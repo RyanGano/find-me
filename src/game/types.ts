@@ -17,6 +17,13 @@ export interface Target {
   strokeWidth?: number;
   opacity?: number;
   blend?: string;
+  /**
+   * Softens the shape's edges, in image pixels. At the fitted view this is far below a
+   * pixel and costs nothing; at the matched zoom the painting is shown above its native
+   * resolution, and a razor-sharp vector edge against soft brushwork is a giveaway all
+   * by itself. This matches the shape to the paint.
+   */
+  blur?: number;
 }
 
 export interface Puzzle {

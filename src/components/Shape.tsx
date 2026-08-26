@@ -10,6 +10,8 @@ interface Props {
   strokeWidth?: number;
   opacity?: number;
   blend?: string;
+  /** Edge softening in the shape's own pixel units. */
+  blur?: number;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -24,6 +26,7 @@ export function Shape({
   strokeWidth,
   opacity,
   blend,
+  blur,
   className,
   style,
 }: Props) {
@@ -40,6 +43,7 @@ export function Shape({
         transform: angle ? `rotate(${angle}deg)` : undefined,
         opacity,
         mixBlendMode: blend as React.CSSProperties['mixBlendMode'],
+        filter: blur ? `blur(${blur}px)` : undefined,
         ...style,
       }}
     >

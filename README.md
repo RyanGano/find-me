@@ -120,7 +120,8 @@ any opacity at all.
 | `src/game/match.ts` | Win condition and the tolerances |
 | `src/game/puzzles.ts` | Puzzle definitions — image, hiding place, size, angle |
 | `src/game/shapes.ts` | Shape paths and their rotational symmetry |
-| `scripts/tune-camouflage.ts` | Measures and solves how well a shape hides |
+| `scripts/tune-camouflage.mjs` | Measures and solves how well a shape hides, in-browser |
+| `scripts/diag-camouflage.mjs` | Screenshots the match zoom, to look at a hiding place |
 | `src/game/daily.ts` | Which puzzle a given day gets |
 | `src/game/storage.ts` | Recorded times, versioned by puzzle definition |
 | `src/hooks/useGestures.ts` | Pointer, wheel, Safari gesture and keyboard input |
@@ -189,15 +190,17 @@ looks bigger than the badge" report was traced to gesture gain rather than geome
 2. Add an entry to `SEEDS` in `src/game/puzzles.ts` with the image's dimensions and
    where the shape hides — `cx`, `cy`, `size` and `angle` are all in the **generated
    asset's** pixel space.
-3. Preview the hiding place before committing to it. This renders the real shape with
-   its real fill and blend mode at three zooms -- fitted, mid, and matched -- so you can
-   check it is invisible from far out and unmistakable up close:
+3. Look at the hiding place as a player will see it — the real page, snapped to the
+   exact winning framing:
    ```bash
-   npx vite-node scripts/preview-spots.ts -- '[{"id":"mona","shape":"snowflake","cx":780,"cy":2438,"size":95,"angle":41,"fill":"#cfe0ea","opacity":0.45,"blend":"screen"}]' out.jpg
+   node scripts/diag-camouflage.mjs mona '[{}]' out.jpg
    ```
-4. Solve its opacity with `npx vite-node scripts/tune-camouflage.ts -- --target 2`. If it
-   cannot reach the target at any opacity, the spot is too busy — use `--scan` to find
-   one that works, or give the shape a fill with more luminance separation.
+   It also takes a list of variants to compare, e.g.
+   `'[{"opacity":0.1},{"opacity":0.2,"blur":1.5}]'`. **Judge camouflage only from this**,
+   never from a composited preview — see the note above about what that cost.
+4. Solve its opacity with `node scripts/tune-camouflage.mjs --target 1.05`. If it cannot
+   reach the target at any opacity, the spot is too busy — use `--scan` to find one that
+   works, or give the shape a fill with more luminance separation.
 5. `npm test` checks that every asset exists, that its dimensions match what the puzzle
    declares, and that the hiding place needs a real zoom to reach.
 

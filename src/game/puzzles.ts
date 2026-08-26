@@ -27,7 +27,7 @@ const SEEDS: PuzzleSeed[] = [
     artist: 'Leonardo da Vinci, c. 1503',
     width: 2600,
     height: 3933,
-    target: { shape: 'snowflake', cx: 2120, cy: 1300, size: 58, angle: 41, fill: '#cfe0ea', opacity: 0.38, blend: 'screen' },
+    target: { shape: 'snowflake', cx: 2120, cy: 1300, size: 58, angle: 41, fill: '#cfe0ea', opacity: 0.128, blend: 'screen', blur: 1.1 },
   },
   {
     id: 'wave',
@@ -35,7 +35,7 @@ const SEEDS: PuzzleSeed[] = [
     artist: 'Katsushika Hokusai, c. 1831',
     width: 2600,
     height: 1748,
-    target: { shape: 'key', cx: 324, cy: 216, size: 54, angle: -48, fill: '#3d5f96', opacity: 0.16, blend: 'multiply' },
+    target: { shape: 'key', cx: 324, cy: 216, size: 54, angle: -48, fill: '#3d5f96', opacity: 0.21, blend: 'multiply', blur: 1.1 },
   },
   {
     id: 'starry',
@@ -43,7 +43,7 @@ const SEEDS: PuzzleSeed[] = [
     artist: 'Vincent van Gogh, 1889',
     width: 2600,
     height: 2059,
-    target: { shape: 'crescent', cx: 1534, cy: 559, size: 54, angle: 112, fill: '#e2ca7c', opacity: 0.69, blend: 'screen' },
+    target: { shape: 'crescent', cx: 1534, cy: 559, size: 54, angle: 112, fill: '#e2ca7c', opacity: 0.457, blend: 'screen', blur: 1.1 },
   },
   {
     id: 'proverbs',
@@ -51,7 +51,7 @@ const SEEDS: PuzzleSeed[] = [
     artist: 'Pieter Bruegel the Elder, 1559',
     width: 2600,
     height: 1841,
-    target: { shape: 'clover', cx: 728, cy: 208, size: 52, angle: 24, fill: '#7d5527', opacity: 0.87, blend: 'multiply' },
+    target: { shape: 'clover', cx: 728, cy: 208, size: 52, angle: 24, fill: '#7d5527', opacity: 0.673, blend: 'multiply', blur: 1.1 },
   },
   {
     id: 'jatte',
@@ -59,7 +59,7 @@ const SEEDS: PuzzleSeed[] = [
     artist: 'Georges Seurat, 1884',
     width: 2600,
     height: 1731,
-    target: { shape: 'bolt', cx: 2268, cy: 1080, size: 54, angle: 156, fill: '#54613a', opacity: 0.52, blend: 'multiply' },
+    target: { shape: 'bolt', cx: 2268, cy: 1080, size: 54, angle: 156, fill: '#54613a', opacity: 0.496, blend: 'multiply', blur: 1.1 },
   },
   {
     id: 'delights',
@@ -67,7 +67,7 @@ const SEEDS: PuzzleSeed[] = [
     artist: 'Hieronymus Bosch, c. 1500',
     width: 2600,
     height: 1480,
-    target: { shape: 'heart', cx: 1300, cy: 806, size: 52, angle: -71, fill: '#241a16', opacity: 0.94, blend: 'multiply' },
+    target: { shape: 'heart', cx: 1300, cy: 806, size: 52, angle: -71, fill: '#241a16', opacity: 0.626, blend: 'multiply', blur: 1.1 },
   },
   {
     id: 'hunters',
@@ -75,7 +75,7 @@ const SEEDS: PuzzleSeed[] = [
     artist: 'Pieter Bruegel the Elder, 1565',
     width: 2600,
     height: 1850,
-    target: { shape: 'fish', cx: 2016, cy: 336, size: 56, angle: 39, fill: '#4e6274', opacity: 0.33, blend: 'multiply' },
+    target: { shape: 'fish', cx: 2016, cy: 336, size: 56, angle: 39, fill: '#4e6274', opacity: 0.395, blend: 'multiply', blur: 1.1 },
   },
   {
     id: 'temeraire',
@@ -83,7 +83,7 @@ const SEEDS: PuzzleSeed[] = [
     artist: 'J. M. W. Turner, 1839',
     width: 2600,
     height: 1932,
-    target: { shape: 'anchor', cx: 784, cy: 1120, size: 56, angle: -124, fill: '#5f4d3b', opacity: 0.23, blend: 'multiply' },
+    target: { shape: 'anchor', cx: 784, cy: 1120, size: 56, angle: -124, fill: '#5f4d3b', opacity: 0.28, blend: 'multiply', blur: 1.1 },
   },
 ];
 

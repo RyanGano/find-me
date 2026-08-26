@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "preview": "vite preview",
     "images": "node scripts/resize-images.mjs",
-    "camouflage": "vite-node scripts/tune-camouflage.ts"
+    "camouflage": "node scripts/tune-camouflage.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

@@ -70,6 +70,7 @@ export function Stage({ stageRef, puzzle, transform, solved, blurred, onReady }:
             strokeWidth={target.strokeWidth}
             opacity={target.opacity}
             blend={target.blend}
+            blur={target.blur}
           />
         </div>
         {solved && (
