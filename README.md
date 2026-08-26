@@ -37,6 +37,18 @@ around.
 | Zoom | pinch | scroll, `+` / `-`, or alt+drag |
 | Rotate | twist two fingers | shift+scroll, shift+drag, or `Q` / `E` |
 
+### Fairness
+
+Everything is fixed and identical for every player: which painting a day gets, where
+the shape hides, its size, its angle and its colour. Nothing is randomised or derived
+from the session, so two people's times are timing the same thing. `determinism.test.ts`
+holds that line -- it pins the day-to-puzzle mapping, checks every target is fully
+specified, and fails the build if `Math.random` or a crypto random ever appears in
+`src/`.
+
+The corner badge is drawn in the target's **own** fill colour, not a house colour, since
+it is the only description a player gets of what they are hunting for.
+
 ### Feedback
 
 There is exactly one running hint, and it is on the shape itself: once your view is
@@ -70,6 +82,7 @@ rather than editing a painting.
 | `src/game/puzzles.ts` | Puzzle definitions — image, hiding place, size, angle |
 | `src/game/shapes.ts` | Shape paths and their rotational symmetry |
 | `src/game/daily.ts` | Which puzzle a given day gets |
+| `src/game/storage.ts` | Recorded times, versioned by puzzle definition |
 | `src/hooks/useGestures.ts` | Pointer, wheel, Safari gesture and keyboard input |
 
 ## Development
@@ -144,6 +157,16 @@ looks bigger than the badge" report was traced to gesture gain rather than geome
    ```
 4. `npm test` checks that every asset exists, that its dimensions match what the puzzle
    declares, and that the hiding place needs a real zoom to reach.
+
+### Changing a puzzle that people have already played
+
+Each result is stored with a fingerprint of the puzzle it was set on -- the id, shape,
+position, size, angle, fill, opacity and blend. Move the shape, resize it, recolour it
+or swap it for another, and the fingerprint changes, so anyone holding a result for that
+day gets it handed back to them as playable rather than being shown a finished board for
+a puzzle that no longer exists. Their old time still counts towards played, best and
+streak; it just no longer locks the day. Editing a title or an artist line does not
+trip this, since it does not change what the player has to do.
 
 Tune `size` to set difficulty: smaller means more zoom, but keep the required zoom near
 the asset's native resolution so the shape stays crisp at the moment of the match.

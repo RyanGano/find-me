@@ -3,7 +3,7 @@ import type { Puzzle } from './types';
 
 const base = import.meta.env.BASE_URL;
 
-interface PuzzleSeed extends Omit<Puzzle, 'src' | 'thing' | 'emoji'> {
+interface PuzzleSeed extends Omit<Puzzle, 'src' | 'thing' | 'emoji' | 'version'> {
   thing?: string;
   emoji?: string;
 }
@@ -87,6 +87,22 @@ const SEEDS: PuzzleSeed[] = [
   },
 ];
 
+/**
+ * Short stable hash of the fields a player actually has to contend with. Cosmetic
+ * edits to a title or an artist line deliberately do not change it; moving, resizing,
+ * recolouring or replacing the hidden shape does.
+ */
+function fingerprint(seed: PuzzleSeed): string {
+  const t = seed.target;
+  const canonical = [seed.id, t.shape, t.cx, t.cy, t.size, t.angle, t.fill, t.opacity, t.blend].join('|');
+  let h = 0x811c9dc5;
+  for (let i = 0; i < canonical.length; i++) {
+    h ^= canonical.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
 export const PUZZLES: Puzzle[] = SEEDS.map((seed) => {
   const shape = getShape(seed.target.shape);
   return {
@@ -94,6 +110,7 @@ export const PUZZLES: Puzzle[] = SEEDS.map((seed) => {
     src: `${base}puzzles/${seed.id}.jpg`,
     thing: seed.thing ?? shape.label,
     emoji: seed.emoji ?? shape.emoji,
+    version: fingerprint(seed),
     target: { symmetry: shape.symmetry, ...seed.target },
   };
 });

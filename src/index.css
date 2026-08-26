@@ -294,7 +294,10 @@ body,
 .reference-well {
   display: grid;
   place-items: center;
-  color: var(--accent);
+  border-radius: 8px;
+  /* Neutral mid-tone: the target fills run from pale ice blue to dark slate, and the
+     badge has to show each of them honestly. */
+  background: #6d6862;
 }
 
 .reference-label {

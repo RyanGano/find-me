@@ -5,6 +5,12 @@ export interface Result {
   ms: number;
   /** ISO date string of when it was solved. */
   at: string;
+  /**
+   * The puzzle version this time was set on. Absent on results written before
+   * versioning existed, which are treated as belonging to a puzzle that no longer
+   * exists -- so those days open playable again rather than stuck on a finished board.
+   */
+  v?: string;
 }
 
 interface Store {
@@ -30,17 +36,28 @@ function write(store: Store): void {
   }
 }
 
+/** Any recorded result for a day, whatever version it was set on. Feeds the stats. */
 export function getResult(day: number): Result | undefined {
   return read().results[String(day)];
 }
 
-export function saveResult(day: number, ms: number): void {
+/**
+ * The result that counts as "you have already played today": a recorded time for this
+ * day *and* for the puzzle as it is defined now. A redefined puzzle is a new puzzle.
+ */
+export function getCurrentResult(day: number, version: string): Result | undefined {
+  const result = read().results[String(day)];
+  return result && result.v === version ? result : undefined;
+}
+
+export function saveResult(day: number, ms: number, version: string): void {
   const store = read();
   const key = String(day);
   const existing = store.results[key];
-  // Keep the first solve, so replaying a day cannot inflate or improve the record.
-  if (existing) return;
-  store.results[key] = { ms, at: new Date().toISOString() };
+  // Keep the first solve of a given puzzle, so replaying cannot improve the record --
+  // but a result from an older version of the day is superseded, not protected.
+  if (existing && existing.v === version) return;
+  store.results[key] = { ms, at: new Date().toISOString(), v: version };
   write(store);
 }
 

@@ -6,7 +6,7 @@ import { Stage } from './components/Stage';
 import { puzzleNumber, selectPuzzle } from './game/daily';
 import { formatTime } from './game/format';
 import { evaluate, targetDisplaySize } from './game/match';
-import { getResult, getStats, saveResult, type Stats } from './game/storage';
+import { getCurrentResult, getStats, saveResult, type Stats } from './game/storage';
 import { compose, constrainPan, fitTransform } from './game/transform';
 import type { Transform } from './game/types';
 import type { GestureDelta } from './game/transform';
@@ -29,7 +29,10 @@ export default function App() {
   const [ready, setReady] = useState(false);
 
   // A solve already recorded for today opens as a finished board, not a fresh timer.
-  const prior = useMemo(() => (isPractice ? undefined : getResult(day)), [day, isPractice]);
+  const prior = useMemo(
+    () => (isPractice ? undefined : getCurrentResult(day, puzzle.version)),
+    [day, isPractice, puzzle.version],
+  );
 
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -116,9 +119,9 @@ export default function App() {
     setSolvedMs(ms);
     setElapsed(ms);
     setShowResult(true);
-    if (!isPractice) saveResult(day, ms);
+    if (!isPractice) saveResult(day, ms, puzzle.version);
     setStats(getStats(day));
-  }, [match?.solved, running, startedAt, day, isPractice]);
+  }, [match?.solved, running, startedAt, day, isPractice, puzzle.version]);
 
   const reset = useCallback(() => {
     if (size) setTransform(fit(size));

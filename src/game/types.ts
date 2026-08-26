@@ -32,6 +32,12 @@ export interface Puzzle {
   thing: string;
   /** Emoji used in the shared result. */
   emoji: string;
+  /**
+   * Fingerprint of everything that defines the challenge. Recorded results carry the
+   * version they were set on, so re-hiding a shape or swapping it for another one
+   * hands the day back to the player instead of showing them a stale finished board.
+   */
+  version: string;
 }
 
 /**
