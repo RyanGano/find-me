@@ -17,9 +17,8 @@ Play: **https://ryangano.github.io/find-me/**
 The painting starts blurred and the clock starts stopped. Both change on your first
 pan, pinch or rotate, so there is no free look at the board before the timer runs.
 
-Close enough counts: **±2% on size** and **±3.6° on angle**. The 3.6° is the rotational
-equivalent of the same 2% tolerance, measured against a half-turn. It was ±5% until the
-badge started hinting; with a hint in play, the landing has to be worth something.
+Close enough counts: **±4% on size** and **±7.2° on angle**. The 7.2° is the rotational
+equivalent of the same 4% tolerance, measured against a half-turn.
 
 Input sensitivity is set against those tolerances rather than by feel. A notched mouse
 wheel reports about 100 deltaY per click, which at the old sensitivity moved the zoom
@@ -58,8 +57,14 @@ it is the only description a player gets of what they are hunting for.
 
 ### Feedback
 
-There is exactly one running hint, and it lives **on the badge**: once your view is close
-on both size and angle it lights amber, and it turns green as you land the match.
+There is exactly one running hint, and it lives **on the badge**: once the shape is
+**on screen** at close to the right size and angle, the badge lights amber, and it turns
+green as you land the match.
+
+All three conditions matter. The badge used to light on zoom and twist alone, which meant
+it announced "nearly there" to a player still staring at completely the wrong corner of
+the painting. That is not what nearly means, and it let you sweep for the shape blind
+rather than look for it.
 
 It was briefly drawn on the hidden shape instead, which was a straightforward mistake --
 it put a bright ring around the very thing the player is meant to be searching for and
@@ -86,10 +91,22 @@ rather than editing a painting.
 
 ### Camouflage is measured, not eyeballed
 
-Shapes are small — around 2% of the image width. A small shape is invisible in the fitted
-view on its own merits, and zooming in to match it magnifies it back to something
-findable, so difficulty comes from scale rather than from making the shape so faint that
-finding it is unfair.
+The shape has two jobs that pull against each other. Someone scanning the whole painting
+must not pick it out; someone who has zoomed in on it must be able to see it plainly. It
+should be *camouflaged*, not *hidden*.
+
+Those are separable, thanks to an asymmetry worth stating outright. At the match the
+shape is always exactly `targetPx` across on screen, because the winning scale is
+`targetPx / size` — so how findable it is there depends on contrast alone, and not at all
+on `size`. At the fitted view it is `size * fitScale` across, which does shrink with
+`size`. **Shrinking a shape makes it harder to scan for without making it any harder to
+see once you are on it.** So `size` is small — around 1.5% of the image width — which buys
+the headroom to raise contrast for the searcher.
+
+`npm run camouflage` reports both jobs: `found` is the contrast at the matched framing,
+and `scannable` is the peak luminance shift at the fitted view — a single bright speck is
+what gives a shape away when someone is scanning, so a peak reads that better than an
+average over a shape only a few pixels across.
 
 Opacity is solved for, not chosen. The same fill and opacity that vanish into Leonardo's
 glazed landscape sit up and wave on Hokusai's flat woodblock, so no single number works
@@ -198,9 +215,11 @@ looks bigger than the badge" report was traced to gesture gain rather than geome
    It also takes a list of variants to compare, e.g.
    `'[{"opacity":0.1},{"opacity":0.2,"blur":1.5}]'`. **Judge camouflage only from this**,
    never from a composited preview — see the note above about what that cost.
-4. Solve its opacity with `node scripts/tune-camouflage.mjs --target 1.05`. If it cannot
+4. Solve its opacity with `node scripts/tune-camouflage.mjs --target 1.9`. If it cannot
    reach the target at any opacity, the spot is too busy — use `--scan` to find one that
-   works, or give the shape a fill with more luminance separation.
+   works, or give the shape a fill with more luminance separation. Then check `scannable`
+   has not climbed: a spot that needs near-full opacity to be findable will be a bright
+   speck at the fitted view, which is how starry and delights ended up being moved.
 5. `npm test` checks that every asset exists, that its dimensions match what the puzzle
    declares, and that the hiding place needs a real zoom to reach.
 
@@ -214,7 +233,7 @@ a puzzle that no longer exists. Their old time still counts towards played, best
 streak; it just no longer locks the day. Editing a title or an artist line does not
 trip this, since it does not change what the player has to do.
 
-Keep `size` small, around 2% of the image width. Smaller means more zoom to reach the
+Keep `size` small, around 1.5% of the image width. Smaller means more zoom to reach the
 match, which is the fair way to make a puzzle harder; it also means the painting is shown
 further above its native resolution at the moment of the match, so there is a floor.
 

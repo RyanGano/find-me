@@ -24,11 +24,11 @@ export function HowTo({ thing, onDismiss }: Props) {
             <li>Shift + scroll or shift + drag to rotate</li>
           </>
         )}
-        <li>The corner badge lights up once you are close on both size and angle</li>
+        <li>The corner badge lights up once the {thing} is on screen at close to the right size and angle</li>
       </ul>
       <p className="howto-note">
         The painting stays blurred, and the clock stays stopped, until your first move — so
-        there is no free look. Close enough counts: within 2% on size and 3.6&deg; on angle.
+        there is no free look. Close enough counts: within 4% on size and 7.2&deg; on angle.
         Some shapes match at more than one rotation.
       </p>
       <button type="button" className="btn btn-primary" onClick={onDismiss}>

@@ -1,10 +1,10 @@
 import { apply, DEG, RAD, wrapAngle } from './transform';
 import type { Target, Transform } from './types';
 
-/** Scale must land within +/- 2% of the reference size. */
-export const SIZE_TOLERANCE = 0.02;
-/** Rotation must land within +/- 2% of a half turn (3.6 degrees). */
-export const ANGLE_TOLERANCE_DEG = 3.6;
+/** Scale must land within +/- 4% of the reference size. */
+export const SIZE_TOLERANCE = 0.04;
+/** Rotation must land within +/- 4% of a half turn (7.2 degrees). */
+export const ANGLE_TOLERANCE_DEG = 7.2;
 
 /**
  * The looser "warm" band. Inside it the hidden shape picks up an outline, which is the
@@ -12,8 +12,8 @@ export const ANGLE_TOLERANCE_DEG = 3.6;
  * "you have found the right thing and you are nearly there" and far too narrow to be
  * swept for blind: it only helps once the shape is already in front of you.
  */
-export const NEAR_SIZE_TOLERANCE = 0.08;
-export const NEAR_ANGLE_TOLERANCE_DEG = 10;
+export const NEAR_SIZE_TOLERANCE = 0.12;
+export const NEAR_ANGLE_TOLERANCE_DEG = 15;
 
 export interface MatchState {
   /** Rendered size of the hidden shape, in CSS pixels. */
@@ -68,6 +68,7 @@ export function evaluate(
     screen.y + r <= viewportH;
 
   const near =
+    onScreen &&
     Math.abs(sizeError) <= NEAR_SIZE_TOLERANCE &&
     Math.abs(angleError) <= NEAR_ANGLE_TOLERANCE_DEG;
 

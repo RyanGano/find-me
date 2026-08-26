@@ -84,15 +84,20 @@ const rot = (-plan.angle * Math.PI) / 180;
 const cxs = plan.stage.left + plan.stage.w / 2;
 const cys = plan.stage.top + plan.stage.h / 2;
 
-// Zoom in with the wheel until the render scale reaches the winning size. The step
-// shrinks as it closes in, the way a player eases off near the tolerance window.
-for (let i = 0; i < 900; i++) {
-  const { scale: s } = await readTransform(page);
-  const gap = Math.log(scale / s);
-  if (Math.abs(gap) < 0.004) break;
-  await page.mouse.move(cxs, cys);
-  await page.mouse.wheel(0, -Math.sign(gap) * Math.min(120, Math.max(4, Math.abs(gap) / 0.0004 / 3)));
+/** Wheel-zoom towards a target scale, easing off as it closes in like a player would. */
+async function zoomTo(want) {
+  for (let i = 0; i < 900; i++) {
+    const { scale: s } = await readTransform(page);
+    const gap = Math.log(want / s);
+    if (Math.abs(gap) < 0.003) return;
+    await page.mouse.move(cxs, cys);
+    await page.mouse.wheel(0, -Math.sign(gap) * Math.min(120, Math.max(4, Math.abs(gap) / 0.0004 / 3)));
+  }
 }
+
+// Stop deliberately short of the match: inside the "nearly" band, outside the tolerance.
+// That lets the run observe the amber state before it turns green.
+await zoomTo(scale * 1.07);
 check('blur lifts on the first move', await page.$('.stage-viewport.is-blurred') === null);
 check('clock starts on the first move', (await page.textContent('.clock')).trim() !== 'ready');
 await page.screenshot({ path: `${OUT}/3-zoomed.png` });
@@ -111,10 +116,11 @@ for (let i = 0; i < 900; i++) {
 }
 await page.keyboard.up('Shift');
 
-check('the badge lights up once size and angle are close', await page.$('.reference.is-near') !== null);
+// Size and angle are close, but the shape is nowhere near the screen. Claiming
+// "nearly" here would be a lie, and would let a player sweep for it blind.
 check(
-  'the hint never marks the hidden shape itself',
-  await page.$('.stage-outline') === null && await page.$('.stage-target .is-near') === null,
+  'the badge stays dark while the shape is off screen',
+  await page.$('.reference.is-near') === null,
 );
 await page.screenshot({ path: `${OUT}/4-rotated.png` });
 
@@ -134,6 +140,18 @@ await page.screenshot({ path: `${OUT}/4-rotated.png` });
   }
   await page.mouse.up();
 }
+
+// On screen now, and close on both axes, so the badge should light -- but the run is
+// still 7% out on size, so it must not have solved.
+check('the badge lights once the shape is on screen and close', await page.$('.reference.is-near') !== null);
+check('being close is not the same as solving', await page.$('.result') === null);
+check(
+  'the hint never marks the hidden shape itself',
+  await page.$('.stage-outline') === null && await page.$('.stage-target .is-near') === null,
+);
+
+// Close the last 7%. The shape is at the centre, which is the zoom pivot, so it stays put.
+await zoomTo(scale);
 
 await page.waitForSelector('.result', { timeout: 5000 });
 await page.waitForTimeout(400);

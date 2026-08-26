@@ -96,6 +96,17 @@ describe('evaluate', () => {
     expect(check(framed(EXACT, -30 + 20)).near).toBe(false);
   });
 
+  it('does not claim you are near while the shape is off screen', () => {
+    // Perfect zoom and angle, but the player is looking at the wrong part of the
+    // painting. Saying "nearly" here is just wrong, and teaches people to ignore it.
+    const offLeft = { ...PERFECT, x: PERFECT.x - VIEW.w };
+    const m = check(offLeft);
+    expect(m.sizeOk).toBe(true);
+    expect(m.angleOk).toBe(true);
+    expect(m.onScreen).toBe(false);
+    expect(m.near).toBe(false);
+  });
+
   it('leaves clearance for the rotated bounding box at the edges', () => {
     // Centre the shape exactly half its width from the edge: a rotated shape can
     // still poke out, so this must not count as on screen.

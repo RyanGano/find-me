@@ -82,10 +82,49 @@ async function prepare(page, id) {
     const s = Math.sin(rot);
     const x = stage.width / 2 - (c * cx * scale - s * cy * scale);
     const y = stage.height / 2 - (s * cx * scale + c * cy * scale);
-    document.querySelector('.stage-canvas').style.transform =
+    const canvas = document.querySelector('.stage-canvas');
+    const fitted = getComputedStyle(canvas).transform;
+    canvas.style.transform =
       'translate(' + x + 'px, ' + y + 'px) rotate(' + (rot * 180) / Math.PI + 'deg) scale(' + scale + ')';
-    return { targetPx, declared: Number(svg.style.opacity || getComputedStyle(svg).opacity) };
+    return {
+      targetPx,
+      cx,
+      cy,
+      size,
+      angle,
+      fitted,
+      declared: Number(svg.style.opacity || getComputedStyle(svg).opacity),
+    };
   });
+}
+
+/**
+ * The two views pull against each other, so both get measured.
+ *
+ * At the match the shape is always exactly `targetPx` on screen, because the winning
+ * scale is `targetPx / size` -- so its findability there depends on contrast alone, and
+ * not at all on `size`. At the fitted view the shape is `size * fitScale` across, which
+ * does shrink with `size`. That asymmetry is the whole lever: shrinking a shape makes it
+ * harder to scan for without making it any harder to see once you are on it.
+ */
+async function frame(page, mode, geo) {
+  await page.evaluate(([m, g]) => {
+    const canvas = document.querySelector('.stage-canvas');
+    if (m === 'fitted') {
+      canvas.style.transform = g.fitted;
+      return;
+    }
+    const scale = g.targetPx / g.size;
+    const rot = (-g.angle * Math.PI) / 180;
+    const stage = document.querySelector('.stage').getBoundingClientRect();
+    const c = Math.cos(rot);
+    const s = Math.sin(rot);
+    const x = stage.width / 2 - (c * g.cx * scale - s * g.cy * scale);
+    const y = stage.height / 2 - (s * g.cx * scale + c * g.cy * scale);
+    canvas.style.transform =
+      'translate(' + x + 'px, ' + y + 'px) rotate(' + (rot * 180) / Math.PI + 'deg) scale(' + scale + ')';
+  }, [mode, geo]);
+  await page.waitForTimeout(80);
 }
 
 /** Contrast of the shape against the painting at a given opacity, on real pixels. */
@@ -118,10 +157,12 @@ async function sample(page, opacity, targetPx, maskArea) {
   // the shape actually covers, measured once at full opacity.
   let sum = 0;
   let changed = 0;
+  let peak = 0;
   for (let i = 0; i < b.length; i++) {
     const d = Math.abs(a.data[i] - b[i]);
     sum += d;
     if (d > 1) changed++;
+    if (d > peak) peak = d;
   }
   const signal = sum / (maskArea || changed || 1);
 
@@ -142,7 +183,10 @@ async function sample(page, opacity, targetPx, maskArea) {
   }
   const mean = t / m;
   const noise = Math.sqrt(Math.max(0, t2 / m - mean * mean));
-  return { ratio: noise < 1 ? signal : signal / noise, changed };
+  // At the fitted view the shape is only a few pixels across, so an average over its
+  // footprint says little. What gives it away there is a single bright speck, which is
+  // what the peak captures.
+  return { ratio: noise < 1 ? signal : signal / noise, changed, peak };
 }
 
 /**
@@ -209,7 +253,13 @@ for (const p of list) {
 
   if (target === null) {
     const got = await sample(page, p.opacity, info.targetPx, area);
-    console.log('  ' + p.id.padEnd(10) + ' opacity ' + String(p.opacity).padEnd(5) + ' -> ' + got.ratio.toFixed(3));
+    await frame(page, 'fitted', info);
+    const scanned = await sample(page, p.opacity, info.targetPx, area);
+    await frame(page, 'matched', info);
+    console.log(
+      '  ' + p.id.padEnd(10) + ' size ' + String(p.size).padEnd(4) + ' opacity ' + String(p.opacity).padEnd(6) +
+      ' found ' + got.ratio.toFixed(2).padEnd(6) + ' scannable ' + scanned.peak.toFixed(0),
+    );
   } else {
     let lo = 0.005;
     let hi = 1;
