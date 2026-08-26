@@ -1,7 +1,7 @@
 # Find Me
 
-A daily image-seek game. One painting a day has a shape hidden in it — a snowflake, a
-key, a crescent. Find it, then frame it so it appears at the **same size and angle** as
+A daily image-seek game. One painting a day has a small shape hidden in it — a snowflake,
+a key, a crescent. Find it, then frame it so it appears at the **same size and angle** as
 the badge in the corner. The clock starts on your first move.
 
 Play: **https://ryangano.github.io/find-me/**
@@ -17,8 +17,15 @@ Play: **https://ryangano.github.io/find-me/**
 The painting starts blurred and the clock starts stopped. Both change on your first
 pan, pinch or rotate, so there is no free look at the board before the timer runs.
 
-Close enough counts: **±5% on size** and **±9° on angle**. The 9° is the rotational
-equivalent of the same 5% tolerance, measured against a half-turn.
+Close enough counts: **±2% on size** and **±3.6° on angle**. The 3.6° is the rotational
+equivalent of the same 2% tolerance, measured against a half-turn. It was ±5% until the
+badge started hinting; with a hint in play, the landing has to be worth something.
+
+Input sensitivity is set against those tolerances rather than by feel. A notched mouse
+wheel reports about 100 deltaY per click, which at the old sensitivity moved the zoom
+16% and swung the angle 20° in a single click -- neither could ever be landed inside the
+window. A click is now about 4% and 3.4°, with `+`/`-` and `Q`/`E` finer still for the
+last nudge.
 
 Shapes with rotational symmetry — a six-armed snowflake, a five-pointed star, a
 four-leaf clover — match at **every** equivalent rotation, so you are never asked to
@@ -51,15 +58,18 @@ it is the only description a player gets of what they are hunting for.
 
 ### Feedback
 
-There is exactly one running hint, and it is on the shape itself: once your view is
-close on both size and angle, the hidden shape draws its own outline. It confirms
-"that is the thing, and you are nearly there" at the moment you need it -- while you
-are squinting at something and adjusting -- and tells you nothing at all until the
-shape is already in front of you. The outline turns green as you land the match.
+There is exactly one running hint, and it lives **on the badge**: once your view is close
+on both size and angle it lights amber, and it turns green as you land the match.
 
-An earlier version put live size and angle gauges along the bottom. They worked, but
-they let you dial in a perfect match before finding anything and then simply sweep the
-painting, which turned a seek game into a scan.
+It was briefly drawn on the hidden shape instead, which was a straightforward mistake --
+it put a bright ring around the very thing the player is meant to be searching for and
+handed the answer to anyone who had not spotted it yet. On the badge it says exactly the
+same thing while revealing nothing, because closeness depends only on zoom and twist,
+never on position.
+
+Before that, live size and angle gauges ran along the bottom. They worked, but they let
+you dial in a perfect match before finding anything and then simply sweep the painting,
+which turned a seek game into a scan.
 
 ## How it is built
 
@@ -74,6 +84,35 @@ layer with a blend mode (`src/game/puzzles.ts`). That keeps the win condition ex
 the ground truth *is* the render — and adding a puzzle means adding a few numbers
 rather than editing a painting.
 
+### Camouflage is measured, not eyeballed
+
+Shapes are small — around 2% of the image width. A small shape is invisible in the fitted
+view on its own merits, and zooming in to match it magnifies it back to something
+findable, so difficulty comes from scale rather than from making the shape so faint that
+finding it is unfair.
+
+Opacity is solved for, not chosen. The same fill and opacity that vanish into Leonardo's
+glazed landscape sit up and wave on Hokusai's flat woodblock, so no single number works
+everywhere. `npm run camouflage` measures how far the shape shifts the pixels underneath
+it **relative to the local texture it has to compete with**, and binary-searches the
+opacity that lands on a chosen ratio. Every puzzle is tuned to 2.0.
+
+That ratio, rather than a flat contrast figure, is the whole point. An earlier pass
+targeting a fixed luminance shift left several puzzles genuinely unfindable even at the
+matched zoom: a shift that reads clearly on a smooth glaze is swallowed whole by
+hard-edged waves. Measuring against local texture fixed it.
+
+```bash
+npm run camouflage                                    # report every puzzle
+npx vite-node scripts/tune-camouflage.ts -- --target 2  # solve for a ratio
+npx vite-node scripts/tune-camouflage.ts -- --scan      # find workable hiding places
+```
+
+`--scan` reports where in a painting a shape *can* hide: textured enough to disappear
+into, not so busy that no opacity makes it findable. Five of the current positions came
+from it, after the tuner showed their original spots could not reach the target ratio at
+any opacity at all.
+
 | Path | What lives there |
 |---|---|
 | `src/game/transform.ts` | Viewport transform, gesture composition, pan constraint |
@@ -81,6 +120,7 @@ rather than editing a painting.
 | `src/game/match.ts` | Win condition and the tolerances |
 | `src/game/puzzles.ts` | Puzzle definitions — image, hiding place, size, angle |
 | `src/game/shapes.ts` | Shape paths and their rotational symmetry |
+| `scripts/tune-camouflage.ts` | Measures and solves how well a shape hides |
 | `src/game/daily.ts` | Which puzzle a given day gets |
 | `src/game/storage.ts` | Recorded times, versioned by puzzle definition |
 | `src/hooks/useGestures.ts` | Pointer, wheel, Safari gesture and keyboard input |
@@ -155,7 +195,10 @@ looks bigger than the badge" report was traced to gesture gain rather than geome
    ```bash
    npx vite-node scripts/preview-spots.ts -- '[{"id":"mona","shape":"snowflake","cx":780,"cy":2438,"size":95,"angle":41,"fill":"#cfe0ea","opacity":0.45,"blend":"screen"}]' out.jpg
    ```
-4. `npm test` checks that every asset exists, that its dimensions match what the puzzle
+4. Solve its opacity with `npx vite-node scripts/tune-camouflage.ts -- --target 2`. If it
+   cannot reach the target at any opacity, the spot is too busy — use `--scan` to find
+   one that works, or give the shape a fill with more luminance separation.
+5. `npm test` checks that every asset exists, that its dimensions match what the puzzle
    declares, and that the hiding place needs a real zoom to reach.
 
 ### Changing a puzzle that people have already played
@@ -168,8 +211,9 @@ a puzzle that no longer exists. Their old time still counts towards played, best
 streak; it just no longer locks the day. Editing a title or an artist line does not
 trip this, since it does not change what the player has to do.
 
-Tune `size` to set difficulty: smaller means more zoom, but keep the required zoom near
-the asset's native resolution so the shape stays crisp at the moment of the match.
+Keep `size` small, around 2% of the image width. Smaller means more zoom to reach the
+match, which is the fair way to make a puzzle harder; it also means the painting is shown
+further above its native resolution at the moment of the match, so there is a floor.
 
 ## Deployment
 

@@ -1,10 +1,13 @@
 import { Shape } from './Shape';
+import type { MatchState } from '../game/match';
 import type { Puzzle } from '../game/types';
 
 interface Props {
   puzzle: Puzzle;
   /** The exact on-screen size the hidden shape must be matched to. */
   targetSize: number;
+  match: MatchState | null;
+  solved: boolean;
 }
 
 /**
@@ -16,10 +19,18 @@ interface Props {
  * people hunting for the wrong thing. It sits on a neutral well because the fills range
  * from pale ice blue to dark slate and both have to read; the shape is drawn at full
  * opacity, since the blend against the painting cannot be reproduced on a flat card.
+ *
+ * The badge is also where the closeness hint lives. It lights when the view is nearly
+ * right on size and angle, and greens on the match. Putting that hint on the hidden
+ * shape instead -- which is where it started -- drew a bright ring around the very
+ * thing the player is supposed to be searching for, handing over the answer to anyone
+ * who had not spotted it yet. Here it says the same thing while revealing nothing:
+ * closeness depends only on zoom and twist, never on position.
  */
-export function ReferenceCard({ puzzle, targetSize }: Props) {
+export function ReferenceCard({ puzzle, targetSize, match, solved }: Props) {
+  const state = solved ? ' is-solved' : match?.near ? ' is-near' : '';
   return (
-    <div className="reference" aria-label={`Find this ${puzzle.thing}`}>
+    <div className={`reference${state}`} aria-label={`Find this ${puzzle.thing}`}>
       <div className="reference-well" style={{ width: targetSize, height: targetSize }}>
         <Shape
           shape={puzzle.target.shape}
@@ -27,7 +38,9 @@ export function ReferenceCard({ puzzle, targetSize }: Props) {
           fill={puzzle.target.fill ?? 'var(--accent)'}
         />
       </div>
-      <p className="reference-label">find the {puzzle.thing}</p>
+      <p className="reference-label">
+        {solved ? 'found' : match?.near ? 'nearly' : `find the ${puzzle.thing}`}
+      </p>
     </div>
   );
 }

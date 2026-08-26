@@ -1,10 +1,10 @@
 import { apply, DEG, RAD, wrapAngle } from './transform';
 import type { Target, Transform } from './types';
 
-/** Scale must land within +/- 5% of the reference size. */
-export const SIZE_TOLERANCE = 0.05;
-/** Rotation must land within +/- 5% of a half turn (9 degrees). */
-export const ANGLE_TOLERANCE_DEG = 9;
+/** Scale must land within +/- 2% of the reference size. */
+export const SIZE_TOLERANCE = 0.02;
+/** Rotation must land within +/- 2% of a half turn (3.6 degrees). */
+export const ANGLE_TOLERANCE_DEG = 3.6;
 
 /**
  * The looser "warm" band. Inside it the hidden shape picks up an outline, which is the
@@ -12,8 +12,8 @@ export const ANGLE_TOLERANCE_DEG = 9;
  * "you have found the right thing and you are nearly there" and far too narrow to be
  * swept for blind: it only helps once the shape is already in front of you.
  */
-export const NEAR_SIZE_TOLERANCE = 0.2;
-export const NEAR_ANGLE_TOLERANCE_DEG = 25;
+export const NEAR_SIZE_TOLERANCE = 0.08;
+export const NEAR_ANGLE_TOLERANCE_DEG = 10;
 
 export interface MatchState {
   /** Rendered size of the hidden shape, in CSS pixels. */
@@ -38,8 +38,8 @@ export interface MatchState {
  * viewport keeps the amount of zooming required roughly even across phone and desktop.
  */
 export function targetDisplaySize(viewportW: number, viewportH: number): number {
-  const base = Math.min(viewportW, viewportH) * 0.18;
-  return Math.round(Math.min(104, Math.max(64, base)));
+  const base = Math.min(viewportW, viewportH) * 0.16;
+  return Math.round(Math.min(88, Math.max(60, base)));
 }
 
 export function evaluate(

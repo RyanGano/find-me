@@ -171,7 +171,6 @@ export default function App() {
           stageRef={stageRef}
           puzzle={puzzle}
           transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
-          match={match}
           solved={solvedMs !== null}
           blurred={startedAt === null && solvedMs === null}
           onReady={() => setReady(true)}
@@ -179,7 +178,12 @@ export default function App() {
 
         {!ready && <p className="loading">Loading today&rsquo;s painting…</p>}
 
-        <ReferenceCard puzzle={puzzle} targetSize={targetSize} />
+        <ReferenceCard
+          puzzle={puzzle}
+          targetSize={targetSize}
+          match={match}
+          solved={solvedMs !== null}
+        />
 
         {showHowTo && <HowTo thing={puzzle.thing} onDismiss={dismissHowTo} />}
 

@@ -197,30 +197,6 @@ body,
   transform-origin: 0 0;
 }
 
-/*
- * The only running feedback in the game: once the view is close on both size and
- * angle, the hidden shape draws its own edge. It says "that is the thing, and you are
- * nearly there" without ever hinting at where the thing is.
- */
-.stage-outline {
-  position: absolute;
-  inset: 0;
-  overflow: visible;
-  pointer-events: none;
-  stroke: var(--accent);
-  animation: outline-in 0.2s ease-out;
-}
-
-.stage-outline.is-solved {
-  stroke: var(--ok);
-}
-
-@keyframes outline-in {
-  from {
-    opacity: 0;
-  }
-}
-
 .stage-image {
   display: block;
   width: 100%;
@@ -298,10 +274,41 @@ body,
   /* Neutral mid-tone: the target fills run from pale ice blue to dark slate, and the
      badge has to show each of them honestly. */
   background: #6d6862;
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow 0.2s ease-out;
+}
+
+/*
+ * The whole of the running feedback, and it lives here rather than on the hidden shape
+ * so that it cannot give away a hiding place the player has not found yet.
+ */
+.reference.is-near {
+  border-color: var(--accent);
+}
+
+.reference.is-near .reference-well {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.reference.is-near .reference-label {
+  color: var(--accent);
+}
+
+.reference.is-solved {
+  border-color: var(--ok);
+}
+
+.reference.is-solved .reference-well {
+  box-shadow: 0 0 0 2px var(--ok);
+}
+
+.reference.is-solved .reference-label {
+  color: var(--ok);
 }
 
 .reference-label {
   margin: 0;
+  min-height: 1em;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;

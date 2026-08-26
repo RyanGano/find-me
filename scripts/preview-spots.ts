@@ -21,6 +21,7 @@ interface Spot {
   fill: string;
   opacity: number;
   blend: string;
+  label?: string;
 }
 
 const spots: Spot[] = JSON.parse(process.argv[2]);
@@ -48,7 +49,7 @@ for (const spot of spots) {
       `fill-opacity="${spot.opacity}"/></g></svg>`,
   );
   const composed = await sharp(src)
-    .composite([{ input: overlay, blend: spot.blend === 'screen' ? 'screen' : 'multiply' }])
+    .composite([{ input: overlay, blend: (spot.blend === 'color-burn' ? 'colour-burn' : spot.blend) as never }])
     .toBuffer();
 
   const tiles: Buffer[] = [];
@@ -60,19 +61,21 @@ for (const spot of spots) {
         .png()
         .toBuffer();
     } else {
-      const half = zoom.crop;
-      const left = Math.max(0, Math.min(meta.width! - half * 2, Math.round(spot.cx - half)));
-      const top = Math.max(0, Math.min(meta.height! - half * 2, Math.round(spot.cy - half)));
+      // The window has to fit inside the painting: several are shorter than the
+      // widest crop, and an out-of-bounds extract is a hard failure in sharp.
+      const side = Math.min(zoom.crop * 2, meta.width!, meta.height!);
+      const left = Math.max(0, Math.min(meta.width! - side, Math.round(spot.cx - side / 2)));
+      const top = Math.max(0, Math.min(meta.height! - side, Math.round(spot.cy - side / 2)));
       tile = await sharp(composed)
-        .extract({ left, top, width: half * 2, height: half * 2 })
+        .extract({ left, top, width: side, height: side })
         .resize({ width: TILE, height: TILE, fit: 'contain', background: '#111' })
         .png()
         .toBuffer();
     }
     const caption = Buffer.from(
       `<svg xmlns="http://www.w3.org/2000/svg" width="${TILE}" height="${TILE}">` +
-        `<text x="10" y="26" font-size="20" fill="#ff00ff" font-family="sans-serif">` +
-        `${spot.id} / ${spot.shape} / ${zoom.label}</text></svg>`,
+        `<text x="10" y="26" font-size="19" fill="#ff00ff" font-family="sans-serif">` +
+        `${spot.label ?? spot.id} / ${zoom.label}</text></svg>`,
     );
     tiles.push(await sharp(tile).composite([{ input: caption, top: 0, left: 0 }]).png().toBuffer());
   }

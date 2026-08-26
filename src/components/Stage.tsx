@@ -1,6 +1,4 @@
-import { getShape } from '../game/shapes';
 import { DEG } from '../game/transform';
-import type { MatchState } from '../game/match';
 import type { Puzzle, Transform } from '../game/types';
 import { Shape } from './Shape';
 
@@ -8,7 +6,6 @@ interface Props {
   stageRef: React.RefObject<HTMLDivElement | null>;
   puzzle: Puzzle;
   transform: Transform;
-  match: MatchState | null;
   solved: boolean;
   /** Hide the detail until the player commits, so nobody can scan for free. */
   blurred: boolean;
@@ -20,18 +17,13 @@ interface Props {
  * lives in image pixel coordinates; the single CSS transform maps it to the screen,
  * which keeps the hidden shape locked to the artwork under every gesture.
  */
-export function Stage({ stageRef, puzzle, transform, match, solved, blurred, onReady }: Props) {
+export function Stage({ stageRef, puzzle, transform, solved, blurred, onReady }: Props) {
   const { target } = puzzle;
   const css = `translate(${transform.x}px, ${transform.y}px) rotate(${transform.rot * DEG}deg) scale(${transform.scale})`;
 
   // Keep the reveal ring a constant thickness on screen however far we are zoomed in.
   const ringSize = target.size * 2.2;
   const ringWidth = 3 / transform.scale;
-
-  // The outline is drawn in the shape's own 100-unit space, so convert from the screen
-  // width we want back through both the shape's size and the current zoom.
-  const outlineWidth = (2.5 * 100) / (target.size * transform.scale);
-  const outlined = Boolean(match && (match.near || solved));
 
   return (
     <div
@@ -79,24 +71,6 @@ export function Stage({ stageRef, puzzle, transform, match, solved, blurred, onR
             opacity={target.opacity}
             blend={target.blend}
           />
-          {outlined && (
-            <svg
-              className={`stage-outline${solved ? ' is-solved' : ''}`}
-              width={target.size}
-              height={target.size}
-              viewBox="0 0 100 100"
-              aria-hidden="true"
-              style={{ transform: `rotate(${target.angle}deg)` }}
-            >
-              <path
-                d={getShape(target.shape).path}
-                fill="none"
-                fillRule={getShape(target.shape).fillRule ?? 'evenodd'}
-                strokeWidth={outlineWidth}
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
         </div>
         {solved && (
           <div

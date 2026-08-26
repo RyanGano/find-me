@@ -3,7 +3,7 @@ import { ANGLE_TOLERANCE_DEG, evaluate, SIZE_TOLERANCE, targetDisplaySize } from
 import { RAD } from './transform';
 import type { Target, Transform } from './types';
 
-const TARGET_PX = 100;
+const TARGET_PX = 88;
 const VIEW = { w: 800, h: 600 };
 
 const target: Target = {
@@ -32,8 +32,10 @@ function framed(scale: number, rotDeg: number): Transform {
 
 const check = (t: Transform) => evaluate(target, t, VIEW.w, VIEW.h, TARGET_PX);
 
-// scale 2 renders the 50px shape at 100px; rotation -30 cancels the baked-in 30.
-const PERFECT = framed(2, -30);
+// This scale renders the 50px shape at the target size; rotation -30 cancels the
+// baked-in 30.
+const EXACT = TARGET_PX / target.size;
+const PERFECT = framed(EXACT, -30);
 
 describe('evaluate', () => {
   it('solves an exact match', () => {
@@ -46,34 +48,34 @@ describe('evaluate', () => {
   });
 
   it('accepts size just inside the tolerance and rejects just outside', () => {
-    expect(check(framed(2 * (1 + SIZE_TOLERANCE * 0.99), -30)).solved).toBe(true);
-    expect(check(framed(2 * (1 - SIZE_TOLERANCE * 0.99), -30)).solved).toBe(true);
-    expect(check(framed(2 * (1 + SIZE_TOLERANCE * 1.5), -30)).sizeOk).toBe(false);
-    expect(check(framed(2 * (1 - SIZE_TOLERANCE * 1.5), -30)).sizeOk).toBe(false);
+    expect(check(framed(EXACT * (1 + SIZE_TOLERANCE * 0.99), -30)).solved).toBe(true);
+    expect(check(framed(EXACT * (1 - SIZE_TOLERANCE * 0.99), -30)).solved).toBe(true);
+    expect(check(framed(EXACT * (1 + SIZE_TOLERANCE * 1.5), -30)).sizeOk).toBe(false);
+    expect(check(framed(EXACT * (1 - SIZE_TOLERANCE * 1.5), -30)).sizeOk).toBe(false);
   });
 
   it('accepts angle just inside the tolerance and rejects just outside', () => {
-    expect(check(framed(2, -30 + ANGLE_TOLERANCE_DEG * 0.99)).angleOk).toBe(true);
-    expect(check(framed(2, -30 - ANGLE_TOLERANCE_DEG * 0.99)).angleOk).toBe(true);
-    expect(check(framed(2, -30 + ANGLE_TOLERANCE_DEG * 1.5)).angleOk).toBe(false);
+    expect(check(framed(EXACT, -30 + ANGLE_TOLERANCE_DEG * 0.99)).angleOk).toBe(true);
+    expect(check(framed(EXACT, -30 - ANGLE_TOLERANCE_DEG * 0.99)).angleOk).toBe(true);
+    expect(check(framed(EXACT, -30 + ANGLE_TOLERANCE_DEG * 1.5)).angleOk).toBe(false);
   });
 
   it('treats a symmetric shape rotated by one period as matching', () => {
     // A five-pointed star repeats every 72 degrees.
-    expect(check(framed(2, -30 + 72)).solved).toBe(true);
-    expect(check(framed(2, -30 + 144)).solved).toBe(true);
-    expect(check(framed(2, -30 + 36)).angleOk).toBe(false);
+    expect(check(framed(EXACT, -30 + 72)).solved).toBe(true);
+    expect(check(framed(EXACT, -30 + 144)).solved).toBe(true);
+    expect(check(framed(EXACT, -30 + 36)).angleOk).toBe(false);
   });
 
   it('does not treat an asymmetric shape as matching when flipped round', () => {
     const key: Target = { ...target, shape: 'key', symmetry: 1 };
-    const m = evaluate(key, framed(2, -30 + 72), VIEW.w, VIEW.h, TARGET_PX);
+    const m = evaluate(key, framed(EXACT, -30 + 72), VIEW.w, VIEW.h, TARGET_PX);
     expect(m.angleOk).toBe(false);
   });
 
   it('reports size direction so the gauge can say zoom in or out', () => {
-    expect(check(framed(1, -30)).sizeError).toBeLessThan(0);
-    expect(check(framed(4, -30)).sizeError).toBeGreaterThan(0);
+    expect(check(framed(EXACT * 0.5, -30)).sizeError).toBeLessThan(0);
+    expect(check(framed(EXACT * 2, -30)).sizeError).toBeGreaterThan(0);
   });
 
   it('requires the whole shape to be inside the viewport', () => {
@@ -84,6 +86,14 @@ describe('evaluate', () => {
     expect(m.angleOk).toBe(true);
     expect(m.onScreen).toBe(false);
     expect(m.solved).toBe(false);
+  });
+
+  it('lights the near band before the match, and not once it is far off', () => {
+    expect(check(PERFECT).near).toBe(true);
+    expect(check(framed(EXACT * 1.06, -30)).near).toBe(true);
+    expect(check(framed(EXACT * 1.06, -30)).solved).toBe(false);
+    expect(check(framed(EXACT * 1.5, -30)).near).toBe(false);
+    expect(check(framed(EXACT, -30 + 20)).near).toBe(false);
   });
 
   it('leaves clearance for the rotated bounding box at the edges', () => {
@@ -97,9 +107,9 @@ describe('evaluate', () => {
 
 describe('targetDisplaySize', () => {
   it('scales with the viewport but stays within sane bounds', () => {
-    expect(targetDisplaySize(360, 640)).toBe(65);
-    expect(targetDisplaySize(1440, 900)).toBe(104);
-    expect(targetDisplaySize(200, 200)).toBe(64);
-    expect(targetDisplaySize(4000, 4000)).toBe(104);
+    expect(targetDisplaySize(360, 640)).toBe(60);
+    expect(targetDisplaySize(1440, 900)).toBe(88);
+    expect(targetDisplaySize(200, 200)).toBe(60);
+    expect(targetDisplaySize(4000, 4000)).toBe(88);
   });
 });

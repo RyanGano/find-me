@@ -84,31 +84,38 @@ const rot = (-plan.angle * Math.PI) / 180;
 const cxs = plan.stage.left + plan.stage.w / 2;
 const cys = plan.stage.top + plan.stage.h / 2;
 
-// Zoom in with the wheel until the render scale reaches the winning size.
-for (let i = 0; i < 400; i++) {
+// Zoom in with the wheel until the render scale reaches the winning size. The step
+// shrinks as it closes in, the way a player eases off near the tolerance window.
+for (let i = 0; i < 900; i++) {
   const { scale: s } = await readTransform(page);
-  if (Math.abs(s / scale - 1) < 0.02) break;
+  const gap = Math.log(scale / s);
+  if (Math.abs(gap) < 0.004) break;
   await page.mouse.move(cxs, cys);
-  await page.mouse.wheel(0, s < scale ? -40 : 40);
+  await page.mouse.wheel(0, -Math.sign(gap) * Math.min(120, Math.max(4, Math.abs(gap) / 0.0004 / 3)));
 }
 check('blur lifts on the first move', await page.$('.stage-viewport.is-blurred') === null);
 check('clock starts on the first move', (await page.textContent('.clock')).trim() !== 'ready');
 await page.screenshot({ path: `${OUT}/3-zoomed.png` });
 
-// Rotate with shift+wheel until upright.
+// Rotate with shift+wheel until upright, again easing off as it closes in.
 await page.keyboard.down('Shift');
-for (let i = 0; i < 600; i++) {
+for (let i = 0; i < 900; i++) {
   const m = await readTransform(page);
   const r = Math.atan2(m.b, m.a);
   let d = rot - r;
   while (d > Math.PI) d -= 2 * Math.PI;
   while (d < -Math.PI) d += 2 * Math.PI;
-  if (Math.abs(d) < 0.02) break;
+  if (Math.abs(d) < 0.004) break;
   await page.mouse.move(cxs, cys);
-  await page.mouse.wheel(0, d > 0 ? 30 : -30);
+  await page.mouse.wheel(0, Math.sign(d) * Math.min(120, Math.max(4, Math.abs(d) / 0.0006 / 3)));
 }
 await page.keyboard.up('Shift');
-check('the shape outlines itself once size and angle are close', await page.$('.stage-outline') !== null);
+
+check('the badge lights up once size and angle are close', await page.$('.reference.is-near') !== null);
+check(
+  'the hint never marks the hidden shape itself',
+  await page.$('.stage-outline') === null && await page.$('.stage-target .is-near') === null,
+);
 await page.screenshot({ path: `${OUT}/4-rotated.png` });
 
 // Pan the hidden shape to the centre of the stage in one drag.
@@ -135,7 +142,7 @@ await page.screenshot({ path: `${OUT}/5-solved.png` });
 const time = await page.textContent('.result-time');
 check('puzzle solves', Boolean(time), `time ${time}`);
 check('clock marked done', await page.$('.clock.is-done') !== null);
-check('outline turns green on the solve', await page.$('.stage-outline.is-solved') !== null);
+check('the badge turns green on the solve', await page.$('.reference.is-solved') !== null);
 
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForSelector('.result');

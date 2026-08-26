@@ -10,11 +10,20 @@ interface Options {
   enabled: boolean;
 }
 
-const WHEEL_ZOOM = 0.0015;
-const TRACKPAD_PINCH_ZOOM = 0.01;
-const WHEEL_ROTATE = 0.0035;
-const DRAG_ROTATE = 0.006;
-const DRAG_ZOOM = 0.006;
+/*
+ * Sensitivities are set against the win tolerances, not against feel alone. A notched
+ * mouse wheel reports about 100 deltaY per click, so at the old 0.0015 one click moved
+ * the zoom 16% and one shift-click swung the angle 20 degrees -- neither could ever be
+ * landed inside a 2% / 3.6-degree window. These give roughly 4% and 3.4 degrees per
+ * click, with the keyboard finer still for the last nudge.
+ */
+const WHEEL_ZOOM = 0.0004;
+const TRACKPAD_PINCH_ZOOM = 0.006;
+const WHEEL_ROTATE = 0.0006;
+const DRAG_ROTATE = 0.004;
+const DRAG_ZOOM = 0.004;
+const KEY_ZOOM = 1.02;
+const KEY_ROTATE = 0.012;
 
 /**
  * Pointer, wheel and Safari gesture handling for the puzzle stage.
@@ -183,10 +192,10 @@ export function useGestures(
         case 'ArrowRight': emit({ pan: { x: -step, y: 0 } }); break;
         case 'ArrowUp': emit({ pan: { x: 0, y: step } }); break;
         case 'ArrowDown': emit({ pan: { x: 0, y: -step } }); break;
-        case '+': case '=': emit({ scaleBy: 1.12, pivot }); break;
-        case '-': case '_': emit({ scaleBy: 1 / 1.12, pivot }); break;
-        case 'q': case 'Q': emit({ rotBy: -0.04, pivot }); break;
-        case 'e': case 'E': emit({ rotBy: 0.04, pivot }); break;
+        case '+': case '=': emit({ scaleBy: KEY_ZOOM, pivot }); break;
+        case '-': case '_': emit({ scaleBy: 1 / KEY_ZOOM, pivot }); break;
+        case 'q': case 'Q': emit({ rotBy: -KEY_ROTATE, pivot }); break;
+        case 'e': case 'E': emit({ rotBy: KEY_ROTATE, pivot }); break;
         default: return;
       }
       e.preventDefault();

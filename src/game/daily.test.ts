@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dayIndex, EPOCH, msUntilTomorrow, puzzleForDay, selectPuzzle } from './daily';
 import { PUZZLES } from './puzzles';
+import { targetDisplaySize } from './match';
 import { getShape } from './shapes';
 
 describe('dayIndex', () => {
@@ -97,7 +98,7 @@ describe('puzzle data', () => {
   it('needs a real zoom-in to solve, on a typical viewport', () => {
     for (const p of PUZZLES) {
       const fitScale = Math.min(900 / p.width, 700 / p.height) * 0.92;
-      const needed = 100 / p.target.size;
+      const needed = targetDisplaySize(900, 700) / p.target.size;
       expect(needed / fitScale, p.id).toBeGreaterThan(3);
     }
   });

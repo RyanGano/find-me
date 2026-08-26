@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "images": "node scripts/resize-images.mjs"
+    "images": "node scripts/resize-images.mjs",
+    "camouflage": "vite-node scripts/tune-camouflage.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
