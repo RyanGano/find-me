@@ -1,8 +1,8 @@
 # Find Me
 
-A daily image-seek game. One painting a day has a shape hidden in it — a star, a key,
-a crescent. Find it, then frame it so it appears at the **same size and angle** as the
-badge in the corner. The clock starts on your first move.
+A daily image-seek game. One painting a day has a shape hidden in it — a snowflake, a
+key, a crescent. Find it, then frame it so it appears at the **same size and angle** as
+the badge in the corner. The clock starts on your first move.
 
 Play: **https://ryangano.github.io/find-me/**
 
@@ -14,10 +14,20 @@ Play: **https://ryangano.github.io/find-me/**
 3. Pan, zoom and rotate until it sits on screen at the badge's size and angle.
 4. Share your time.
 
+The painting starts blurred and the clock starts stopped. Both change on your first
+pan, pinch or rotate, so there is no free look at the board before the timer runs.
+
 Close enough counts: **±5% on size** and **±9° on angle**. The 9° is the rotational
-equivalent of the same 5% tolerance, measured against a half-turn. Shapes with
-rotational symmetry — a five-pointed star, a four-leaf clover — match at every
-equivalent rotation, so you are never asked to distinguish two identical positions.
+equivalent of the same 5% tolerance, measured against a half-turn.
+
+Shapes with rotational symmetry — a six-armed snowflake, a five-pointed star, a
+four-leaf clover — match at **every** equivalent rotation, so you are never asked to
+distinguish two positions that look identical. Getting this wrong is easy and invisible
+by inspection, so `symmetry.test.ts` measures it rather than trusting the numbers: it
+rasterises each shape, rotates the raster about the same point the app rotates it
+about, and derives the true rotational order. That test caught a triangle whose
+symmetry was real about its centroid but not about the box centre the app spins it
+around.
 
 ### Controls
 
@@ -27,11 +37,17 @@ equivalent rotation, so you are never asked to distinguish two identical positio
 | Zoom | pinch | scroll, `+` / `-`, or alt+drag |
 | Rotate | twist two fingers | shift+scroll, shift+drag, or `Q` / `E` |
 
-### The gauges
+### Feedback
 
-The size and angle gauges at the bottom are always live. They depend only on the zoom
-and twist of your view, never on where the shape is, so they help you lock in the match
-without ever hinting at the hiding place. Finding it is still on you.
+There is exactly one running hint, and it is on the shape itself: once your view is
+close on both size and angle, the hidden shape draws its own outline. It confirms
+"that is the thing, and you are nearly there" at the moment you need it -- while you
+are squinting at something and adjusting -- and tells you nothing at all until the
+shape is already in front of you. The outline turns green as you land the match.
+
+An earlier version put live size and angle gauges along the bottom. They worked, but
+they let you dial in a perfect match before finding anything and then simply sweep the
+painting, which turned a seek game into a scan.
 
 ## How it is built
 
@@ -49,6 +65,7 @@ rather than editing a painting.
 | Path | What lives there |
 |---|---|
 | `src/game/transform.ts` | Viewport transform, gesture composition, pan constraint |
+| `src/game/symmetry.test.ts` | Measures each shape's true rotational symmetry from pixels |
 | `src/game/match.ts` | Win condition and the tolerances |
 | `src/game/puzzles.ts` | Puzzle definitions — image, hiding place, size, angle |
 | `src/game/shapes.ts` | Shape paths and their rotational symmetry |
@@ -77,9 +94,25 @@ recorded or counted towards a streak.
 ### Browser smoke test
 
 `scripts/smoke.mjs` drives the real page with Playwright: it solves the puzzle through
-genuine wheel and pointer events, checks the gauges, the timer, the result card and
-that the result survives a reload, then repeats the pinch-and-twist on a touch
-viewport. Screenshots land in `.source-images/shots`.
+genuine wheel and pointer events, checks the blur, the timer, the outline, the result
+card and that the result survives a reload. It then runs a set of touch regressions
+that pin down two input bugs which only appear on real devices:
+
+- **Safari gesture events double-applying.** On iOS, `gesturestart`/`gesturechange`
+  fire *alongside* the touch pointer events for the same two fingers. Acting on both
+  zooms roughly the square of what the fingers asked for, which is what reached us as
+  "the zoom doesn't match my pinch". The handler now ignores them whenever pointers are
+  down, which leaves them serving only their real purpose, the desktop trackpad.
+- **Ghost fingers.** If a `pointerup` never arrives -- the app is backgrounded, a call
+  comes in, Safari claims the gesture -- a stale entry used to sit in the pointer map
+  forever, and the next one-finger drag was read as a pinch against a motionless ghost.
+  In the regression that turns a 60px drag into an 803px lurch with a 0.72x zoom, which
+  is both "zoom is way too strong" and "zoom stopped working". Releases are now tracked
+  on the window, a primary `pointerdown` clears any leftovers, and losing visibility
+  drops everything.
+
+Both regressions were confirmed to fail against the unfixed code before the fix landed.
+Screenshots land in `.source-images/shots`.
 
 ```bash
 npm run build
@@ -89,6 +122,12 @@ node scripts/smoke.mjs
 
 It uses your installed Chrome or Edge, so there is no browser download.
 
+`scripts/diag-size.mjs` is a narrower tool for one recurring question: does the hidden
+shape really render at the badge's size when the game says it matches? It measures the
+painted path geometry of both through their live transform matrices, on desktop and at
+iPhone dimensions. It reports a ratio of 1.0000 on both, which is how the "the object
+looks bigger than the badge" report was traced to gesture gain rather than geometry.
+
 ## Adding a puzzle
 
 1. Drop a high-resolution source image in `.source-images/` and add it to the list in
@@ -97,9 +136,11 @@ It uses your installed Chrome or Edge, so there is no browser download.
 2. Add an entry to `SEEDS` in `src/game/puzzles.ts` with the image's dimensions and
    where the shape hides — `cx`, `cy`, `size` and `angle` are all in the **generated
    asset's** pixel space.
-3. Preview the hiding place before committing to it:
+3. Preview the hiding place before committing to it. This renders the real shape with
+   its real fill and blend mode at three zooms -- fitted, mid, and matched -- so you can
+   check it is invisible from far out and unmistakable up close:
    ```bash
-   node scripts/preview-spots.mjs '[{"id":"mona","cx":676,"cy":3055,"size":75}]' out.jpg
+   npx vite-node scripts/preview-spots.ts -- '[{"id":"mona","shape":"snowflake","cx":780,"cy":2438,"size":95,"angle":41,"fill":"#cfe0ea","opacity":0.45,"blend":"screen"}]' out.jpg
    ```
 4. `npm test` checks that every asset exists, that its dimensions match what the puzzle
    declares, and that the hiding place needs a real zoom to reach.

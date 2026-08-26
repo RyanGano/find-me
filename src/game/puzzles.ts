@@ -27,7 +27,7 @@ const SEEDS: PuzzleSeed[] = [
     artist: 'Leonardo da Vinci, c. 1503',
     width: 2600,
     height: 3933,
-    target: { shape: 'star', cx: 676, cy: 3055, size: 75, angle: 137, fill: '#a8813f', opacity: 0.5, blend: 'screen' },
+    target: { shape: 'snowflake', cx: 780, cy: 2438, size: 95, angle: 41, fill: '#cfe0ea', opacity: 0.45, blend: 'screen' },
   },
   {
     id: 'wave',

@@ -22,6 +22,13 @@ const DRAG_ZOOM = 0.006;
  * Touch: one finger pans, two fingers pinch, twist and pan at once.
  * Mouse/trackpad: drag pans, wheel zooms at the cursor, shift+wheel or shift+drag
  * rotates, alt+drag zooms. Everything funnels into a single similarity transform.
+ *
+ * Most of the care here is about never being left holding a finger that is no longer
+ * on the glass. A stale entry in `pointers` turns the next one-finger drag into a
+ * two-finger pinch against a ghost, which reads to the player as "zoom is broken" or
+ * "zoom is way too strong". iOS drops pointers in several ordinary situations -- a
+ * call arrives, the app is backgrounded, Safari claims the gesture -- so the cleanup
+ * below is deliberately belt-and-braces.
  */
 export function useGestures(
   ref: React.RefObject<HTMLElement | null>,
@@ -55,10 +62,36 @@ export function useGestures(
       return { x: r.width / 2, y: r.height / 2 };
     };
 
+    const forget = (pointerId: number) => {
+      pointers.delete(pointerId);
+      try {
+        if (el.hasPointerCapture(pointerId)) el.releasePointerCapture(pointerId);
+      } catch {
+        // Already released, or the pointer is gone. Nothing to do.
+      }
+    };
+
+    const forgetAll = () => {
+      for (const id of [...pointers.keys()]) forget(id);
+    };
+
     const onPointerDown = (e: PointerEvent) => {
       if (!cb.current.enabled) return;
-      el.setPointerCapture(e.pointerId);
+
+      // `isPrimary` means this is the first contact of a new gesture, so anything we
+      // still think is down is a leftover from a gesture that never ended cleanly.
+      if (e.isPrimary) forgetAll();
+
+      // Register before capturing: setPointerCapture can throw (iOS raises
+      // NotFoundError if the pointer is already gone), and a throw here used to skip
+      // the registration entirely and leave the finger permanently invisible.
       pointers.set(e.pointerId, local(e));
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        // Without capture we still track the pointer; the window-level listeners
+        // below catch the release even if it happens off the element.
+      }
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -92,9 +125,12 @@ export function useGestures(
       emit(gestureFromPointerPair(from, to));
     };
 
-    const release = (e: PointerEvent) => {
-      pointers.delete(e.pointerId);
-      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    const onPointerRelease = (e: PointerEvent) => forget(e.pointerId);
+
+    // If the page loses the user's attention mid-gesture we will never see the
+    // matching pointerup, so drop everything rather than keep a ghost finger.
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') forgetAll();
     };
 
     const onWheel = (e: WheelEvent) => {
@@ -110,17 +146,22 @@ export function useGestures(
       }
     };
 
-    // Safari desktop reports trackpad pinch/rotate through its own gesture events.
+    // Safari's own trackpad pinch/rotate events. On iOS these fire *alongside* the
+    // touch pointer events for the same two fingers, so acting on both would apply
+    // every pinch twice and zoom roughly the square of what the fingers asked for.
+    // Only trust them when no pointers are down, which is the desktop trackpad case.
     let gestureScale = 1;
     let gestureRotation = 0;
+    const gestureUsable = () => cb.current.enabled && pointers.size === 0;
+
     const onGestureStart = (e: Event) => {
-      if (!cb.current.enabled) return;
+      if (!gestureUsable()) return;
       e.preventDefault();
       gestureScale = 1;
       gestureRotation = 0;
     };
     const onGestureChange = (e: Event) => {
-      if (!cb.current.enabled) return;
+      if (!gestureUsable()) return;
       e.preventDefault();
       const g = e as Event & { scale: number; rotation: number; clientX: number; clientY: number };
       const pivot = local(g);
@@ -153,26 +194,32 @@ export function useGestures(
 
     el.addEventListener('pointerdown', onPointerDown);
     el.addEventListener('pointermove', onPointerMove);
-    el.addEventListener('pointerup', release);
-    el.addEventListener('pointercancel', release);
-    el.addEventListener('lostpointercapture', release);
     el.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('gesturestart', onGestureStart as EventListener);
     el.addEventListener('gesturechange', onGestureChange as EventListener);
     el.addEventListener('gestureend', onGestureStart as EventListener);
     el.addEventListener('keydown', onKeyDown);
 
+    // Releases go on the window: with pointer capture they would reach the element
+    // anyway, but when capture failed they can land anywhere at all.
+    window.addEventListener('pointerup', onPointerRelease);
+    window.addEventListener('pointercancel', onPointerRelease);
+    window.addEventListener('blur', forgetAll);
+    document.addEventListener('visibilitychange', onHidden);
+
     return () => {
       el.removeEventListener('pointerdown', onPointerDown);
       el.removeEventListener('pointermove', onPointerMove);
-      el.removeEventListener('pointerup', release);
-      el.removeEventListener('pointercancel', release);
-      el.removeEventListener('lostpointercapture', release);
       el.removeEventListener('wheel', onWheel);
       el.removeEventListener('gesturestart', onGestureStart as EventListener);
       el.removeEventListener('gesturechange', onGestureChange as EventListener);
       el.removeEventListener('gestureend', onGestureStart as EventListener);
       el.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('pointerup', onPointerRelease);
+      window.removeEventListener('pointercancel', onPointerRelease);
+      window.removeEventListener('blur', forgetAll);
+      document.removeEventListener('visibilitychange', onHidden);
+      forgetAll();
     };
   }, [ref]);
 }

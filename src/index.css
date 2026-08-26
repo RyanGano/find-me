@@ -31,6 +31,23 @@ body {
   overscroll-behavior: none;
 }
 
+/*
+ * iOS ignores `user-scalable=no`, so a two-finger gesture that starts anywhere without
+ * an explicit touch-action -- the top bar, the badge, the margins -- becomes a Safari
+ * page zoom. Once the page is zoomed the game's own pinch handling appears to stop
+ * working entirely, so lock the whole shell down rather than just the stage.
+ */
+html,
+body,
+.app {
+  touch-action: pan-x pan-y;
+}
+
+.board,
+.topbar {
+  touch-action: none;
+}
+
 .app {
   display: flex;
   flex-direction: column;
@@ -161,11 +178,47 @@ body {
   outline-offset: -2px;
 }
 
+.stage-viewport {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  transition: filter 0.35s ease-out;
+}
+
+/* Nobody gets to scan the painting before the clock is running. */
+.stage-viewport.is-blurred {
+  filter: blur(14px) brightness(0.75) saturate(0.8);
+}
+
 .stage-canvas {
   position: absolute;
   top: 0;
   left: 0;
   transform-origin: 0 0;
+}
+
+/*
+ * The only running feedback in the game: once the view is close on both size and
+ * angle, the hidden shape draws its own edge. It says "that is the thing, and you are
+ * nearly there" without ever hinting at where the thing is.
+ */
+.stage-outline {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  stroke: var(--accent);
+  animation: outline-in 0.2s ease-out;
+}
+
+.stage-outline.is-solved {
+  stroke: var(--ok);
+}
+
+@keyframes outline-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .stage-image {
@@ -197,7 +250,7 @@ body {
   }
 }
 
-.stage-nudge,
+.stage-start-hint,
 .loading {
   position: absolute;
   left: 50%;
@@ -250,89 +303,6 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-}
-
-/* ---------- gauges ---------- */
-
-.meters {
-  position: absolute;
-  left: 50%;
-  bottom: 14px;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 10px;
-  width: min(440px, calc(100% - 24px));
-  padding: 10px 12px;
-  background: rgba(18, 16, 14, 0.88);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(6px);
-  pointer-events: none;
-}
-
-.gauge {
-  flex: 1;
-  min-width: 0;
-}
-
-.gauge-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.gauge-label {
-  color: var(--muted);
-}
-
-.gauge-hint {
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.gauge.is-ok .gauge-hint {
-  color: var(--ok);
-}
-
-.gauge-track {
-  position: relative;
-  height: 8px;
-  background: #2a2621;
-  border-radius: 999px;
-}
-
-.gauge-band {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: rgba(111, 202, 122, 0.35);
-  border-radius: 999px;
-}
-
-.gauge.is-ok .gauge-band {
-  background: rgba(111, 202, 122, 0.75);
-}
-
-.gauge-needle {
-  position: absolute;
-  top: -3px;
-  width: 3px;
-  height: 14px;
-  margin-left: -1.5px;
-  border-radius: 2px;
-  background: var(--text);
-  transition: left 0.05s linear;
-}
-
-.gauge.is-ok .gauge-needle {
-  background: var(--ok);
 }
 
 /* ---------- panels ---------- */
@@ -475,6 +445,12 @@ body {
   .result-time {
     font-size: 2rem;
   }
+}
+
+.stage-start-hint {
+  bottom: 24px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

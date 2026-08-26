@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HowTo } from './components/HowTo';
-import { Meters } from './components/Meters';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
@@ -27,7 +26,7 @@ export default function App() {
   const stageRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<Size | null>(null);
   const [transform, setTransform] = useState<Transform | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [ready, setReady] = useState(false);
 
   // A solve already recorded for today opens as a finished board, not a fresh timer.
   const prior = useMemo(() => (isPractice ? undefined : getResult(day)), [day, isPractice]);
@@ -100,7 +99,7 @@ export default function App() {
   useGestures(stageRef, {
     onGesture: handleGesture,
     onInteract: handleInteract,
-    enabled: loaded && !showHowTo,
+    enabled: ready && !showHowTo,
   });
 
   // Tick the visible clock while the run is live.
@@ -171,14 +170,13 @@ export default function App() {
           transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
           match={match}
           solved={solvedMs !== null}
-          onLoad={() => setLoaded(true)}
+          blurred={startedAt === null && solvedMs === null}
+          onReady={() => setReady(true)}
         />
 
-        {!loaded && <p className="loading">Loading today&rsquo;s painting…</p>}
+        {!ready && <p className="loading">Loading today&rsquo;s painting…</p>}
 
         <ReferenceCard puzzle={puzzle} targetSize={targetSize} />
-
-        {match && solvedMs === null && <Meters match={match} />}
 
         {showHowTo && <HowTo thing={puzzle.thing} onDismiss={dismissHowTo} />}
 

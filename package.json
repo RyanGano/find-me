@@ -26,6 +26,7 @@
     "sharp": "^0.35.4",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
+    "vite-node": "^6.0.0",
     "vitest": "^4.1.11"
   },
   "description": "A daily image-seek game: find the hidden shape and frame it at the right size and angle."

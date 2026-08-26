@@ -5,9 +5,18 @@
  */
 export interface ShapeDef {
   path: string;
+  /**
+   * Rotational symmetry **about the centre of the 100x100 box**, which is the point the
+   * app rotates shapes around. A shape whose symmetry is only true about some other
+   * point does not count -- see the triangle, whose vertices are placed on a circle
+   * centred on the box rather than sitting flat on its base. `symmetry.test.ts`
+   * measures this from the rendered drawing rather than taking these numbers on trust.
+   */
   symmetry: number;
   label: string;
   emoji: string;
+  /** Overlapping sub-paths need 'nonzero' to union; holes need 'evenodd'. */
+  fillRule?: 'nonzero' | 'evenodd';
 }
 
 function polygon(points: Array<[number, number]>): string {
@@ -24,7 +33,45 @@ function starPath(points: number, inner: number): string {
   return polygon(pts);
 }
 
+/** A thick line segment, as a filled quad. */
+function bar(x1: number, y1: number, x2: number, y2: number, width: number): string {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  const nx = (-dy / len) * (width / 2);
+  const ny = (dx / len) * (width / 2);
+  return polygon([
+    [x1 + nx, y1 + ny],
+    [x2 + nx, y2 + ny],
+    [x2 - nx, y2 - ny],
+    [x1 - nx, y1 - ny],
+  ]);
+}
+
+/** Six arms with side branches, built around the box centre so the symmetry is exact. */
+function snowflakePath(): string {
+  const parts: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (i * Math.PI) / 3 - Math.PI / 2;
+    parts.push(bar(50, 50, 50 + 47 * Math.cos(a), 50 + 47 * Math.sin(a), 10));
+    for (const side of [-1, 1]) {
+      const bx = 50 + 26 * Math.cos(a);
+      const by = 50 + 26 * Math.sin(a);
+      const b = a + (side * Math.PI) / 3;
+      parts.push(bar(bx, by, bx + 18 * Math.cos(b), by + 18 * Math.sin(b), 7.5));
+    }
+  }
+  return parts.join(' ');
+}
+
 export const SHAPES: Record<string, ShapeDef> = {
+  snowflake: {
+    path: snowflakePath(),
+    symmetry: 6,
+    label: 'snowflake',
+    emoji: '❄️',
+    fillRule: 'nonzero',
+  },
   star: {
     path: starPath(5, 0.42),
     symmetry: 5,
@@ -90,7 +137,13 @@ export const SHAPES: Record<string, ShapeDef> = {
     emoji: '⚓',
   },
   triangle: {
-    path: polygon([[50, 6], [92, 88], [8, 88]]),
+    // Vertices on a circle about (50, 50): rotating by 120 degrees about the box
+    // centre must map the drawing onto itself, which a flat-based triangle does not.
+    path: polygon([
+      [50, 4],
+      [50 + 46 * Math.cos(Math.PI / 6), 50 + 46 * Math.sin(Math.PI / 6)],
+      [50 - 46 * Math.cos(Math.PI / 6), 50 + 46 * Math.sin(Math.PI / 6)],
+    ]),
     symmetry: 3,
     label: 'triangle',
     emoji: '🔺',
