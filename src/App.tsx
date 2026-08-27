@@ -163,12 +163,17 @@ export default function App() {
           {solvedMs !== null && (
             <button
               type="button"
-              className={`btn btn-icon${showRing ? ' is-on' : ''}`}
+              className={`btn btn-icon btn-ring${showRing ? ' is-on' : ''}`}
               onClick={() => setShowRing((prev) => !prev)}
               title={showRing ? 'Hide the reveal ring' : 'Show the reveal ring'}
               aria-pressed={showRing}
             >
-              ◎
+              {/* A circle-check: the ring itself, ticked. Green while it is on the
+                  painting, grey once the player has put the artwork back. */}
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M8.2 12.4l2.6 2.6 5-5.4" />
+              </svg>
             </button>
           )}
           <button type="button" className="btn btn-icon" onClick={reset} title="Reset view">
