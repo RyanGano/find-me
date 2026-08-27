@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  dayIndex,
-  EPOCH,
-  msUntilTomorrow,
-  nextWeekPuzzle,
-  puzzleForDay,
-  selectPuzzle,
-  weekday,
-} from './daily';
+import { dayIndex, EPOCH, msUntilTomorrow, puzzleForDay, selectPuzzle, weekday } from './daily';
 import { DAYS_PER_WEEK, RAMP } from './difficulty';
 import { PUZZLES } from './puzzles';
 import { targetDisplaySize } from './match';
@@ -140,24 +132,6 @@ describe('puzzle data', () => {
       const fitScale = Math.min(900 / p.width, 700 / p.height) * 0.92;
       const needed = targetDisplaySize(900, 700) / p.target.size;
       expect(needed / fitScale, p.id).toBeGreaterThan(3);
-    }
-  });
-});
-
-describe('nextWeekPuzzle', () => {
-  /**
-   * The panel promises "next week", so it has to be a different painting from every
-   * remaining day of this one -- including on Sunday, where naively adding seven days
-   * would skip a whole week.
-   */
-  it('names the painting that takes over on Monday, from any day of the week', () => {
-    for (let day = 0; day < PUZZLES.length + DAYS_PER_WEEK; day++) {
-      const next = nextWeekPuzzle(day);
-      expect(next.dayOfWeek).toBe(0);
-      expect(next.image).not.toBe(puzzleForDay(day).image);
-      // Same answer all week: it is the week's successor, not tomorrow's puzzle.
-      const monday = day - puzzleForDay(day).dayOfWeek;
-      expect(next.id).toBe(nextWeekPuzzle(monday).id);
     }
   });
 });

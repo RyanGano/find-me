@@ -52,16 +52,6 @@ export function puzzleForDay(index: number): Puzzle {
   return PUZZLES[i];
 }
 
-/**
- * The painting that takes over on the coming Monday.
- *
- * A painting holds for a whole Monday-to-Sunday week, so stepping past this week's
- * remaining days lands on the first day of the next one whatever day it is today.
- */
-export function nextWeekPuzzle(index: number): Puzzle {
-  return puzzleForDay(index + 7 - puzzleForDay(index).dayOfWeek);
-}
-
 /** Milliseconds until the next puzzle unlocks. */
 export function msUntilTomorrow(now: Date = new Date()): number {
   return localMidnight(now) + DAY_MS - now.getTime();
