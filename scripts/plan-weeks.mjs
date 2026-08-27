@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { RAMP } from '../src/game/difficulty.ts';
 import { SHAPES } from '../src/game/shapes.ts';
 import { paintFor } from './lib/paint.mjs';
+import AVOID from './avoid.json' with { type: 'json' };
 
 
 const FILE = 'src/game/puzzles.ts';
@@ -317,7 +318,39 @@ function stdOver(grey, info, cx, cy, side) {
  * paintings, the third quartile runs from 1.46 to 3.29, so 1.5 keeps roughly the best
  * quarter of each canvas and is reachable on all of them.
  */
+/**
+ * Hiding places already known to be no good, and struck off by hand.
+ *
+ * Some paint defeats every test here and only gives itself away once the browser has
+ * actually solved it: the tuner either has to shout to reach the day's target -- a shape
+ * at contrast 9.8 on the wall behind the Mona Lisa, which reads as a bright spot rather
+ * than as anything hidden -- or cannot reach it at all and leaves the day easier to find
+ * than the day before it. Rather than keep moving the thresholds below and shifting the
+ * problem onto another painting, the specific spot is recorded and the day takes its next
+ * best. `scripts/avoid.json` is part of the definition of the game and is committed with
+ * it; without it a fresh checkout would plan different weeks.
+ */
+function avoided(image, x, y) {
+  return (AVOID[image] ?? []).some((a) => Math.hypot(a.cx - x, a.cy - y) < (a.r ?? 260));
+}
+
 const VIEWS_AGREE_FLOOR = 1.5;
+
+/**
+ * And a ceiling, whose absence produced the opposite failure.
+ *
+ * Paint that is very smooth close up and very busy further out lets a shape be *bright* at
+ * the match and still average out when the whole painting is scanned, because the window
+ * it is compared against takes in structure nowhere near it. The Mona Lisa's wall does
+ * exactly this: a Wednesday there solved to full opacity with its fill pushed towards
+ * white, a contrast of 9.8 where a normal day sits between 1 and 5, and it read as a
+ * bright spot on the wall behind her rather than as anything hidden.
+ *
+ * So the preference peaks in the middle of the band rather than at its top, which is where
+ * an earlier version pointed it.
+ */
+const VIEWS_AGREE_CEILING = 3.6;
+const VIEWS_AGREE_BEST = 2.2;
 
 function viewAgreement(grey, info, cx, cy, rung, fitScale) {
   const fine = Math.max(3, stdOver(grey, info, cx, cy, 4 * rung.size));
@@ -340,7 +373,7 @@ function viewAgreement(grey, info, cx, cy, rung, fitScale) {
  * two views can be satisfied at once. Ranking afterwards shuffled spots between days that
  * could not legally hold them.
  */
-function spotsForWeek(grey, info, spots) {
+function spotsForWeek(grey, info, spots, image) {
   const fitScale = Math.min(900 / info.width, 700 / info.height) * 0.92;
   const taken = [];
   for (const rung of RAMP) {
@@ -348,11 +381,12 @@ function spotsForWeek(grey, info, spots) {
     let best = null;
     let refused = 0;
     for (const s of spots) {
+      if (avoided(image, s.cx, s.cy)) continue;
       if (s.cx < margin || s.cy < margin || s.cx > info.width - margin || s.cy > info.height - margin) continue;
       const nearest = taken.reduce((m, t) => Math.min(m, Math.hypot(t.cx - s.cx, t.cy - s.cy)), Infinity);
       if (nearest < 420) continue;
       const agreement = viewAgreement(grey, info, s.cx, s.cy, rung, fitScale);
-      if (agreement < VIEWS_AGREE_FLOOR) {
+      if (agreement < VIEWS_AGREE_FLOOR || agreement > VIEWS_AGREE_CEILING) {
         refused++;
         continue;
       }
@@ -363,16 +397,18 @@ function spotsForWeek(grey, info, spots) {
       // of flat sky that happens to look like the flat sky next to it is repetitive in the
       // arithmetic and offers the shape nothing to hide in, so a spot has to be roughly on
       // its rung before its lookalikes count for anything.
-      // Prefer paint that satisfies both views comfortably, not just barely.
-      cost -= 0.3 * Math.min(1, (agreement - VIEWS_AGREE_FLOOR) / 1.5);
+      // Prefer the middle of the band: comfortably above the floor, well clear of the
+      // ceiling where shapes turn into beacons.
+      cost += 0.3 * Math.min(1, Math.abs(agreement - VIEWS_AGREE_BEST) / 1.2);
       if (rung.company && cost < 1.2) cost -= rung.company * Math.max(0, repetition(grey, info, s.cx, s.cy, rung.size));
       if (!best || cost < best.cost) best = { ...s, cost };
     }
     if (!best) {
       throw new Error(
         `${rung.label}: nothing left that clears the edge by ${margin}px, sits 420px from the other days, ` +
-          `and can be both subtle at a distance and visible close up ` +
-          `(${refused} spots refused on that last count) -- this painting cannot hold a week`,
+          `and sits in the band where a shape can be subtle at a distance and visible but ` +
+          `not blazing close up (${refused} spots refused on that last count) -- ` +
+          `this painting cannot hold a week`,
       );
     }
     best.repeat = repetition(grey, info, best.cx, best.cy, rung.size);
@@ -410,7 +446,7 @@ for (const [w, week] of [...found.entries()].reverse()) {
 
   const shapes = shapesForWeek(w);
   const surveyed = survey(grey.data, grey.info);
-  const spots = spotsForWeek(grey.data, grey.info, surveyed);
+  const spots = spotsForWeek(grey.data, grey.info, surveyed, week.image);
   const lines = [];
   const report = [];
   for (const [d, rung] of RAMP.entries()) {
