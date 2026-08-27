@@ -10,6 +10,8 @@ interface Props {
   showRing: boolean;
   /** Hide the detail until the player commits, so nobody can scan for free. */
   blurred: boolean;
+  /** Blurred because the player paused, rather than because they have not started. */
+  paused: boolean;
   onReady: () => void;
 }
 
@@ -18,7 +20,7 @@ interface Props {
  * lives in image pixel coordinates; the single CSS transform maps it to the screen,
  * which keeps the hidden shape locked to the artwork under every gesture.
  */
-export function Stage({ stageRef, puzzle, transform, showRing, blurred, onReady }: Props) {
+export function Stage({ stageRef, puzzle, transform, showRing, blurred, paused, onReady }: Props) {
   const { target } = puzzle;
   const css = `translate(${transform.x}px, ${transform.y}px) rotate(${transform.rot * DEG}deg) scale(${transform.scale})`;
 
@@ -89,7 +91,11 @@ export function Stage({ stageRef, puzzle, transform, showRing, blurred, onReady 
       </div>
       </div>
 
-      {blurred && <p className="stage-start-hint">Pan, pinch or rotate to start</p>}
+      {blurred && (
+        <p className="stage-start-hint">
+          {paused ? 'Paused — press play to carry on' : 'Pan, pinch or rotate to start'}
+        </p>
+      )}
     </div>
   );
 }

@@ -38,6 +38,9 @@ export default function App() {
 
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  // A pause blurs the painting and freezes the clock, so a player can look away
+  // mid-hunt without the run reading their kettle break as thinking time.
+  const [paused, setPaused] = useState(false);
   const [solvedMs, setSolvedMs] = useState<number | null>(prior?.ms ?? null);
   const [showResult, setShowResult] = useState(Boolean(prior));
   // The reveal ring is a spoiler once the hunt is over, so let the player hide it
@@ -88,7 +91,17 @@ export default function App() {
     return evaluate(puzzle.target, transform, size.w, size.h, targetSize);
   }, [puzzle.target, transform, size, targetSize]);
 
-  const running = startedAt !== null && solvedMs === null;
+  const running = startedAt !== null && solvedMs === null && !paused;
+
+  // Resuming rebases the start so the frozen elapsed time carries over untouched.
+  const togglePause = useCallback(() => {
+    if (startedAt === null || solvedMs !== null) return;
+    setPaused((prev) => {
+      if (prev) setStartedAt(performance.now() - elapsed);
+      else setElapsed(performance.now() - startedAt);
+      return !prev;
+    });
+  }, [startedAt, solvedMs, elapsed]);
 
   const handleInteract = useCallback(() => {
     if (solvedMs !== null) return;
@@ -109,7 +122,7 @@ export default function App() {
   useGestures(stageRef, {
     onGesture: handleGesture,
     onInteract: handleInteract,
-    enabled: ready && !showHowTo && !showCredits,
+    enabled: ready && !showHowTo && !showCredits && !paused,
   });
 
   // Tick the visible clock while the run is live.
@@ -168,11 +181,32 @@ export default function App() {
               title={showRing ? 'Hide the reveal ring' : 'Show the reveal ring'}
               aria-pressed={showRing}
             >
-              {/* A circle-check: the ring itself, ticked. Green while it is on the
-                  painting, grey once the player has put the artwork back. */}
+              {/* Just the tick - the button's own round border is the circle. Green
+                  while the ring is on the painting, grey once it is off. */}
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M8.2 12.4l2.6 2.6 5-5.4" />
+                <path d="M6 12.6l4 4 8-9" />
+              </svg>
+            </button>
+          )}
+          {startedAt !== null && solvedMs === null && (
+            <button
+              type="button"
+              className="btn btn-icon btn-pause"
+              onClick={togglePause}
+              title={paused ? 'Resume' : 'Pause'}
+              aria-label={paused ? 'Resume' : 'Pause'}
+              aria-pressed={paused}
+            >
+              {/* Two bars while running, a play triangle while held. */}
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                {paused ? (
+                  <path d="M9 6.5l9 5.5-9 5.5z" />
+                ) : (
+                  <>
+                    <path d="M9.5 6v12" />
+                    <path d="M14.5 6v12" />
+                  </>
+                )}
               </svg>
             </button>
           )}
@@ -206,7 +240,8 @@ export default function App() {
           puzzle={puzzle}
           transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
           showRing={solvedMs !== null && showRing}
-          blurred={startedAt === null && solvedMs === null}
+          blurred={paused || (startedAt === null && solvedMs === null)}
+          paused={paused}
           onReady={() => setReady(true)}
         />
 
