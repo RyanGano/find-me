@@ -159,6 +159,12 @@ body,
   line-height: 1;
 }
 
+/* The ring toggle wears the ring's own colour while the ring is showing. */
+.btn-icon.is-on {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
 /* ---------- board ---------- */
 
 .board {

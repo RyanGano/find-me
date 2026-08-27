@@ -6,7 +6,8 @@ interface Props {
   stageRef: React.RefObject<HTMLDivElement | null>;
   puzzle: Puzzle;
   transform: Transform;
-  solved: boolean;
+  /** Draw the reveal ring. Only ever true once solved, and the player can turn it off. */
+  showRing: boolean;
   /** Hide the detail until the player commits, so nobody can scan for free. */
   blurred: boolean;
   onReady: () => void;
@@ -17,7 +18,7 @@ interface Props {
  * lives in image pixel coordinates; the single CSS transform maps it to the screen,
  * which keeps the hidden shape locked to the artwork under every gesture.
  */
-export function Stage({ stageRef, puzzle, transform, solved, blurred, onReady }: Props) {
+export function Stage({ stageRef, puzzle, transform, showRing, blurred, onReady }: Props) {
   const { target } = puzzle;
   const css = `translate(${transform.x}px, ${transform.y}px) rotate(${transform.rot * DEG}deg) scale(${transform.scale})`;
 
@@ -73,7 +74,7 @@ export function Stage({ stageRef, puzzle, transform, solved, blurred, onReady }:
             blur={target.blur}
           />
         </div>
-        {solved && (
+        {showRing && (
           <div
             className="stage-ring"
             style={{

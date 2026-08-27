@@ -39,6 +39,9 @@ export default function App() {
   const [elapsed, setElapsed] = useState(0);
   const [solvedMs, setSolvedMs] = useState<number | null>(prior?.ms ?? null);
   const [showResult, setShowResult] = useState(Boolean(prior));
+  // The reveal ring is a spoiler once the hunt is over, so let the player hide it
+  // while they look at the painting itself.
+  const [showRing, setShowRing] = useState(true);
   const [stats, setStats] = useState<Stats>(() => getStats(day));
 
   const [showHowTo, setShowHowTo] = useState(
@@ -154,6 +157,17 @@ export default function App() {
           {startedAt === null && solvedMs === null ? 'ready' : formatTime(clock)}
         </p>
         <div className="topbar-actions">
+          {solvedMs !== null && (
+            <button
+              type="button"
+              className={`btn btn-icon${showRing ? ' is-on' : ''}`}
+              onClick={() => setShowRing((prev) => !prev)}
+              title={showRing ? 'Hide the reveal ring' : 'Show the reveal ring'}
+              aria-pressed={showRing}
+            >
+              ◎
+            </button>
+          )}
           <button type="button" className="btn btn-icon" onClick={reset} title="Reset view">
             ⟲
           </button>
@@ -175,7 +189,7 @@ export default function App() {
           stageRef={stageRef}
           puzzle={puzzle}
           transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
-          solved={solvedMs !== null}
+          showRing={solvedMs !== null && showRing}
           blurred={startedAt === null && solvedMs === null}
           onReady={() => setReady(true)}
         />
