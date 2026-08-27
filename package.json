@@ -11,7 +11,10 @@
     "test:watch": "vitest",
     "preview": "vite preview",
     "images": "node scripts/resize-images.mjs",
-    "camouflage": "node scripts/tune-camouflage.mjs"
+    "plan": "vite-node scripts/plan-weeks.mjs",
+    "rate": "vite-node scripts/rate-painting.mjs",
+    "camouflage": "vite-node scripts/tune-camouflage.mjs",
+    "preview:week": "vite-node scripts/preview-week.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

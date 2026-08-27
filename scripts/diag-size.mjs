@@ -17,7 +17,7 @@ for (const device of [
 ]) {
   const ctx = await browser.newContext(device);
   const page = await ctx.newPage();
-  await page.goto(URL + '?puzzle=mona', { waitUntil: 'networkidle' });
+  await page.goto(URL + '?puzzle=mona-thu', { waitUntil: 'networkidle' });
   await page.waitForSelector('.stage-image');
   const start = await page.$('button:has-text("Start")');
   if (start) await start.click();

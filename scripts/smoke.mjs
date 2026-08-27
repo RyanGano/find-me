@@ -178,7 +178,7 @@ const mobile = await browser.newContext({
 const mp = await mobile.newPage();
 mp.on('pageerror', (e) => errors.push('mobile: ' + e));
 
-await mp.goto(URL + '?puzzle=wave', { waitUntil: 'networkidle' });
+await mp.goto(URL + '?puzzle=wave-thu', { waitUntil: 'networkidle' });
 await mp.waitForSelector('.stage-image');
 
 // Install helpers that fire real PointerEvents at the stage.
