@@ -8,7 +8,15 @@ import { puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
 import { evaluate, targetDisplaySize } from './game/match';
-import { getCurrentResult, getStats, saveResult, type Stats } from './game/storage';
+import {
+  clearProgress,
+  getCurrentResult,
+  getProgress,
+  getStats,
+  saveProgress,
+  saveResult,
+  type Stats,
+} from './game/storage';
 import { compose, constrainPan, fitTransform } from './game/transform';
 import type { Transform } from './game/types';
 import type { GestureDelta } from './game/transform';
@@ -36,11 +44,25 @@ export default function App() {
     [day, isPractice, puzzle.version],
   );
 
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [elapsed, setElapsed] = useState(0);
+  // A run left half-finished -- most often by an accidental edge swipe, which the browser
+  // reads as "back" -- comes back with its clock where it was, rather than handing the
+  // player a fresh timer and a free second look at the painting.
+  const saved = useMemo(
+    () => (isPractice || prior ? undefined : getProgress(day, puzzle.version)),
+    [day, isPractice, prior, puzzle.version],
+  );
+
+  // A resumed run opens held, so the clock does not run while the player re-orients.
+  const [startedAt, setStartedAt] = useState<number | null>(() =>
+    saved ? performance.now() - saved.ms : null,
+  );
+  const [elapsed, setElapsed] = useState(saved?.ms ?? 0);
   // A pause blurs the painting and freezes the clock, so a player can look away
   // mid-hunt without the run reading their kettle break as thinking time.
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(Boolean(saved));
+  // True until the player picks the resumed run back up: the board is theirs from a
+  // moment ago, and it should say so rather than looking like a fresh puzzle.
+  const [resuming, setResuming] = useState(Boolean(saved));
   const [solvedMs, setSolvedMs] = useState<number | null>(prior?.ms ?? null);
   const [showResult, setShowResult] = useState(Boolean(prior));
   // The reveal ring is a spoiler once the hunt is over, so let the player hide it
@@ -51,7 +73,7 @@ export default function App() {
   const [showCredits, setShowCredits] = useState(false);
 
   const [showHowTo, setShowHowTo] = useState(
-    () => !prior && !isPractice && !localStorage.getItem(HOWTO_SEEN),
+    () => !prior && !saved && !isPractice && !localStorage.getItem(HOWTO_SEEN),
   );
 
   // Track the stage box; it drives both the fitted view and the target size.
@@ -71,8 +93,20 @@ export default function App() {
     [puzzle.width, puzzle.height],
   );
 
+  // The saved view is only meaningful in the stage box it was framed in, so it is claimed
+  // by the first measure and only used if the board came back the same size.
+  const pending = useRef(saved ? { t: saved.t, w: saved.w, h: saved.h } : null);
+
   useEffect(() => {
     if (!size) return;
+    const resume = pending.current;
+    if (resume) {
+      pending.current = null;
+      if (Math.abs(resume.w - size.w) < 1 && Math.abs(resume.h - size.h) < 1) {
+        setTransform(resume.t);
+        return;
+      }
+    }
     // Fit on first measure, and keep fitting while the board is still untouched.
     setTransform((prev) => (prev && startedAt !== null ? prev : fit(size)));
   }, [size, fit, startedAt]);
@@ -96,6 +130,7 @@ export default function App() {
   // Resuming rebases the start so the frozen elapsed time carries over untouched.
   const togglePause = useCallback(() => {
     if (startedAt === null || solvedMs !== null) return;
+    setResuming(false);
     setPaused((prev) => {
       if (prev) setStartedAt(performance.now() - elapsed);
       else setElapsed(performance.now() - startedAt);
@@ -139,9 +174,56 @@ export default function App() {
     setSolvedMs(ms);
     setElapsed(ms);
     setShowResult(true);
-    if (!isPractice) saveResult(day, ms, puzzle.version);
+    if (!isPractice) {
+      saveResult(day, ms, puzzle.version);
+      clearProgress();
+    }
     setStats(getStats(day));
   }, [match?.solved, running, startedAt, day, isPractice, puzzle.version]);
+
+  // Latest state, read by the leave handlers below -- they are registered once, and a
+  // `pagehide` fires too late to wait on a re-render.
+  const live = useRef<{ startedAt: number; elapsed: number; paused: boolean; t: Transform } | null>(
+    null,
+  );
+  const stage = useRef<Size | null>(null);
+  useEffect(() => {
+    live.current =
+      !isPractice && startedAt !== null && solvedMs === null && transform && size
+        ? { startedAt, elapsed, paused, t: transform }
+        : null;
+    stage.current = size;
+  });
+
+  // Leaving the page banks the run. `visibilitychange` is the one event a phone reliably
+  // fires when the tab is backgrounded or the browser is swiped away; `pagehide` covers a
+  // real navigation, including the accidental back-swipe this exists for.
+  useEffect(() => {
+    const bank = () => {
+      const run = live.current;
+      const box = stage.current;
+      if (!run || !box) return;
+      saveProgress({
+        day,
+        v: puzzle.version,
+        // Read the clock now, not at the last render: a run banked while it is still live
+        // is worth exactly what it reads at the moment the page goes away.
+        ms: run.paused ? run.elapsed : performance.now() - run.startedAt,
+        t: run.t,
+        w: box.w,
+        h: box.h,
+      });
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') bank();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', bank);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', bank);
+    };
+  }, [day, puzzle.version]);
 
   const reset = useCallback(() => {
     if (size) setTransform(fit(size));
@@ -242,8 +324,17 @@ export default function App() {
           showRing={solvedMs !== null && showRing}
           blurred={paused || (startedAt === null && solvedMs === null)}
           paused={paused}
+          resumed={resuming}
           onReady={() => setReady(true)}
         />
+
+        {/* Sits inside the board rather than above it: a banner in the column would
+            resize the stage, and the saved view only fits the box it was framed in. */}
+        {resuming && (
+          <p className="resume-note">
+            continuing your run — clock held at {formatTime(elapsed)}
+          </p>
+        )}
 
         {!ready && <p className="loading">Loading today&rsquo;s painting…</p>}
 

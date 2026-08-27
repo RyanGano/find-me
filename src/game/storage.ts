@@ -1,3 +1,5 @@
+import type { Transform } from './types';
+
 const KEY = 'find-me:v1';
 
 export interface Result {
@@ -15,6 +17,8 @@ export interface Result {
 
 interface Store {
   results: Record<string, Result>;
+  /** The single run in progress, if the player left mid-hunt. See `Progress`. */
+  progress?: Progress;
 }
 
 function read(): Store {
@@ -22,7 +26,8 @@ function read(): Store {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { results: {} };
     const parsed = JSON.parse(raw) as Partial<Store>;
-    return { results: parsed.results ?? {} };
+    const progress = isProgress(parsed.progress) ? parsed.progress : undefined;
+    return { results: parsed.results ?? {}, progress };
   } catch {
     return { results: {} };
   }
@@ -89,4 +94,74 @@ export function getStats(today: number): Stats {
   }
 
   return { played: days.length, best, streak };
+}
+
+/**
+ * A run in progress: where the player had got to when they left the page.
+ *
+ * Without this, a swipe-to-go-back — the easiest gesture to hit by accident on a phone —
+ * hands the player a fresh timer and an unlimited second look at the painting. Only one
+ * run is ever kept, and it is only handed back for the same day and the same version of
+ * that day's puzzle; anything else is stale and gets cleared.
+ */
+export interface Progress {
+  day: number;
+  /** Puzzle version, as on `Result`. A redefined puzzle is a new puzzle. */
+  v: string;
+  /** Elapsed time in milliseconds at the moment the page was left. */
+  ms: number;
+  /** The viewport transform, in the stage box it was measured in. */
+  t: Transform;
+  /** Stage size the transform belongs to; a different box gets the fitted view back. */
+  w: number;
+  h: number;
+  /** When it was stored, so a run left open overnight is not resumed days later. */
+  at: string;
+}
+
+/** How long a stored run stays resumable. Long enough for a phone to be put down. */
+const PROGRESS_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+
+function isProgress(value: unknown): value is Progress {
+  const p = value as Progress | undefined;
+  return (
+    !!p &&
+    typeof p.day === 'number' &&
+    typeof p.v === 'string' &&
+    typeof p.ms === 'number' &&
+    Number.isFinite(p.ms) &&
+    !!p.t &&
+    typeof p.t.x === 'number' &&
+    typeof p.t.y === 'number' &&
+    typeof p.t.scale === 'number' &&
+    typeof p.t.rot === 'number' &&
+    typeof p.w === 'number' &&
+    typeof p.h === 'number'
+  );
+}
+
+/**
+ * The run to resume for this puzzle, if there is one. A stored run for another day, an
+ * older version of this day, or one left sitting for half a day is dropped on the spot.
+ */
+export function getProgress(day: number, version: string): Progress | undefined {
+  const progress = read().progress;
+  if (!progress) return undefined;
+  const fresh = Date.now() - Date.parse(progress.at) < PROGRESS_MAX_AGE_MS;
+  if (progress.day === day && progress.v === version && fresh) return progress;
+  clearProgress();
+  return undefined;
+}
+
+export function saveProgress(progress: Omit<Progress, 'at'>): void {
+  const store = read();
+  store.progress = { ...progress, at: new Date().toISOString() };
+  write(store);
+}
+
+export function clearProgress(): void {
+  const store = read();
+  if (!store.progress) return;
+  delete store.progress;
+  write(store);
 }

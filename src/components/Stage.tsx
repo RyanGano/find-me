@@ -12,6 +12,8 @@ interface Props {
   blurred: boolean;
   /** Blurred because the player paused, rather than because they have not started. */
   paused: boolean;
+  /** Blurred on a run picked up again after the player left the page mid-hunt. */
+  resumed: boolean;
   onReady: () => void;
 }
 
@@ -20,7 +22,16 @@ interface Props {
  * lives in image pixel coordinates; the single CSS transform maps it to the screen,
  * which keeps the hidden shape locked to the artwork under every gesture.
  */
-export function Stage({ stageRef, puzzle, transform, showRing, blurred, paused, onReady }: Props) {
+export function Stage({
+  stageRef,
+  puzzle,
+  transform,
+  showRing,
+  blurred,
+  paused,
+  resumed,
+  onReady,
+}: Props) {
   const { target } = puzzle;
   const css = `translate(${transform.x}px, ${transform.y}px) rotate(${transform.rot * DEG}deg) scale(${transform.scale})`;
 
@@ -92,8 +103,12 @@ export function Stage({ stageRef, puzzle, transform, showRing, blurred, paused, 
       </div>
 
       {blurred && (
-        <p className="stage-start-hint">
-          {paused ? 'Paused — press play to carry on' : 'Pan, pinch or rotate to start'}
+        <p className={`stage-start-hint${resumed ? ' is-resumed' : ''}`}>
+          {resumed
+            ? 'Still hunting — press play to pick up where you left off'
+            : paused
+              ? 'Paused — press play to carry on'
+              : 'Pan, pinch or rotate to start'}
         </p>
       )}
     </div>

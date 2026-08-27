@@ -537,3 +537,30 @@ body,
     transition: none !important;
   }
 }
+
+/*
+ * A run resumed after the player left the page. It has to be unmistakable: the board
+ * looks exactly like a fresh puzzle otherwise, and the clock they are about to restart
+ * already has time on it.
+ */
+.resume-note {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  margin: 0;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--bg);
+  background: var(--ok);
+  pointer-events: none;
+}
+
+.stage-start-hint.is-resumed {
+  color: var(--ok);
+  border-color: var(--ok);
+}
