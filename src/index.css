@@ -392,7 +392,7 @@ body,
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 7px 0;
+  padding: 9px 0;
   border-top: 1px solid var(--line);
 }
 
@@ -413,7 +413,7 @@ body,
   color: var(--muted);
 }
 
-.credits-list .is-current strong {
+.credits-list li:first-child strong {
   color: var(--ok);
 }
 

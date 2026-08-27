@@ -216,14 +216,3 @@ export const PUZZLES: Puzzle[] = WEEKS.flatMap((week) =>
 
 /** The distinct paintings, for tooling that works per asset rather than per day. */
 export const IMAGES = WEEKS.map((w) => ({ id: w.image, width: w.width, height: w.height }));
-
-/**
- * Every painting in the rotation, for the credits panel. All eight are in the public
- * domain; the scans come from Wikimedia Commons.
- */
-export const CREDITS = WEEKS.map((w) => ({
-  id: w.image,
-  title: w.title,
-  artist: w.artist,
-  year: w.year,
-}));

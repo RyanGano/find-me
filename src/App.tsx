@@ -4,7 +4,7 @@ import { HowTo } from './components/HowTo';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
-import { puzzleNumber, selectPuzzle } from './game/daily';
+import { nextWeekPuzzle, puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
 import { evaluate, targetDisplaySize } from './game/match';
@@ -46,6 +46,7 @@ export default function App() {
   const [stats, setStats] = useState<Stats>(() => getStats(day));
 
   const [showCredits, setShowCredits] = useState(false);
+  const nextWeek = useMemo(() => nextWeekPuzzle(day), [day]);
 
   const [showHowTo, setShowHowTo] = useState(
     () => !prior && !isPractice && !localStorage.getItem(HOWTO_SEEN),
@@ -178,7 +179,7 @@ export default function App() {
             type="button"
             className="btn btn-icon"
             onClick={() => setShowCredits(true)}
-            title="The paintings"
+            title="About the painting"
           >
             i
           </button>
@@ -214,7 +215,9 @@ export default function App() {
           solved={solvedMs !== null}
         />
 
-        {showCredits && <Credits image={puzzle.image} onDismiss={() => setShowCredits(false)} />}
+        {showCredits && (
+          <Credits puzzle={puzzle} next={nextWeek} onDismiss={() => setShowCredits(false)} />
+        )}
 
         {showHowTo && <HowTo thing={puzzle.thing} rung={RAMP[puzzle.dayOfWeek].label} onDismiss={dismissHowTo} />}
 
