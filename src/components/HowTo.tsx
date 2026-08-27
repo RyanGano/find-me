@@ -37,7 +37,7 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         each day harder than the last. Today is <strong>{rung}</strong>.
       </p>
       <button type="button" className="btn btn-primary" onClick={onDismiss}>
-        Start
+        Close
       </button>
     </div>
   );
