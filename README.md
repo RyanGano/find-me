@@ -387,4 +387,6 @@ The site is served from a subpath, so `base` in `vite.config.ts` and `SITE_URL` 
 
 ## Credits
 
-All paintings are in the public domain, sourced from Wikimedia Commons.
+All paintings are in the public domain, sourced from Wikimedia Commons. The `i` button in
+the top bar credits every one of them by title, painter and year; the `year` field lives
+beside `title` and `artist` on each week seed in `src/game/puzzles.ts`.

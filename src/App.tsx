@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Credits } from './components/Credits';
 import { HowTo } from './components/HowTo';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
@@ -43,6 +44,8 @@ export default function App() {
   // while they look at the painting itself.
   const [showRing, setShowRing] = useState(true);
   const [stats, setStats] = useState<Stats>(() => getStats(day));
+
+  const [showCredits, setShowCredits] = useState(false);
 
   const [showHowTo, setShowHowTo] = useState(
     () => !prior && !isPractice && !localStorage.getItem(HOWTO_SEEN),
@@ -106,7 +109,7 @@ export default function App() {
   useGestures(stageRef, {
     onGesture: handleGesture,
     onInteract: handleInteract,
-    enabled: ready && !showHowTo,
+    enabled: ready && !showHowTo && !showCredits,
   });
 
   // Tick the visible clock while the run is live.
@@ -174,6 +177,14 @@ export default function App() {
           <button
             type="button"
             className="btn btn-icon"
+            onClick={() => setShowCredits(true)}
+            title="The paintings"
+          >
+            i
+          </button>
+          <button
+            type="button"
+            className="btn btn-icon"
             onClick={() => setShowHowTo(true)}
             title="How to play"
           >
@@ -202,6 +213,8 @@ export default function App() {
           match={match}
           solved={solvedMs !== null}
         />
+
+        {showCredits && <Credits image={puzzle.image} onDismiss={() => setShowCredits(false)} />}
 
         {showHowTo && <HowTo thing={puzzle.thing} rung={RAMP[puzzle.dayOfWeek].label} onDismiss={dismissHowTo} />}
 

@@ -9,6 +9,8 @@ interface WeekSeed {
   image: string;
   title: string;
   artist: string;
+  /** Year painted, as it should read on the credit line, e.g. `c. 1503`. */
+  year: string;
   width: number;
   height: number;
   /** Exactly seven targets, Monday first. Written by `npm run plan`, solved by `npm run camouflage`. */
@@ -35,7 +37,8 @@ const WEEKS: WeekSeed[] = [
   {
     image: 'mona',
     title: 'Mona Lisa',
-    artist: 'Leonardo da Vinci, c. 1503',
+    artist: 'Leonardo da Vinci',
+    year: 'c. 1503',
     width: 2600,
     height: 3933,
     days: [
@@ -51,7 +54,8 @@ const WEEKS: WeekSeed[] = [
   {
     image: 'wave',
     title: 'The Great Wave off Kanagawa',
-    artist: 'Katsushika Hokusai, c. 1831',
+    artist: 'Katsushika Hokusai',
+    year: 'c. 1831',
     width: 2600,
     height: 1748,
     days: [
@@ -67,7 +71,8 @@ const WEEKS: WeekSeed[] = [
   {
     image: 'starry',
     title: 'The Starry Night',
-    artist: 'Vincent van Gogh, 1889',
+    artist: 'Vincent van Gogh',
+    year: '1889',
     width: 2600,
     height: 2059,
     days: [
@@ -83,7 +88,8 @@ const WEEKS: WeekSeed[] = [
   {
     image: 'proverbs',
     title: 'Netherlandish Proverbs',
-    artist: 'Pieter Bruegel the Elder, 1559',
+    artist: 'Pieter Bruegel the Elder',
+    year: '1559',
     width: 2600,
     height: 1841,
     days: [
@@ -99,7 +105,8 @@ const WEEKS: WeekSeed[] = [
   {
     image: 'jatte',
     title: 'A Sunday on La Grande Jatte',
-    artist: 'Georges Seurat, 1884',
+    artist: 'Georges Seurat',
+    year: '1884',
     width: 2600,
     height: 1731,
     days: [
@@ -115,7 +122,8 @@ const WEEKS: WeekSeed[] = [
   {
     image: 'gypsy',
     title: 'The Sleeping Gypsy',
-    artist: 'Henri Rousseau, 1897',
+    artist: 'Henri Rousseau',
+    year: '1897',
     width: 2600,
     height: 1661,
     days: [
@@ -131,7 +139,8 @@ const WEEKS: WeekSeed[] = [
   {
     image: 'hunters',
     title: 'The Hunters in the Snow',
-    artist: 'Pieter Bruegel the Elder, 1565',
+    artist: 'Pieter Bruegel the Elder',
+    year: '1565',
     width: 2600,
     height: 1850,
     days: [
@@ -147,7 +156,8 @@ const WEEKS: WeekSeed[] = [
   {
     image: 'babel',
     title: 'The Tower of Babel',
-    artist: 'Pieter Bruegel the Elder, 1563',
+    artist: 'Pieter Bruegel the Elder',
+    year: '1563',
     width: 2600,
     height: 2082,
     days: [
@@ -192,6 +202,7 @@ export const PUZZLES: Puzzle[] = WEEKS.flatMap((week) =>
       dayOfWeek: day,
       title: week.title,
       artist: week.artist,
+      year: week.year,
       width: week.width,
       height: week.height,
       src: `${base}puzzles/${week.image}.jpg`,
@@ -205,3 +216,14 @@ export const PUZZLES: Puzzle[] = WEEKS.flatMap((week) =>
 
 /** The distinct paintings, for tooling that works per asset rather than per day. */
 export const IMAGES = WEEKS.map((w) => ({ id: w.image, width: w.width, height: w.height }));
+
+/**
+ * Every painting in the rotation, for the credits panel. All eight are in the public
+ * domain; the scans come from Wikimedia Commons.
+ */
+export const CREDITS = WEEKS.map((w) => ({
+  id: w.image,
+  title: w.title,
+  artist: w.artist,
+  year: w.year,
+}));

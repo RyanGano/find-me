@@ -48,9 +48,11 @@ export interface Puzzle {
   image: string;
   /** 0 = Monday ... 6 = Sunday. Also the difficulty rung: Monday easiest. */
   dayOfWeek: number;
-  /** Painting title + artist, revealed after the solve. */
+  /** Painting title, artist and year. Credited in the attribution panel all week,
+   *  and shown again on the result card once the day is solved. */
   title: string;
   artist: string;
+  year: string;
   src: string;
   width: number;
   height: number;

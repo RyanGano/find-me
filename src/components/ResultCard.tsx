@@ -31,7 +31,9 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, onReplay }: Pro
 
       <p className="result-art">
         <strong>{puzzle.title}</strong>
-        <span>{puzzle.artist}</span>
+        <span>
+          {puzzle.artist} &middot; {puzzle.year}
+        </span>
       </p>
 
       {!isPractice && (
