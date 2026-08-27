@@ -116,13 +116,13 @@ export interface Rung {
 
 /** Index 0 is Monday, index 6 is Sunday. */
 export const RAMP: Rung[] = [
-  { key: 'mon', label: 'Monday', size: 40, scan: 0.56, ratio: 3.2, texture: 9, angle: 12, scannable: 100, company: 1.6, opaque: true },
-  { key: 'tue', label: 'Tuesday', size: 37, scan: 0.48, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 0.8 },
-  { key: 'wed', label: 'Wednesday', size: 34, scan: 0.41, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 0.8 },
-  { key: 'thu', label: 'Thursday', size: 31, scan: 0.38, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 0.9 },
-  { key: 'fri', label: 'Friday', size: 28, scan: 0.36, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 1.0 },
-  { key: 'sat', label: 'Saturday', size: 25, scan: 0.345, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 1.2 },
-  { key: 'sun', label: 'Sunday', size: 22, scan: 0.335, ratio: 1.05, texture: 22, angle: 148, scannable: 36, company: 1.6 },
+  { key: 'mon', label: 'Monday', size: 40, scan: 0.52, ratio: 3.2, texture: 9, angle: 12, scannable: 100, company: 1.6, opaque: true },
+  { key: 'tue', label: 'Tuesday', size: 37, scan: 0.43, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 0.8 },
+  { key: 'wed', label: 'Wednesday', size: 34, scan: 0.385, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 0.8 },
+  { key: 'thu', label: 'Thursday', size: 31, scan: 0.36, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 0.9 },
+  { key: 'fri', label: 'Friday', size: 28, scan: 0.345, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 1.0 },
+  { key: 'sat', label: 'Saturday', size: 25, scan: 0.33, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 1.2 },
+  { key: 'sun', label: 'Sunday', size: 22, scan: 0.31, ratio: 1.05, texture: 22, angle: 148, scannable: 36, company: 1.6 },
 ];
 
 export const DAYS_PER_WEEK = RAMP.length;

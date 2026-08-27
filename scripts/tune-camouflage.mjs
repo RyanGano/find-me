@@ -264,6 +264,21 @@ const MAX_OPAQUE_STRENGTH = 1;
 const FRAMED_FLOOR = 0.95;
 
 /**
+ * Above this it is a beacon rather than a hidden shape, whatever the scan reading says.
+ *
+ * The scan reading divides by the paint in a window a few shape-widths across, and at the
+ * fitted view on a large canvas that window is a few hundred image pixels -- wide enough,
+ * on the Mona Lisa, to take in her shoulder and her hair. A bright cream shape on the
+ * smooth wall behind her therefore measured as perfectly average and read as a beacon: it
+ * solved to full opacity with the fill pushed towards white, at a contrast of 9.8 when a
+ * normal day sits between 1 and 5.
+ *
+ * Dimming such a day also makes it harder, so the trade runs the right way: it comes out
+ * quieter than the clock asked for, which is the direction a too-easy day wants to move.
+ */
+const FRAMED_CEILING = 5;
+
+/**
  * The paint for a given strength, from nothing to as far as colour goes.
  *
  * Below 1 the knob is opacity, which is the obvious one. Above it opacity is already
@@ -398,8 +413,17 @@ for (const p of list) {
     got = await sample(page, paint, geo.targetPx, area);
     raised++;
   }
+  // And the other end: a day that had to shout to hit its target is not hidden at all.
+  let dimmed = 0;
+  while (solve && got.ratio > FRAMED_CEILING && strength > 0.01 && dimmed < 10) {
+    strength *= Math.max(0.7, Math.sqrt(FRAMED_CEILING / got.ratio));
+    paint = paintAt(p, strength, image);
+    got = await sample(page, paint, geo.targetPx, area);
+    dimmed++;
+  }
+
   await frame(page, 'fitted', geo);
-  if (raised) scanned = await sample(page, paint, geo.targetPx, fittedArea, true);
+  if (raised || dimmed) scanned = await sample(page, paint, geo.targetPx, fittedArea, true);
 
   // Second reading: how loud the shape is with the whole painting on screen.
   //
@@ -422,6 +446,7 @@ for (const p of list) {
       '  scan ' + scanned.ratio.toFixed(3).padStart(6) + ' (want ' + want.toFixed(3).padEnd(6) + ')' +
       '  found ' + got.ratio.toFixed(2).padStart(5) +
       (raised ? '   raised to stay visible once framed' : '') +
+      (dimmed ? '   dimmed: it was a beacon once framed' : '') +
       (got.ratio < FRAMED_FLOOR ? '   TOO FAINT once framed even at full strength' : ''),
   );
 
