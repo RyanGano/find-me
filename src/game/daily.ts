@@ -1,7 +1,7 @@
 import { PUZZLES } from './puzzles';
 import type { Puzzle } from './types';
 
-/** Local date of puzzle #1. */
+/** Local date of puzzle #1. A Wednesday, which matters -- see `puzzleForDay`. */
 export const EPOCH = new Date(2026, 7, 26);
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -9,6 +9,20 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 function localMidnight(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
+
+/** Weekday with Monday as 0 and Sunday as 6, in the player's own timezone. */
+export function weekday(d: Date): number {
+  return (d.getDay() + 6) % 7;
+}
+
+/**
+ * Days from the Monday of the epoch's week to the epoch itself: 2 for a Wednesday.
+ *
+ * The whole calendar hangs off this. Day numbers are counted from the epoch, because
+ * that is what players see and share, but the puzzle list is laid out Monday-first, so
+ * the two are offset by however far into its week the epoch fell.
+ */
+const EPOCH_WEEKDAY = weekday(EPOCH);
 
 /** Days elapsed since the epoch, in the player's own timezone. */
 export function dayIndex(now: Date = new Date()): number {
@@ -20,8 +34,21 @@ export function puzzleNumber(index: number): number {
   return index + 1;
 }
 
+/**
+ * The puzzle for a day number.
+ *
+ * Puzzles are stored Monday-first in blocks of seven, so shifting the day number by the
+ * epoch's own weekday lines the list up with the calendar: any real Monday lands on a
+ * Monday puzzle, and a painting holds for the whole Monday-to-Sunday week. Everything
+ * is in the player's local timezone, the same as `dayIndex`, so the day rolls over at
+ * their midnight rather than anyone else's.
+ *
+ * The epoch is a Wednesday, so the very first week is a short one: it opens on rung
+ * three of its ramp and finishes on Sunday like any other.
+ */
 export function puzzleForDay(index: number): Puzzle {
-  const i = ((index % PUZZLES.length) + PUZZLES.length) % PUZZLES.length;
+  const n = index + EPOCH_WEEKDAY;
+  const i = ((n % PUZZLES.length) + PUZZLES.length) % PUZZLES.length;
   return PUZZLES[i];
 }
 

@@ -4,6 +4,7 @@ import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
 import { puzzleNumber, selectPuzzle } from './game/daily';
+import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
 import { evaluate, targetDisplaySize } from './game/match';
 import { getCurrentResult, getStats, saveResult, type Stats } from './game/storage';
@@ -145,6 +146,9 @@ export default function App() {
       <header className="topbar">
         <h1 className="title">
           Find Me <span className="title-day">#{puzzleNumber(day)}</span>
+          {/* Which rung of the week this is. Sunday being brutal is the design; without
+              saying so, a player meeting it first just thinks the game is broken. */}
+          <span className="title-rung">{RAMP[puzzle.dayOfWeek].label}</span>
         </h1>
         <p className={`clock${running ? ' is-running' : ''}${solvedMs !== null ? ' is-done' : ''}`}>
           {startedAt === null && solvedMs === null ? 'ready' : formatTime(clock)}
@@ -185,7 +189,7 @@ export default function App() {
           solved={solvedMs !== null}
         />
 
-        {showHowTo && <HowTo thing={puzzle.thing} onDismiss={dismissHowTo} />}
+        {showHowTo && <HowTo thing={puzzle.thing} rung={RAMP[puzzle.dayOfWeek].label} onDismiss={dismissHowTo} />}
 
         {showResult && solvedMs !== null && (
           <ResultCard

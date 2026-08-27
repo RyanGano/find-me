@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { dayIndex, EPOCH, msUntilTomorrow, puzzleForDay, selectPuzzle } from './daily';
+import { dayIndex, EPOCH, msUntilTomorrow, puzzleForDay, selectPuzzle, weekday } from './daily';
+import { DAYS_PER_WEEK, RAMP } from './difficulty';
 import { PUZZLES } from './puzzles';
 import { targetDisplaySize } from './match';
 import { getShape } from './shapes';
@@ -24,13 +25,44 @@ describe('dayIndex', () => {
 
 describe('puzzleForDay', () => {
   it('cycles through the list', () => {
-    expect(puzzleForDay(0).id).toBe(PUZZLES[0].id);
-    expect(puzzleForDay(PUZZLES.length).id).toBe(PUZZLES[0].id);
-    expect(puzzleForDay(PUZZLES.length + 2).id).toBe(PUZZLES[2].id);
+    expect(puzzleForDay(PUZZLES.length).id).toBe(puzzleForDay(0).id);
+    expect(puzzleForDay(PUZZLES.length + 2).id).toBe(puzzleForDay(2).id);
   });
 
   it('handles negative days without crashing', () => {
-    expect(puzzleForDay(-1).id).toBe(PUZZLES[PUZZLES.length - 1].id);
+    expect(puzzleForDay(-1).id).toBe(puzzleForDay(PUZZLES.length - 1).id);
+  });
+
+  /**
+   * The calendar promise, and the reason the whole list is stored Monday-first: a real
+   * Monday gets a Monday puzzle. Walked over a long stretch of real dates rather than
+   * asserted at one point, because the failure mode this guards against -- the ramp
+   * drifting a day out of step -- looks perfect on any single day you happen to check.
+   */
+  it('lines the ramp up with the calendar week', () => {
+    const d = new Date(EPOCH);
+    for (let i = 0; i < 400; i++) {
+      const puzzle = puzzleForDay(dayIndex(d));
+      expect(puzzle.dayOfWeek, d.toDateString()).toBe(weekday(d));
+      expect(puzzle.id, d.toDateString()).toBe(`${puzzle.image}-${RAMP[weekday(d)].key}`);
+      d.setDate(d.getDate() + 1);
+    }
+  });
+
+  it('holds one painting for a whole Monday-to-Sunday week', () => {
+    // Start on the first Monday on or after the epoch, then take seven days at a time.
+    const monday = new Date(EPOCH);
+    monday.setDate(monday.getDate() + ((7 - weekday(EPOCH)) % 7));
+    for (let week = 0; week < 12; week++) {
+      const days = [];
+      for (let i = 0; i < DAYS_PER_WEEK; i++) {
+        const d = new Date(monday);
+        d.setDate(d.getDate() + week * DAYS_PER_WEEK + i);
+        days.push(puzzleForDay(dayIndex(d)));
+      }
+      expect(new Set(days.map((p) => p.image)).size, `week ${week}`).toBe(1);
+      expect(days.map((p) => p.dayOfWeek)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    }
   });
 });
 
@@ -44,13 +76,13 @@ describe('selectPuzzle', () => {
   it('honours ?day=', () => {
     const s = selectPuzzle('?day=3', EPOCH);
     expect(s.index).toBe(3);
-    expect(s.puzzle.id).toBe(PUZZLES[3].id);
+    expect(s.puzzle.id).toBe(puzzleForDay(3).id);
     expect(s.isPractice).toBe(true);
   });
 
   it('honours ?puzzle=', () => {
-    const s = selectPuzzle('?puzzle=starry', EPOCH);
-    expect(s.puzzle.id).toBe('starry');
+    const s = selectPuzzle('?puzzle=starry-wed', EPOCH);
+    expect(s.puzzle.id).toBe('starry-wed');
     expect(s.isPractice).toBe(true);
   });
 

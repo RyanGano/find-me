@@ -24,10 +24,30 @@ export interface Target {
    * by itself. This matches the shape to the paint.
    */
   blur?: number;
+  /**
+   * The signal-to-texture ratio `opacity` was solved for, measured in the browser by
+   * `npm run camouflage`. Nothing reads it at runtime: it is the difficulty knob in
+   * legible form, and what the week's ramp is asserted against. Opacity on its own
+   * cannot say whether a shape is subtle, because the same opacity shouts on a flat
+   * glaze and vanishes in Bruegel's crowd.
+   */
+  ratio?: number;
+  /**
+   * The scan reading `opacity` was solved for: how the shape reads with the whole
+   * painting on screen, relative to the paint around it and to how much work this canvas
+   * is to search. This is the difficulty knob that corresponds to time-to-find, and the
+   * one the week's ramp is asserted against. See `difficulty.ts`.
+   */
+  scan?: number;
 }
 
 export interface Puzzle {
+  /** Unique per day, e.g. `mona-wed`. */
   id: string;
+  /** Asset id of the painting, shared by all seven days of the week. */
+  image: string;
+  /** 0 = Monday ... 6 = Sunday. Also the difficulty rung: Monday easiest. */
+  dayOfWeek: number;
   /** Painting title + artist, revealed after the solve. */
   title: string;
   artist: string;

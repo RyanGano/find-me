@@ -1,9 +1,11 @@
 interface Props {
   thing: string;
+  /** Monday, Tuesday... Named so the ramp is something a player can see coming. */
+  rung: string;
   onDismiss: () => void;
 }
 
-export function HowTo({ thing, onDismiss }: Props) {
+export function HowTo({ thing, rung, onDismiss }: Props) {
   const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   return (
     <div className="howto" role="dialog" aria-label="How to play">
@@ -30,6 +32,10 @@ export function HowTo({ thing, onDismiss }: Props) {
         The painting stays blurred, and the clock stays stopped, until your first move — so
         there is no free look. Close enough counts: within 4% on size and 7.2&deg; on angle.
         Some shapes match at more than one rotation.
+      </p>
+      <p className="howto-note">
+        This painting stays all week, with something different to find in it each day and
+        each day harder than the last. Today is <strong>{rung}</strong>.
       </p>
       <button type="button" className="btn btn-primary" onClick={onDismiss}>
         Start
