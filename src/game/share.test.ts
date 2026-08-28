@@ -44,15 +44,26 @@ describe('speedBar', () => {
 
 describe('buildShareText', () => {
   it('names the day and time without revealing the painting or the spot', () => {
-    const text = buildShareText(12, PUZZLES[0], 83400, 1);
+    const text = buildShareText(12, PUZZLES[0], 83400, 1, 41);
     expect(text).toContain('Find Me #12');
     expect(text).toContain('1:23.4');
     expect(text).not.toContain(PUZZLES[0].title);
     expect(text).not.toContain(String(PUZZLES[0].target.cx));
   });
 
+  it('puts the age directly under the time, above the streak', () => {
+    const lines = buildShareText(12, PUZZLES[0], 83400, 4, 41).split('\n');
+    expect(lines[1]).toContain('1:23.4');
+    expect(lines[2]).toBe('Your Find Me Age: 41');
+    expect(lines[3]).toContain('streak');
+  });
+
+  it('leaves the age out when there is none to show', () => {
+    expect(buildShareText(12, PUZZLES[0], 83400, 1, null)).not.toContain('Find Me Age');
+  });
+
   it('adds the streak only once it is worth bragging about', () => {
-    expect(buildShareText(1, PUZZLES[0], 1000, 1)).not.toContain('streak');
-    expect(buildShareText(1, PUZZLES[0], 1000, 4)).toContain('🔥 4 day streak');
+    expect(buildShareText(1, PUZZLES[0], 1000, 1, 20)).not.toContain('streak');
+    expect(buildShareText(1, PUZZLES[0], 1000, 4, 20)).toContain('🔥 4 day streak');
   });
 });

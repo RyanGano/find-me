@@ -18,11 +18,15 @@ export function buildShareText(
   puzzle: Puzzle,
   ms: number,
   streak: number,
+  age: number | null,
 ): string {
   const lines = [
     `Find Me #${day} ${puzzle.emoji}`,
     `${formatTime(ms)}  ${speedBar(ms)}`,
   ];
+  // Sits directly under the clock, because it is the same result read a second way:
+  // the time says how fast, the age says how it was played.
+  if (age !== null) lines.push(`Your Find Me Age: ${age}`);
   if (streak > 1) lines.push(`🔥 ${streak} day streak`);
   lines.push(SITE_URL);
   return lines.join('\n');

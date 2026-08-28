@@ -458,8 +458,33 @@ body,
 }
 
 .result-bar {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
   letter-spacing: 2px;
+}
+
+/* The second reading of the same result, so it sits with the clock rather than down
+   with the stats. Quieter than the time: it is a flourish, not the score. */
+.result-age-block {
+  margin: 0 0 14px;
+}
+
+.result-age {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.result-age strong {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.result-age-why {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
 
 .result-art {

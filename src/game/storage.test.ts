@@ -8,6 +8,7 @@ import {
   saveProgress,
   saveResult,
 } from './storage';
+import { newTracker, type RunMetrics } from './metrics';
 import { PUZZLES } from './puzzles';
 
 const KEY = 'find-me:v1';
@@ -72,6 +73,25 @@ describe('saveResult / getCurrentResult', () => {
     expect(stats.played).toBe(1);
     expect(stats.best).toBe(12345);
     expect(stats.streak).toBe(1);
+  });
+
+  it('records how the run was played alongside how long it took', () => {
+    const m: RunMetrics = {
+      searchMs: 20000,
+      adjustMs: 5000,
+      passes: 2,
+      overshoots: 4,
+      reversals: 3,
+      idleMs: 1200,
+    };
+    saveResult(3, 25000, V1, m);
+    expect(getCurrentResult(3, V1)?.m).toEqual(m);
+  });
+
+  it('still records a solve when there is nothing to say about how it went', () => {
+    saveResult(3, 25000, V1);
+    expect(getCurrentResult(3, V1)?.ms).toBe(25000);
+    expect(getCurrentResult(3, V1)?.m).toBeUndefined();
   });
 
   it('survives corrupt stored data', () => {
@@ -143,6 +163,23 @@ describe('progress', () => {
     clearProgress();
     expect(getProgress(3, V1)).toBeUndefined();
     expect(getCurrentResult(3, V1)?.ms).toBe(12345);
+  });
+
+  it('carries the age collector across the interruption', () => {
+    const k = { ...newTracker(), hot: true, hotAt: 4000, lastAt: 8000 };
+    k.m.passes = 3;
+    saveProgress({ ...RUN, k });
+    expect(getProgress(3, V1)?.k).toEqual(k);
+  });
+
+  it('drops a damaged collector but keeps the clock, since the run is the point', () => {
+    saveProgress(RUN);
+    const store = JSON.parse(localStorage.getItem(KEY)!);
+    store.progress.k = { m: 'nonsense' };
+    localStorage.setItem(KEY, JSON.stringify(store));
+    const back = getProgress(3, V1);
+    expect(back?.ms).toBe(8000);
+    expect(back?.k).toBeUndefined();
   });
 
   it('ignores a malformed stored run', () => {

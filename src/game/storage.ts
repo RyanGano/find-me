@@ -1,3 +1,4 @@
+import { isTracker, type RunMetrics, type Tracker } from './metrics';
 import type { Transform } from './types';
 
 const KEY = 'find-me:v1';
@@ -13,6 +14,12 @@ export interface Result {
    * exists -- so those days open playable again rather than stuck on a finished board.
    */
   v?: string;
+  /**
+   * How the run was played, for the Find Me Age. Absent on results recorded before it
+   * existed; those still show an age, taken from the clock alone. The age itself is not
+   * stored, so retuning the estimate re-reads old runs rather than freezing them.
+   */
+  m?: RunMetrics;
 }
 
 interface Store {
@@ -26,7 +33,11 @@ function read(): Store {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { results: {} };
     const parsed = JSON.parse(raw) as Partial<Store>;
-    const progress = isProgress(parsed.progress) ? parsed.progress : undefined;
+    let progress = isProgress(parsed.progress) ? parsed.progress : undefined;
+    // A damaged collector costs the age, not the run: drop it and keep the clock.
+    if (progress && progress.k !== undefined && !isTracker(progress.k)) {
+      progress = { ...progress, k: undefined };
+    }
     return { results: parsed.results ?? {}, progress };
   } catch {
     return { results: {} };
@@ -55,14 +66,19 @@ export function getCurrentResult(day: number, version: string): Result | undefin
   return result && result.v === version ? result : undefined;
 }
 
-export function saveResult(day: number, ms: number, version: string): void {
+export function saveResult(
+  day: number,
+  ms: number,
+  version: string,
+  metrics?: RunMetrics,
+): void {
   const store = read();
   const key = String(day);
   const existing = store.results[key];
   // Keep the first solve of a given puzzle, so replaying cannot improve the record --
   // but a result from an older version of the day is superseded, not protected.
   if (existing && existing.v === version) return;
-  store.results[key] = { ms, at: new Date().toISOString(), v: version };
+  store.results[key] = { ms, at: new Date().toISOString(), v: version, m: metrics };
   write(store);
 }
 
@@ -115,6 +131,13 @@ export interface Progress {
   /** Stage size the transform belongs to; a different box gets the fitted view back. */
   w: number;
   h: number;
+  /**
+   * The Find Me Age collector, mid-run. Without this a back-swipe would hand the clock
+   * back but forget every near miss and wobble that led up to it, and the age on the
+   * result would describe only the half of the run that happened after the interruption.
+   * Optional: a run banked by an older build has no collector, and gets a fresh one.
+   */
+  k?: Tracker;
   /** When it was stored, so a run left open overnight is not resumed days later. */
   at: string;
 }

@@ -9,6 +9,7 @@ import { puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
 import { evaluate, targetDisplaySize } from './game/match';
+import { finish, newTracker, sample, type RunMetrics, type Tracker } from './game/metrics';
 import {
   clearProgress,
   getCurrentResult,
@@ -66,6 +67,10 @@ export default function App() {
   // moment ago, and it should say so rather than looking like a fresh puzzle.
   const [resuming, setResuming] = useState(Boolean(saved));
   const [solvedMs, setSolvedMs] = useState<number | null>(prior?.ms ?? null);
+  // How the run is being played, for the Find Me Age. The collector rides along with the
+  // banked run, so a back-swipe costs nothing; the finished metrics go with the result.
+  const tracker = useRef<Tracker>(saved?.k ?? newTracker());
+  const [metrics, setMetrics] = useState<RunMetrics | null>(prior?.m ?? null);
   const [showResult, setShowResult] = useState(Boolean(prior));
   // The reveal ring is a spoiler once the hunt is over, so let the player hide it
   // while they look at the painting itself.
@@ -173,15 +178,32 @@ export default function App() {
     return () => clearInterval(id);
   }, [running, startedAt]);
 
+  // Watch how the run is being played. Declared above the solve effect on purpose: both
+  // fire in the same commit as the winning move, and the solve must be closed out
+  // against a tracker that has already seen that move.
+  useEffect(() => {
+    if (!running || startedAt === null || !match || !transform || !size) return;
+    tracker.current = sample(
+      tracker.current,
+      performance.now() - startedAt,
+      match,
+      transform.scale,
+      size,
+      targetSize,
+    );
+  }, [match, transform, size, targetSize, running, startedAt]);
+
   // Land the solve the moment size, angle and framing all line up.
   useEffect(() => {
     if (!running || startedAt === null || !match?.solved) return;
     const ms = performance.now() - startedAt;
+    const run = finish(tracker.current, ms);
     setSolvedMs(ms);
     setElapsed(ms);
+    setMetrics(run);
     setShowResult(true);
     if (!isPractice) {
-      saveResult(day, ms, puzzle.version);
+      saveResult(day, ms, puzzle.version, run);
       clearProgress();
     }
     setStats(getStats(day));
@@ -218,6 +240,7 @@ export default function App() {
         t: run.t,
         w: box.w,
         h: box.h,
+        k: tracker.current,
       });
     };
     const onVisibility = () => {
@@ -362,6 +385,7 @@ export default function App() {
             ms={solvedMs}
             stats={stats}
             isPractice={isPractice}
+            metrics={metrics}
             onReplay={replay}
           />
         )}
