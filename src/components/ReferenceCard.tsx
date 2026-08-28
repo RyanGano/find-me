@@ -26,6 +26,12 @@ interface Props {
  * thing the player is supposed to be searching for, handing over the answer to anyone
  * who had not spotted it yet. Here it says the same thing while revealing nothing:
  * closeness depends only on zoom and twist, never on position.
+ *
+ * The label never names the shape. "Find the crescent moon" is far wider than
+ * "nearly", so the badge used to jump leftwards at the exact moment the player is
+ * making fine adjustments. All three words are short now, and the label reserves a
+ * fixed width, so the card and the shape inside it hold still for the whole run. The
+ * drawing says what to look for better than the words did anyway.
  */
 export function ReferenceCard({ puzzle, targetSize, match, solved }: Props) {
   const state = solved ? ' is-solved' : match?.near ? ' is-near' : '';
@@ -39,7 +45,7 @@ export function ReferenceCard({ puzzle, targetSize, match, solved }: Props) {
         />
       </div>
       <p className="reference-label">
-        {solved ? 'found' : match?.near ? 'nearly' : `find the ${puzzle.thing}`}
+        {solved ? 'found' : match?.near ? 'nearly' : 'find me'}
       </p>
     </div>
   );
