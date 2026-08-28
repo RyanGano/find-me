@@ -564,3 +564,60 @@ body,
   color: var(--ok);
   border-color: var(--ok);
 }
+
+/* ---------- update notice ---------- */
+
+/*
+ * Bottom-right, above everything, and deliberately small: a new build is worth
+ * mentioning, never worth interrupting a hunt for.
+ */
+.update-notice {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 15px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  animation: update-in 0.25s ease-out;
+}
+
+@keyframes update-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .update-notice {
+    animation: none;
+  }
+}
+
+.update-refresh {
+  font: inherit;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.update-refresh:hover {
+  border-color: var(--accent);
+}
+
+.update-refresh:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

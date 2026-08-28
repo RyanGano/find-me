@@ -4,6 +4,7 @@ import { HowTo } from './components/HowTo';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
+import { UpdateNotice } from './components/UpdateNotice';
 import { puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
@@ -21,6 +22,7 @@ import { compose, constrainPan, fitTransform } from './game/transform';
 import type { Transform } from './game/types';
 import type { GestureDelta } from './game/transform';
 import { useGestures } from './hooks/useGestures';
+import { useUpdateAvailable } from './hooks/useUpdateAvailable';
 
 const HOWTO_SEEN = 'find-me:howto-seen';
 
@@ -71,6 +73,10 @@ export default function App() {
   const [stats, setStats] = useState<Stats>(() => getStats(day));
 
   const [showCredits, setShowCredits] = useState(false);
+
+  // A new build deployed under a page left open. Refreshing keeps the run: leaving the
+  // page banks it, and it is handed straight back on the way in.
+  const updateAvailable = useUpdateAvailable();
 
   const [showHowTo, setShowHowTo] = useState(
     () => !prior && !saved && !isPractice && !localStorage.getItem(HOWTO_SEEN),
@@ -360,6 +366,8 @@ export default function App() {
           />
         )}
       </main>
+
+      {updateAvailable && <UpdateNotice />}
     </div>
   );
 }
