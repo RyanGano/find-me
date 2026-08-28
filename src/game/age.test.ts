@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { estimateAge, expectedAdjustMs, expectedSearchMs, MAX_AGE, MIN_AGE } from './age';
+import {
+  estimateAge,
+  expectedAdjustMs,
+  expectedSearchMs,
+  MAX_AGE,
+  MIN_AGE,
+  PAR_AGE,
+} from './age';
+import { puzzleForDay } from './daily';
 import { angleWork, RAMP } from './difficulty';
 import type { RunMetrics } from './metrics';
 import { PUZZLES } from './puzzles';
@@ -41,12 +49,48 @@ function parRun(puzzle: Puzzle): { ms: number; metrics: RunMetrics } {
   };
 }
 
+/**
+ * The three groups who played the first week's Thursday and Friday, and roughly where
+ * each of them ought to land. This is the only real-population data the estimate has,
+ * and it is what `PAR_AGE` and `SPREAD` were solved for -- so it is worth more than any
+ * of the reasoning above it, and a retune that breaks it is a retune that is wrong.
+ *
+ * Times only: nobody wrote down how any of them played, so these run through the
+ * clock-alone path. The signal blend can only spread them further apart.
+ */
+const OBSERVED = [
+  { who: 'a group in their mid-forties', ms: 130000, low: 42, high: 50 },
+  { who: 'a group of twenty-somethings', ms: 30000, low: 22, high: 30 },
+  { who: 'two players with very sharp eyes', ms: 12500, low: 11, high: 18 },
+];
+
+describe('against the people who have actually played it', () => {
+  // Day 1 and day 2 from the epoch: the Thursday and Friday of the Mona Lisa week.
+  for (const day of [1, 2]) {
+    const puzzle = puzzleForDay(day);
+    for (const { who, ms, low, high } of OBSERVED) {
+      it(`reads ${who} on ${puzzle.id} as ${low}-${high}`, () => {
+        const { age } = estimateAge(puzzle, ms);
+        expect(age).toBeGreaterThanOrEqual(low);
+        expect(age).toBeLessThanOrEqual(high);
+      });
+    }
+  }
+
+  it('puts the three groups in the order they were observed in', () => {
+    const puzzle = puzzleForDay(2);
+    const ages = OBSERVED.map((o) => estimateAge(puzzle, o.ms).age);
+    expect(ages[0]).toBeGreaterThan(ages[1]);
+    expect(ages[1]).toBeGreaterThan(ages[2]);
+  });
+});
+
 describe('estimateAge', () => {
   it('gives par on every rung of the week to the run that rung is priced at', () => {
     for (let d = 0; d < RAMP.length; d++) {
       const puzzle = onRung(d);
       const { ms, metrics } = parRun(puzzle);
-      expect(estimateAge(puzzle, ms, metrics).age, RAMP[d].label).toBe(32);
+      expect(estimateAge(puzzle, ms, metrics).age, RAMP[d].label).toBe(PAR_AGE);
     }
   });
 
@@ -70,8 +114,8 @@ describe('estimateAge', () => {
       overshoots: metrics.overshoots * 3,
       idleMs: metrics.idleMs * 3,
     }).age;
-    expect(fast).toBeLessThan(32);
-    expect(slow).toBeGreaterThan(32);
+    expect(fast).toBeLessThan(PAR_AGE);
+    expect(slow).toBeGreaterThan(PAR_AGE);
   });
 
   it('reads the same clock differently on Monday and on Sunday', () => {
@@ -137,11 +181,15 @@ describe('estimateAge', () => {
     const puzzle = onRung(4);
     const { ms, metrics } = parRun(puzzle);
     const age = estimateAge(puzzle, ms, { ...metrics, idleMs: 0 }).age;
-    expect(age).toBeGreaterThan(25);
-    expect(age).toBeLessThan(32);
+    expect(age).toBeGreaterThan(PAR_AGE - 6);
+    expect(age).toBeLessThan(PAR_AGE);
   });
 
   it('leaves the far end of the scale out of reach of an ordinarily bad run', () => {
+    // An hour of flailing at a Sunday, which is about as bad as a real run gets. It
+    // reads in the sixties rather than the eighties, because the spread fitted to real
+    // players is tighter than the first guess at it: the observed population runs from
+    // about thirteen to about forty-six, and the tail should not be ten times wider.
     const puzzle = onRung(6);
     const dreadful = estimateAge(puzzle, 4e6, {
       searchMs: 3.9e6,
@@ -151,7 +199,7 @@ describe('estimateAge', () => {
       reversals: 300,
       idleMs: 3e6,
     }).age;
-    expect(dreadful).toBeGreaterThan(70);
+    expect(dreadful).toBeGreaterThan(55);
     expect(dreadful).toBeLessThan(MAX_AGE);
   });
 

@@ -21,10 +21,26 @@ import type { Puzzle } from './types';
 export const MIN_AGE = 10;
 export const MAX_AGE = 85;
 
-/** The age a player gets for doing exactly what the day is priced at. */
-const PAR_AGE = 32;
-/** Years added per doubling of a signal, and taken off per halving. */
-const SPREAD = 13;
+/**
+ * The age a player gets for doing exactly what the day is priced at, and the years
+ * added per doubling of a signal.
+ *
+ * These two set where the whole scale sits, and they are the only numbers here fitted
+ * to real people rather than reasoned about. Three groups played the Thursday and
+ * Friday of the first week -- a set of forty-somethings taking upwards of two minutes,
+ * a set of twenty-somethings around thirty seconds, and two unusually sharp-eyed
+ * players landing it in ten to fifteen. Friday is priced at about forty-two seconds
+ * all in, so those are ratios of roughly 3.1, 0.72 and 0.30; solving for the ends
+ * gives a spread of 9.5 years per doubling and a par just under thirty, and the middle
+ * group then falls out at twenty-five without being fitted to.
+ *
+ * The first guess at these was 32 and 13, which read the same three groups as low
+ * fifties, high twenties, and pegged at the floor. The spread was the part that was
+ * wrong: the real population is tighter than a doubling-is-thirteen-years scale
+ * assumes. See `age.test.ts`, which holds all three groups.
+ */
+export const PAR_AGE = 30;
+export const SPREAD = 9.5;
 
 /**
  * How far from par a single signal is allowed to be read as, derived from the ends of
@@ -33,7 +49,7 @@ const SPREAD = 13;
  * The floor is the part that matters. A signal can legitimately come in at zero -- most
  * good runs have no idle time at all, and plenty have no near misses -- and a raw ratio
  * of zero takes the logarithm to minus infinity, which pulls the whole blend to the
- * floor on the strength of one signal being merely flawless. Three times better than
+ * floor on the strength of one signal being merely flawless. Four times better than
  * par is as good as anything needs to be.
  */
 const RATIO_FLOOR = 2 ** ((MIN_AGE - PAR_AGE) / SPREAD);

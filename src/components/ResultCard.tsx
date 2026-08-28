@@ -79,20 +79,33 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
   );
 }
 
-/** The two signals furthest from par, best first, each said in plain words. */
+/**
+ * How each signal reads when it comes in ahead of par, near it, and behind it.
+ *
+ * Every signal gets its own words rather than a shared "strong on X / slow on X",
+ * because the shared form does not survive contact with the signals it has to describe:
+ * hesitation is the one most often at the very best it can be -- a good run frequently
+ * has no idle time at all -- and "strong on hesitation" says the opposite of what it
+ * means. Nothing here claims more than the number behind it: a single near miss on a
+ * day that expects two is "hardly lost it", not "never".
+ */
+const PHRASES: Record<AgePart['key'], [ahead: string, level: string, behind: string]> = {
+  search: ['spotted it fast', 'spotted it on time', 'slow to spot it'],
+  adjust: ['framed it fast', 'framed it on time', 'slow to frame it'],
+  passes: ['hardly lost it', 'lost it a few times', 'kept losing it'],
+  dither: ['steady hands', 'steady enough', 'shaky hands'],
+  idle: ['barely paused', 'a pause or two', 'long pauses'],
+};
+
+/** The two signals furthest from par, best first, each said in its own words. */
 function whyLine(parts: AgePart[]): string {
-  const ranked = [...parts].sort(
-    (a, b) => Math.abs(Math.log2(orOne(b.ratio))) - Math.abs(Math.log2(orOne(a.ratio))),
-  );
-  return ranked
+  const distance = (p: AgePart) => Math.abs(Math.log2(p.ratio));
+  return [...parts]
+    .sort((a, b) => distance(b) - distance(a))
     .slice(0, 2)
     .sort((a, b) => a.ratio - b.ratio)
-    .map((p) => `${p.ratio < 0.75 ? 'strong' : p.ratio > 1.4 ? 'slow' : 'steady'} on ${p.label}`)
+    .map((p) => PHRASES[p.key][p.ratio < 0.75 ? 0 : p.ratio > 1.4 ? 2 : 1])
     .join(' · ');
-}
-
-function orOne(ratio: number): number {
-  return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
 }
 
 function useCountdown(enabled: boolean): string | null {
