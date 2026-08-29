@@ -294,6 +294,16 @@ export default function App() {
     reset();
   }, [closeResult, reset]);
 
+  // Every panel goes away the same way: a tap on the board behind it. Whichever one is
+  // up is put away by its own means -- the how-to still counts as read, so it does not
+  // come back at the player tomorrow.
+  const anyPanel = showResult || showCredits || showHowTo;
+  const dismissPanels = useCallback(() => {
+    if (showResult) closeResult();
+    if (showCredits) setShowCredits(false);
+    if (showHowTo) dismissHowTo();
+  }, [showResult, closeResult, showCredits, showHowTo, dismissHowTo]);
+
   // Solving used to be a one-way door: the card came down on any tap outside it and a
   // refresh was the only way back to your own time. It is a panel like the others now,
   // reachable from the badge or the clock for as long as the day lasts.
@@ -433,9 +443,7 @@ export default function App() {
 
         {showHowTo && <HowTo thing={puzzle.thing} rung={RAMP[puzzle.dayOfWeek].label} onDismiss={dismissHowTo} />}
 
-        {showResult && solvedMs !== null && (
-          <div className="scrim" onPointerDown={closeResult} />
-        )}
+        {anyPanel && <div className="scrim" onPointerDown={dismissPanels} />}
 
         {showResult && solvedMs !== null && (
           <ResultCard
