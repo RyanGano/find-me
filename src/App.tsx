@@ -211,6 +211,11 @@ export default function App() {
     if (!running || startedAt === null || !match?.solved) return;
     const ms = performance.now() - startedAt;
     const run = finish(tracker.current, ms);
+    // The winning move is a gesture, but `match` is derived during render, so the solve
+    // can only be seen from here. This is the run state machine's one-way transition into
+    // "solved" -- it cannot cascade, because `match.solved` stays true and `running` is
+    // false on the next pass.
+    // oxlint-disable-next-line react/set-state-in-effect
     setSolvedMs(ms);
     setElapsed(ms);
     setMetrics(run);

@@ -171,17 +171,6 @@ function survey(grey, info) {
 }
 
 /**
- * How much work this canvas is to search: how much ground there is to cover, and how much
- * of it looks like something. Same formula as `npm run rate` and the tuner, and the
- * reason a scan target set on one painting means the same thing on another.
- */
-function searchCost(spots, info) {
-  const stds = spots.map((s) => s.std).sort((a, b) => a - b);
-  const median = stds[Math.round((stds.length - 1) * 0.5)] || 1;
-  return Math.sqrt((info.width * info.height) / (2600 * 1841)) * Math.sqrt(median / 24.6);
-}
-
-/**
  * A small mean-removed thumbnail of the paint around a point, for comparing one patch of
  * painting against another.
  */
