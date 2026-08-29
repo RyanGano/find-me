@@ -1,0 +1,19 @@
+{
+  "comment": "Paintings already considered and turned down, so the same candidate is not sourced, resized and measured a second time. Checked before anything else in the add-painting skill, and appended to on every rejection. Reasons: nudity | no-quiet-paint | too-smooth | nothing-busy | cannot-hold-a-week | not-public-domain | duplicate-painter | other.",
+  "rejected": [
+    {
+      "title": "The Garden of Earthly Delights",
+      "artist": "Hieronymus Bosch",
+      "reason": "nudity",
+      "note": "Also fails the rate: quietest 29.9 against 18.5 for every painting that has tuned cleanly, so its Monday could not be made easy at any fill or opacity. Either reason alone is disqualifying.",
+      "added": "2026-08-28"
+    },
+    {
+      "title": "The Fighting Temeraire",
+      "artist": "J. M. W. Turner",
+      "reason": "too-smooth",
+      "note": "Median texture 8.2 -- nothing anywhere for a shape to hide in, so hard-to-scan and visible-once-framed became mutually exclusive. All seven days had to be raised to stay visible and none could be made hard. Caught only after the ramp started aiming at times.",
+      "added": "2026-08-28"
+    }
+  ]
+}

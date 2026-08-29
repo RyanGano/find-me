@@ -4,6 +4,30 @@ import type { Puzzle, Target } from './types';
 
 const base = import.meta.env.BASE_URL;
 
+/**
+ * What kind of painting a week is, so that "a good spread" is a property the build can
+ * check rather than something a curator has to hold in their head.
+ *
+ * A closed list on purpose. The point is to compare one week against its neighbours, and
+ * free text does not compare -- `landscape` and `Landscape with trees` would read as two
+ * different kinds of week and the run would go unnoticed. Widen the list when a painting
+ * genuinely does not fit one of these, not to avoid choosing.
+ */
+export const GENRES = [
+  'portrait',
+  'landscape',
+  'seascape',
+  'cityscape',
+  'architecture',
+  'still-life',
+  'interior',
+  'genre-scene',
+  'history',
+  'abstract',
+] as const;
+
+export type Genre = (typeof GENRES)[number];
+
 interface WeekSeed {
   /** Asset id in `public/puzzles`. */
   image: string;
@@ -11,6 +35,8 @@ interface WeekSeed {
   artist: string;
   /** Year painted, as it should read on the credit line, e.g. `c. 1503`. */
   year: string;
+  /** What kind of painting it is. `curation.test.ts` holds the rotation to a spread of these. */
+  genre: Genre;
   width: number;
   height: number;
   /** Exactly seven targets, Monday first. Written by `npm run plan`, solved by `npm run camouflage`. */
@@ -23,6 +49,9 @@ interface WeekSeed {
  * A player gets a whole week with one painting and seven different things to find in
  * it, each harder than the last -- see `difficulty.ts` for what "harder" means and how
  * each rung is measured. Eight paintings is therefore eight weeks, not eight days.
+ *
+ * New paintings are appended, never inserted -- see `GRANDFATHERED_REPEAT_PAINTER` below
+ * and `curation.test.ts` for what the order of this list is held to.
  *
  * Coordinates are in the pixel space of the generated asset in `public/puzzles`
  * (2600px wide -- see `npm run images`), so re-generating at a different width means
@@ -39,6 +68,7 @@ const WEEKS: WeekSeed[] = [
     title: 'Mona Lisa',
     artist: 'Leonardo da Vinci',
     year: 'c. 1503',
+    genre: 'portrait',
     width: 2600,
     height: 3933,
     days: [
@@ -56,6 +86,7 @@ const WEEKS: WeekSeed[] = [
     title: 'The Great Wave off Kanagawa',
     artist: 'Katsushika Hokusai',
     year: 'c. 1831',
+    genre: 'seascape',
     width: 2600,
     height: 1748,
     days: [
@@ -73,6 +104,7 @@ const WEEKS: WeekSeed[] = [
     title: 'The Starry Night',
     artist: 'Vincent van Gogh',
     year: '1889',
+    genre: 'landscape',
     width: 2600,
     height: 2059,
     days: [
@@ -90,6 +122,7 @@ const WEEKS: WeekSeed[] = [
     title: 'Netherlandish Proverbs',
     artist: 'Pieter Bruegel the Elder',
     year: '1559',
+    genre: 'genre-scene',
     width: 2600,
     height: 1841,
     days: [
@@ -107,6 +140,7 @@ const WEEKS: WeekSeed[] = [
     title: 'A Sunday on La Grande Jatte',
     artist: 'Georges Seurat',
     year: '1884',
+    genre: 'genre-scene',
     width: 2600,
     height: 1731,
     days: [
@@ -124,6 +158,7 @@ const WEEKS: WeekSeed[] = [
     title: 'The School of Athens',
     artist: 'Raphael',
     year: 'c. 1510',
+    genre: 'history',
     width: 2600,
     height: 2017,
     days: [
@@ -141,6 +176,7 @@ const WEEKS: WeekSeed[] = [
     title: 'The Hunters in the Snow',
     artist: 'Pieter Bruegel the Elder',
     year: '1565',
+    genre: 'landscape',
     width: 2600,
     height: 1850,
     days: [
@@ -158,6 +194,7 @@ const WEEKS: WeekSeed[] = [
     title: 'The Tower of Babel',
     artist: 'Pieter Bruegel the Elder',
     year: '1563',
+    genre: 'architecture',
     width: 2600,
     height: 2082,
     days: [
@@ -218,7 +255,7 @@ export const PUZZLES: Puzzle[] = WEEKS.flatMap((week) =>
 export const IMAGES = WEEKS.map((w) => ({ id: w.image, width: w.width, height: w.height }));
 
 /**
- * Every painting in the rotation, for the credits panel. All eight are in the public
+ * Every painting in the rotation, for the credits panel. All of them are in the public
  * domain; the scans come from Wikimedia Commons.
  */
 export const CREDITS = WEEKS.map((w) => ({
@@ -226,4 +263,15 @@ export const CREDITS = WEEKS.map((w) => ({
   title: w.title,
   artist: w.artist,
   year: w.year,
+  genre: w.genre,
 }));
+
+/**
+ * The one adjacency that predates the rule that no painter may hold two weeks running.
+ *
+ * `babel` follows `hunters` and both are Bruegel. Weeks cannot be reordered to fix it:
+ * `daily.ts` maps the calendar onto `PUZZLES` by index, so moving one would move every
+ * painting after it and hand people finished boards for puzzles they never played. It is
+ * recorded here instead, and `curation.test.ts` holds every other pair to the rule.
+ */
+export const GRANDFATHERED_REPEAT_PAINTER = new Set(['babel']);

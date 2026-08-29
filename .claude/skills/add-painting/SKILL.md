@@ -1,6 +1,6 @@
 ---
 name: add-painting
-description: Add a new painting to Find Me and plan, tune and verify its whole Monday-to-Sunday week of puzzles. Use when the user asks to "add a painting", "add a new week", "add another artwork", "put a new painting in the rotation", or names a specific painting to add. Screens the candidate for nudity first, appends it to the end of the puzzle list so nobody's calendar shifts, and refuses to finish until the week measures well and the suite is green.
+description: Add a new painting to Find Me and plan, tune and verify its whole Monday-to-Sunday week of puzzles. Use when the user asks to "add a painting", "add a new week", "add another artwork", "put a new painting in the rotation", or names a specific painting to add. Screens the candidate against the rejected list, for nudity, and for variety against the weeks already in the rotation; appends it to the end of the puzzle list so nobody's calendar shifts; and refuses to finish until the week measures well and the suite is green.
 ---
 
 # Add a painting
@@ -13,6 +13,23 @@ rather than tuned around.
 Read `CLAUDE.md` and the **Adding a puzzle** and **Difficulty** sections of `README.md`
 before starting. The README is the record of which obvious ideas have already been tried
 and failed; don't re-derive them.
+
+## Rule 0 — check the rejected list first
+
+`rejected.json`, next to this file, is every painting already considered and turned down.
+**Read it before sourcing anything.** Sourcing, resizing and measuring a candidate is
+minutes of work and a browser tuning run; re-doing it for a painting that was rejected
+three months ago is pure waste, and worse, it risks quietly accepting something on a
+second look that was correctly refused on the first.
+
+If the candidate is on the list, say so, give the recorded reason, and propose something
+else. A recorded rejection is only reopened if the user explicitly overrides it.
+
+**Every rejection gets appended to that file**, whatever stage it failed at — Rule 1, the
+variety check, `npm run rate`, or the planner giving up. That is what stops the list going
+stale. One entry, with `title`, `artist`, `reason` from the closed set in the file's
+`comment`, a `note` saying what was actually measured or seen, and `added` as an absolute
+date.
 
 ## Rule 1 — no nudity
 
@@ -45,7 +62,38 @@ Safe territory, if you're asked to suggest candidates: landscape, seascape, city
 still life, architecture, clothed portraiture, and abstraction. Every painting must also
 be **public domain** and scanned from Wikimedia Commons — the credits panel says so.
 
-## Rule 2 — always append, never insert
+## Rule 2 — a rotation, not a run
+
+A player meets the rotation one painting at a time over months, so what matters is not
+whether a painting is good but whether it is *different from its neighbours*. Three
+landscapes together is a season of the same picture; two paintings by one painter back to
+back reads as the game repeating itself, even though all fourteen days differ.
+
+Every week declares a `genre` from the closed `GENRES` list in `src/game/puzzles.ts`, and
+`src/game/curation.test.ts` holds the running order to four rules:
+
+- No painter two weeks running.
+- No genre three weeks running.
+- No painter holding more than a third of the rotation.
+- At least four kinds of painting in play.
+
+Check the candidate against the **tail of the list** before sourcing it — the new week
+lands last, so its only neighbour is the current final week:
+
+```bash
+grep -n "image: '\|artist: '\|genre: '" src/game/puzzles.ts | tail -9
+```
+
+If the candidate shares a
+painter with the final week, or would make a third consecutive week of its genre, it is
+the wrong painting *for this slot* — say so and propose a contrasting one. Record it in
+`rejected.json` with reason `duplicate-painter` only if it is being ruled out for good;
+a painting that is merely mistimed should be suggested again later, not blacklisted.
+
+Note that the rules constrain the order and the order is append-only, so a failure cannot
+be fixed by moving weeks around (Rule 3). The fix is always a different painting.
+
+## Rule 3 — always append, never insert
 
 `daily.ts` maps calendar days onto `PUZZLES` by index. Inserting or reordering a week
 changes which painting every future day lands on, and hands people finished boards for
@@ -62,7 +110,11 @@ pushing on.
 
 ### 1. Screen and source the image
 
-Apply Rule 1. Then put the highest-resolution scan available in `.source-images/NAME.jpg`.
+Apply Rules 0, 1 and 2 in that order — rejected list, nudity, then variety against the
+tail of the rotation. They are cheap and they all come before any work that costs time, so
+none of them is worth deferring "until we see how it measures".
+
+Then put the highest-resolution scan available in `.source-images/NAME.jpg`.
 Pick a short lowercase `NAME` with no punctuation — it becomes the asset name, the puzzle
 id prefix (`NAME-mon` … `NAME-sun`) and the `image` field.
 
@@ -102,6 +154,7 @@ block but does not create it.
     title: 'Title As It Should Read',
     artist: 'Painter Name',
     year: 'c. 1665',
+    genre: 'cityscape',
     width: 2600,
     height: 1841,
     days: [
@@ -113,9 +166,12 @@ block but does not create it.
 
 Keep each day on one line — those lines are machine-rewritten in place by both tools.
 
-While in the file, update the two counts written out in prose: the `WEEKS` doc comment
-("Eight paintings is therefore eight weeks") and the `CREDITS` comment ("All eight are in
-the public domain"). Update the painting count in `README.md` too if it states one.
+`genre` must be one of the `GENRES` in the same file. If the painting genuinely is not one
+of them, widen that list — but widen it because the painting does not fit, never to dodge
+a choice that would trip the variety rules.
+
+While in the file, update the count in the `WEEKS` doc comment ("Eight paintings is
+therefore eight weeks"), and the painting count in `README.md` if it states one.
 
 ### 5. Plan the hiding places
 
@@ -192,10 +248,13 @@ npm run build
 
 `assets.test.ts` pins the asset's real dimensions to the seed. `week.test.ts` asserts the
 new week gets harder, takes longer to find, stays visible once framed, and opens with no
-transparency. `daily.test.ts` walks 400 dates against the longer rotation.
+transparency. `curation.test.ts` checks the running order for repeated painters and runs
+of one genre. `daily.test.ts` walks 400 dates against the longer rotation.
 `determinism.test.ts` fails the build on any randomness under `src/`.
 
-A failure here is a real finding about the week, not a test to adjust. Fix the week.
+A failure here is a real finding, not a test to adjust. A `week.test.ts` failure means the
+week needs re-planning; a `curation.test.ts` failure means the painting is wrong for this
+slot and the order cannot be changed to accommodate it.
 
 Then run the browser smoke test, which exercises the app end to end:
 
@@ -213,6 +272,10 @@ Commit `src/game/puzzles.ts`, `public/puzzles/NAME.jpg`, `scripts/resize-images.
 `scripts/avoid.json` change, and the README/comment count updates. The source scan under
 `.source-images/` stays out, and so does anything from `local/`.
 
+Commit any `rejected.json` additions too — including when the whole session ended in a
+rejection and no painting was added. That is the one case where it is tempting to walk
+away with nothing committed, and it is exactly the case the file exists for.
+
 ## Don't
 
 - **Don't hand-write the tuned numbers.** `fill`, `opacity`, `ratio` and `scan` are
@@ -227,3 +290,8 @@ Commit `src/game/puzzles.ts`, `public/puzzles/NAME.jpg`, `scripts/resize-images.
 - **Don't judge camouflage from a `sharp` composite.** The browser applies opacity and
   `mix-blend-mode` in a different order; a shape sharp calls a whisper renders as a bright
   white snowflake.
+- **Don't reorder weeks to satisfy `curation.test.ts`,** and don't add to
+  `GRANDFATHERED_REPEAT_PAINTER` to silence it. That set records one repeat that shipped
+  before the rule existed; it is a scar, not an escape hatch. Change the painting.
+- **Don't leave a rejection unrecorded.** An hour spent re-measuring a painting that was
+  turned down last month is the exact cost `rejected.json` exists to avoid.

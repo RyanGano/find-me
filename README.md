@@ -169,6 +169,31 @@ the top and dense detail below, which is the shape of a canvas that can hold a w
 The thresholds in `rate-painting.mjs` are calibrated against the paintings already tuned
 rather than guessed, and the browser tuner stays the authority.
 
+Every painting turned down is recorded in `.claude/skills/add-painting/rejected.json` with
+what it failed on, so a candidate is sourced and measured once rather than every few
+months.
+
+### Variety
+
+A week is seven days on one painting, so the list in `puzzles.ts` is a running order and a
+player meets it one painting at a time over months. Three landscapes together is a season
+of the same picture; two paintings by one painter back to back reads as the game repeating
+itself, even though all fourteen days differ. Neither is visible in a diff — a new week is
+appended to the bottom of a long file and looks perfectly fine on its own.
+
+So each week declares a `genre` from a closed list, and `curation.test.ts` holds the order
+to four rules: no painter two weeks running, no genre three weeks running, no painter
+holding more than a third of the rotation, and at least four kinds of painting in play.
+Two weeks of a kind together is allowed — a pair reads as variety with a rhyme in it, and
+banning it would make the list hard to extend for no gain.
+
+The rules constrain the order, and the order is append-only: `daily.ts` maps the calendar
+onto `PUZZLES` by index, so a week that has shipped cannot be moved to satisfy a rule
+without moving every painting after it. A failure is therefore always about the painting
+being added, and the fix is a different painting rather than a different position. The one
+repeat that predates the rule -- Bruegel's *Tower of Babel* following his *Hunters in the
+Snow* -- is recorded in `GRANDFATHERED_REPEAT_PAINTER` for exactly that reason.
+
 ### Fairness
 
 Everything is fixed and identical for every player: which painting a week gets, which

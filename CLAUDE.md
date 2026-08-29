@@ -108,8 +108,16 @@ clock, resume, solve, result card).
   camouflage only from `diag-camouflage.mjs` (the real page at the winning framing) or
   `preview:week`, never from a composited preview.
 - Adding a whole new painting and its week: the `add-painting` skill walks the screening,
-  planning, tuning and verification end to end. No nudity in the paintings — the screening
-  step is a hard gate, not a preference. New weeks are always appended, never inserted.
+  planning, tuning and verification end to end. Three hard gates, all applied before any
+  work is done: the candidate is not in `.claude/skills/add-painting/rejected.json` (every
+  painting turned down is recorded there, with why); no nudity, including depicted
+  statuary; and it does not repeat the painter or extend a run of the genre at the tail of
+  the rotation. New weeks are always appended, never inserted — `daily.ts` indexes the
+  calendar into `PUZZLES`, so reordering moves every painting after it.
+- Each week declares a `genre`, and [src/game/curation.test.ts](src/game/curation.test.ts)
+  holds the running order to it: no painter twice running, no genre three times running,
+  no painter over a third of the rotation. `GRANDFATHERED_REPEAT_PAINTER` records the one
+  repeat that shipped before the rule; never add to it to quiet a failure.
 - The site is served at the root of the custom domain in `public/CNAME`
   (https://findme.ryangano.com). `base` in [vite.config.ts](vite.config.ts) is `/`, and
   `SITE_URL` in [src/game/share.ts](src/game/share.ts) and the local URLs in the
