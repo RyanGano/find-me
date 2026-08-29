@@ -283,21 +283,32 @@ export default function App() {
     stageRef.current?.focus();
   }, []);
 
+  // Putting the card away and going back to the painting are two different wishes, and
+  // only the card's own button means both. Dismissing it any other way leaves the view
+  // exactly where the player left it -- now that the card can be summoned back, losing
+  // your framing to a stray tap is the more expensive mistake of the two.
+  const closeResult = useCallback(() => setShowResult(false), []);
+
   const replay = useCallback(() => {
-    setShowResult(false);
+    closeResult();
     reset();
-  }, [reset]);
+  }, [closeResult, reset]);
+
+  // Solving used to be a one-way door: the card came down on any tap outside it and a
+  // refresh was the only way back to your own time. It is a panel like the others now,
+  // reachable from the badge or the clock for as long as the day lasts.
+  const reopenResult = useCallback(() => setShowResult(true), []);
 
   // The result card is a panel like the others, and opening one of the header panels on
   // a board that came back already solved stacked two cards on top of each other. Any
-  // click outside the result -- the scrim over the board, or a header button -- puts the
-  // player into free roam first, so only one panel is ever up.
+  // click outside the result -- the scrim over the board, or a header button -- puts it
+  // away first, so only one panel is ever up.
   const openPanel = useCallback(
     (open: (v: boolean) => void) => {
-      if (showResult) replay();
+      if (showResult) closeResult();
       open(true);
     },
-    [showResult, replay],
+    [showResult, closeResult],
   );
 
   const clock = solvedMs ?? (startedAt === null ? 0 : elapsed);
@@ -305,15 +316,35 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
+        {/* The only way to ask what the painting is. It looks like the title and mostly
+            behaves like one; most players will never think to press it, which is the
+            point -- the header has no room for a button that answers a question hardly
+            anyone asks mid-hunt, and every solve names the painting on the result card
+            anyway. The weekday used to sit here too, and took a third of the bar to
+            tell people something they either already knew or did not care about; the
+            how-to panel still names the rung, which is where it was doing real work. */}
         <h1 className="title">
-          Find Me <span className="title-day">#{puzzleNumber(day)}</span>
-          {/* Which rung of the week this is. Sunday being brutal is the design; without
-              saying so, a player meeting it first just thinks the game is broken. */}
-          <span className="title-rung">{RAMP[puzzle.dayOfWeek].label}</span>
+          <button
+            type="button"
+            className="title-btn"
+            onClick={() => openPanel(setShowCredits)}
+            title="About the painting"
+          >
+            Find Me
+          </button>{' '}
+          <span className="title-day">#{puzzleNumber(day)}</span>
         </h1>
-        <p className={`clock${running ? ' is-running' : ''}${solvedMs !== null ? ' is-done' : ''}`}>
-          {startedAt === null && solvedMs === null ? 'ready' : formatTime(clock)}
-        </p>
+        {/* Second door back to the result, for anyone whose eye goes up to their time
+            rather than down to the badge. Costs no space: it is the clock either way. */}
+        {solvedMs !== null ? (
+          <button type="button" className="clock is-done" onClick={reopenResult} title="Show your result">
+            {formatTime(clock)}
+          </button>
+        ) : (
+          <p className={`clock${running ? ' is-running' : ''}`}>
+            {startedAt === null ? 'ready' : formatTime(clock)}
+          </p>
+        )}
         <div className="topbar-actions">
           {solvedMs !== null && (
             <button
@@ -358,14 +389,6 @@ export default function App() {
           <button
             type="button"
             className="btn btn-icon"
-            onClick={() => openPanel(setShowCredits)}
-            title="About the painting"
-          >
-            i
-          </button>
-          <button
-            type="button"
-            className="btn btn-icon"
             onClick={() => openPanel(setShowHowTo)}
             title="How to play"
           >
@@ -402,7 +425,8 @@ export default function App() {
           puzzle={puzzle}
           targetSize={targetSize}
           match={match}
-          solved={solvedMs !== null}
+          solvedMs={solvedMs}
+          onReopen={reopenResult}
         />
 
         {showCredits && <Credits puzzle={puzzle} onDismiss={() => setShowCredits(false)} />}
@@ -410,7 +434,7 @@ export default function App() {
         {showHowTo && <HowTo thing={puzzle.thing} rung={RAMP[puzzle.dayOfWeek].label} onDismiss={dismissHowTo} />}
 
         {showResult && solvedMs !== null && (
-          <div className="scrim" onPointerDown={replay} />
+          <div className="scrim" onPointerDown={closeResult} />
         )}
 
         {showResult && solvedMs !== null && (

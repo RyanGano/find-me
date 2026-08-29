@@ -1,4 +1,5 @@
 import { Shape } from './Shape';
+import { formatTime } from '../game/format';
 import type { MatchState } from '../game/match';
 import type { Puzzle } from '../game/types';
 
@@ -7,7 +8,10 @@ interface Props {
   /** The exact on-screen size the hidden shape must be matched to. */
   targetSize: number;
   match: MatchState | null;
-  solved: boolean;
+  /** The finished time, or null while the hunt is still on. */
+  solvedMs: number | null;
+  /** Put the result card back up. Only reachable once solved. */
+  onReopen: () => void;
 }
 
 /**
@@ -32,11 +36,20 @@ interface Props {
  * making fine adjustments. All three words are short now, and the label reserves a
  * fixed width, so the card and the shape inside it hold still for the whole run. The
  * drawing says what to look for better than the words did anyway.
+ *
+ * Once the day is solved the badge is the way back to the result card. Dismissing that
+ * card used to be one stray tap from irreversible -- a refresh was the only way to see
+ * your own time again -- and this is the element already carrying the run's state, in
+ * the corner the player is already looking at, with nothing left to say after the
+ * solve. It shows the time rather than "found" precisely so there is something worth
+ * tapping.
  */
-export function ReferenceCard({ puzzle, targetSize, match, solved }: Props) {
+export function ReferenceCard({ puzzle, targetSize, match, solvedMs, onReopen }: Props) {
+  const solved = solvedMs !== null;
   const state = solved ? ' is-solved' : match?.near ? ' is-near' : '';
-  return (
-    <div className={`reference${state}`} aria-label={`Find this ${puzzle.thing}`}>
+
+  const inner = (
+    <>
       <div className="reference-well" style={{ width: targetSize, height: targetSize }}>
         <Shape
           shape={puzzle.target.shape}
@@ -45,8 +58,28 @@ export function ReferenceCard({ puzzle, targetSize, match, solved }: Props) {
         />
       </div>
       <p className="reference-label">
-        {solved ? 'found' : match?.near ? 'nearly' : 'find me'}
+        {solved ? `${formatTime(solvedMs)} ›` : match?.near ? 'nearly' : 'find me'}
       </p>
+    </>
+  );
+
+  if (solved) {
+    return (
+      <button
+        type="button"
+        className={`reference${state}`}
+        onClick={onReopen}
+        title="Show your result"
+        aria-label={`Solved in ${formatTime(solvedMs)}. Show your result.`}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <div className={`reference${state}`} aria-label={`Find this ${puzzle.thing}`}>
+      {inner}
     </div>
   );
 }

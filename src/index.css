@@ -77,13 +77,31 @@ body,
   font-weight: 500;
 }
 
-.title-rung {
-  color: var(--muted);
-  font-size: 0.72em;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  opacity: 0.75;
-  margin-left: 0.5em;
+/* The words "Find Me" are the only way to ask what the painting is. At rest they are
+   the title and nothing else; the underline arrives only for a pointer or a keyboard,
+   so the header stays quiet while remaining reachable to anyone who goes looking. */
+.title-btn {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 4px;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.title-btn:hover {
+  text-decoration-color: var(--muted);
+}
+
+.title-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .clock {
@@ -104,6 +122,20 @@ body,
 .clock.is-done {
   color: var(--ok);
   border-color: var(--ok);
+}
+
+/* Once the run is over the clock is a button back to the result. Same pill either way:
+   the element does not move, grow, or restyle, it just becomes pressable. */
+button.clock {
+  font-family: inherit;
+  font-weight: inherit;
+  background: none;
+  cursor: pointer;
+}
+
+button.clock:focus-visible {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
 }
 
 .topbar-actions {
@@ -354,6 +386,29 @@ body,
 
 .reference.is-solved .reference-label {
   color: var(--ok);
+}
+
+/*
+ * Only the finished badge takes a press. During the hunt it must stay transparent to
+ * pointers -- it sits over the stage, and a badge that swallowed a drag would eat part
+ * of every gesture that began in that corner.
+ */
+button.reference {
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.reference:hover .reference-well,
+button.reference:focus-visible .reference-well {
+  box-shadow: 0 0 0 2px var(--ok);
+  filter: brightness(1.08);
+}
+
+button.reference:focus-visible {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
 }
 
 .reference-label {
