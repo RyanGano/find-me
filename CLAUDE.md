@@ -107,6 +107,9 @@ clock, resume, solve, result card).
 - Adding or moving a puzzle: see "Adding a puzzle" in [README.md](README.md). Judge
   camouflage only from `diag-camouflage.mjs` (the real page at the winning framing) or
   `preview:week`, never from a composited preview.
+- Adding a whole new painting and its week: the `add-painting` skill walks the screening,
+  planning, tuning and verification end to end. No nudity in the paintings — the screening
+  step is a hard gate, not a preference. New weeks are always appended, never inserted.
 - The site is served at the root of the custom domain in `public/CNAME`
   (https://findme.ryangano.com). `base` in [vite.config.ts](vite.config.ts) is `/`, and
   `SITE_URL` in [src/game/share.ts](src/game/share.ts) and the local URLs in the
