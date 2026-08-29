@@ -304,21 +304,22 @@ export default function App() {
     if (showHowTo) dismissHowTo();
   }, [showResult, closeResult, showCredits, showHowTo, dismissHowTo]);
 
-  // Solving used to be a one-way door: the card came down on any tap outside it and a
-  // refresh was the only way back to your own time. It is a panel like the others now,
-  // reachable from the badge or the clock for as long as the day lasts.
-  const reopenResult = useCallback(() => setShowResult(true), []);
-
-  // The result card is a panel like the others, and opening one of the header panels on
-  // a board that came back already solved stacked two cards on top of each other. Any
-  // click outside the result -- the scrim over the board, or a header button -- puts it
-  // away first, so only one panel is ever up.
-  const openPanel = useCallback(
-    (open: (v: boolean) => void) => {
-      if (showResult) closeResult();
-      open(true);
+  // Every button that opens a panel is a switch, not a door. Solving used to be one-way
+  // -- the result card came down on any tap and a refresh was the only way back to your
+  // own time -- so the clock and the badge lead back to it for as long as the day lasts.
+  // Whatever is up comes down first, so only one panel is ever on the board; pressing
+  // the button belonging to the panel already up just puts it away, rather than closing
+  // it and opening it again in the same tap.
+  const togglePanel = useCallback(
+    (panel: 'result' | 'credits' | 'howto') => {
+      const wasOpen = panel === 'result' ? showResult : panel === 'credits' ? showCredits : showHowTo;
+      dismissPanels();
+      if (wasOpen) return;
+      if (panel === 'result') setShowResult(true);
+      else if (panel === 'credits') setShowCredits(true);
+      else setShowHowTo(true);
     },
-    [showResult, closeResult],
+    [showResult, showCredits, showHowTo, dismissPanels],
   );
 
   const clock = solvedMs ?? (startedAt === null ? 0 : elapsed);
@@ -337,7 +338,7 @@ export default function App() {
           <button
             type="button"
             className="title-btn"
-            onClick={() => openPanel(setShowCredits)}
+            onClick={() => togglePanel('credits')}
             title="About the painting"
           >
             Find Me
@@ -347,7 +348,7 @@ export default function App() {
         {/* Second door back to the result, for anyone whose eye goes up to their time
             rather than down to the badge. Costs no space: it is the clock either way. */}
         {solvedMs !== null ? (
-          <button type="button" className="clock is-done" onClick={reopenResult} title="Show your result">
+          <button type="button" className="clock is-done" onClick={() => togglePanel('result')} title="Show your result">
             {formatTime(clock)}
           </button>
         ) : (
@@ -399,7 +400,7 @@ export default function App() {
           <button
             type="button"
             className="btn btn-icon"
-            onClick={() => openPanel(setShowHowTo)}
+            onClick={() => togglePanel('howto')}
             title="How to play"
           >
             ?
@@ -436,7 +437,7 @@ export default function App() {
           targetSize={targetSize}
           match={match}
           solvedMs={solvedMs}
-          onReopen={reopenResult}
+          onReopen={() => togglePanel('result')}
         />
 
         {showCredits && <Credits puzzle={puzzle} onDismiss={() => setShowCredits(false)} />}
