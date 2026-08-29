@@ -671,12 +671,3 @@ body,
   color: var(--text);
 }
 
-.privacy {
-  margin: 0 0 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-
-.privacy p {
-  margin-bottom: 10px;
-}

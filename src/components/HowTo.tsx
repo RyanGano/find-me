@@ -21,6 +21,29 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
     setCountedState(next);
   };
 
+  // The tally note takes the panel over rather than unfolding below the rules: it is a
+  // thing the player has gone looking for, and reading it next to the how-to left them
+  // scrolling past the game to find the one control it exists for.
+  if (showPrivacy) {
+    return (
+      <div className="howto" role="dialog" aria-label="What’s counted">
+        <h2>What&rsquo;s counted</h2>
+        <p className="howto-note">
+          The only thing this site records is that a run happened, whether it was solved,
+          and how long it took — nothing that identifies you.
+        </p>
+        <div className="howto-foot">
+          <button type="button" className="btn btn-primary" onClick={() => setShowPrivacy(false)}>
+            Back
+          </button>
+          <button type="button" className="btn btn-quiet" onClick={toggleCounted}>
+            {counted ? 'Don’t count my runs' : 'Counting is off — count them again'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="howto" role="dialog" aria-label="How to play">
       <h2>How to play</h2>
@@ -51,18 +74,6 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         each day harder than the last. Today is <strong>{rung}</strong>.
       </p>
 
-      {showPrivacy && (
-        <div className="privacy" id="privacy-note">
-          <p className="howto-note">
-            The only thing this site records is that a run happened, whether it was solved,
-            and how long it took — nothing that identifies you.
-          </p>
-          <button type="button" className="btn btn-quiet" onClick={toggleCounted}>
-            {counted ? 'Don’t count my runs' : 'Counting is off — count them again'}
-          </button>
-        </div>
-      )}
-
       <div className="howto-foot">
         <button type="button" className="btn btn-primary" onClick={onDismiss}>
           Close
@@ -70,9 +81,7 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         <button
           type="button"
           className="btn btn-quiet"
-          onClick={() => setShowPrivacy((prev) => !prev)}
-          aria-expanded={showPrivacy}
-          aria-controls="privacy-note"
+          onClick={() => setShowPrivacy(true)}
         >
           What&rsquo;s counted
         </button>
