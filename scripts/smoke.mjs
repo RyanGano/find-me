@@ -47,7 +47,7 @@ const readTransform = (page) =>
 // ---------------------------------------------------------------- desktop playthrough
 
 console.log('\n== desktop playthrough ==');
-const page = await browser.newPage({ viewport: { width: 1100, height: 800 } });
+const page = await browser.newPage({ viewport: { width: 1100, height: 800 }, hasTouch: true });
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 
@@ -55,7 +55,8 @@ await page.goto(URL, { waitUntil: 'networkidle' });
 await page.waitForSelector('.stage-image');
 await page.screenshot({ path: `${OUT}/1-howto.png` });
 
-await page.getByRole('button', { name: 'Start' }).click();
+// The how-to's own button; it used to say "Start".
+await page.getByRole('button', { name: 'Close', exact: true }).click();
 await page.waitForTimeout(300);
 await page.screenshot({ path: `${OUT}/2-board.png` });
 
@@ -165,6 +166,21 @@ check('the badge turns green on the solve', await page.$('.reference.is-solved')
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForSelector('.result');
 check('result survives a reload', (await page.textContent('.result-time')) === time);
+
+// The badge sits under the scrim that dismisses the result card. Closing that card on
+// the pointerdown took the scrim out from under the finger mid-tap, and the click the
+// browser sends afterwards landed on the badge and put the card straight back up -- so
+// the card flashed rather than closing. Only a real tap shows it: a mouse click never
+// changes target between press and release.
+{
+  const box = await page.locator('button.reference').boundingBox();
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForTimeout(250);
+  check('a tap on the badge closes the result card', await page.$('.result') === null);
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForTimeout(250);
+  check('a second tap on the badge brings it back', await page.$('.result') !== null);
+}
 
 // ------------------------------------------------------------------ gesture regressions
 

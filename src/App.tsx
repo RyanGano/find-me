@@ -444,7 +444,13 @@ export default function App() {
 
         {showHowTo && <HowTo thing={puzzle.thing} rung={RAMP[puzzle.dayOfWeek].label} onDismiss={dismissHowTo} />}
 
-        {anyPanel && <div className="scrim" onPointerDown={dismissPanels} />}
+        {/* Dismissed on the click, not the pointerdown. The badge under the corner of
+            the scrim is the way back to the result card, and closing on the way down
+            took the scrim out from under the finger before the tap had finished -- the
+            click the browser sends afterwards then landed on the badge and put the card
+            straight back up, so the result flashed instead of closing. Waiting for the
+            click keeps the scrim there to absorb it. */}
+        {anyPanel && <div className="scrim" onClick={dismissPanels} />}
 
         {showResult && solvedMs !== null && (
           <ResultCard
