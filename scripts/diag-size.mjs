@@ -7,7 +7,7 @@
  */
 import { chromium } from 'playwright';
 
-const URL = process.argv[2] ?? 'http://localhost:4173/find-me/';
+const URL = process.argv[2] ?? 'http://localhost:4173/';
 
 const browser = await chromium.launch({ channel: 'chrome' });
 

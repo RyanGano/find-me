@@ -15,7 +15,7 @@ import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { RAMP } from '../src/game/difficulty.ts';
 
-const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/find-me/';
+const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/';
 const image = process.argv[2] ?? 'mona';
 const out = process.argv[3] ?? `.source-images/week-${image}.jpg`;
 const SCALE = 0.62;

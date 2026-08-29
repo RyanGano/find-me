@@ -1,7 +1,7 @@
 import { formatTime } from './format';
 import type { Puzzle } from './types';
 
-export const SITE_URL = 'https://ryangano.github.io/find-me/';
+export const SITE_URL = 'https://findme.ryangano.com/';
 
 /**
  * A spoiler-free result line: the thing found and how long it took, plus a five-block

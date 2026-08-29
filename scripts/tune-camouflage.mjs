@@ -25,7 +25,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { RAMP } from '../src/game/difficulty.ts';
 import { paintFor } from './lib/paint.mjs';
 
-const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/find-me/';
+const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/';
 const FILE = 'src/game/puzzles.ts';
 const args = process.argv.slice(2);
 const solve = args.includes('--solve');

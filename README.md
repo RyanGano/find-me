@@ -5,7 +5,7 @@ snowflake, a key, a crescent — a different one every day. Find it, then frame 
 appears at the **same size and angle** as the badge in the corner. The clock starts on
 your first move.
 
-Play: **https://ryangano.github.io/find-me/**
+Play: **https://findme.ryangano.com/**
 
 ## How it plays
 
@@ -289,7 +289,7 @@ else.
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173/find-me/
+npm run dev        # http://localhost:5173/
 npm test           # unit tests (transform maths, win condition, the weekly ramp)
 npm run build      # typecheck + production build into dist/
 ```
@@ -382,8 +382,9 @@ further above its native resolution at the moment of the match, so there is a fl
 ## Deployment
 
 Pushing to `main` runs lint, tests and a build, then publishes `dist/` to GitHub Pages.
-The site is served from a subpath, so `base` in `vite.config.ts` and `SITE_URL` in
-`src/game/share.ts` both have to agree with the repository name.
+The site is served from the custom domain in `public/CNAME`, at the root rather than a
+subpath, so `base` in `vite.config.ts` stays `/` and `SITE_URL` in `src/game/share.ts`
+has to match the domain.
 
 ## Counting
 

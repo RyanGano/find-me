@@ -17,7 +17,7 @@
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 
-const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/find-me/';
+const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/';
 const id = process.argv[2] ?? 'mona';
 const variants = JSON.parse(process.argv[3] ?? '[{}]');
 const out = process.argv[4] ?? '.source-images/real.jpg';
