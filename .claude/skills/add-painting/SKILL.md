@@ -1,6 +1,6 @@
 ---
 name: add-painting
-description: Add a new painting to Find Me and plan, tune and verify its whole Monday-to-Sunday week of puzzles. Use when the user asks to "add a painting", "add a new week", "add another artwork", "put a new painting in the rotation", or names a specific painting to add. Screens the candidate against the rejected list, for nudity, and for variety against the weeks already in the rotation; appends it to the end of the puzzle list so nobody's calendar shifts; and refuses to finish until the week measures well and the suite is green.
+description: Add a new painting to Find Me and plan, tune and verify its whole Monday-to-Sunday week of puzzles. Use when the user asks to "add a painting", "add a new week", "add another artwork", "put a new painting in the rotation", or names a specific painting to add. Screens the candidate against the rejected list, for nudity, and for variety against the weeks already in the rotation; appends it to the end of the puzzle list so nobody's calendar shifts; refuses to finish until the week measures well and the suite is green; and never reveals where anything is hidden, so the person who asked for the week can still play it.
 ---
 
 # Add a painting
@@ -14,7 +14,39 @@ Read `CLAUDE.md` and the **Adding a puzzle** and **Difficulty** sections of `REA
 before starting. The README is the record of which obvious ideas have already been tried
 and failed; don't re-derive them.
 
-## Rule 0 — check the rejected list first
+## Rule 0 — the person you are reporting to plays this game
+
+They asked for the week so they could hunt it themselves. Every hiding place you name is
+one day of the game destroyed for them, permanently, and it cannot be given back.
+
+So: **never say where anything ended up.** Not coordinates, not "upper-left", not "on the
+melon", not "in the dark leaves behind the plate", not which object or which quarter of
+the canvas. Not for the day you kept, and not for the spot you rejected either — a
+retired spot still tells them where to look, and where not to.
+
+This governs everything you write: progress notes, the final summary, the commit message,
+and any file you point them at. `git log` is read months later, when the week is live.
+
+What you *can* report freely, and should:
+
+- verdicts and numbers — `rate` figures, each day's `scan` against its `want`, `ratio`,
+  opacity, the shape and size per day;
+- that a day failed and had to be moved, and *why it failed* in terms of the measurement
+  ("solved to a very low opacity and was not visible at the match framing");
+- anything you learned about the painting, the tools, or the ramp;
+- Rule 2 findings — where nudity is on a canvas is a screening fact, and that painting is
+  being rejected, not played.
+
+Describe a failure by its measurement, never by its address.
+
+The renders are spoilers in themselves: `preview:week` circles all seven answers, and
+`diag-camouflage` centres the frame on one. You have to look at them — the eye is the
+final authority in step 7 — but keep that to the minimum the judgement needs, view them
+and move on, and never narrate, re-post or annotate what they show. Don't send the user
+to `.source-images/week-NAME.jpg` either; it is a spoiler sheet with their whole week on
+it.
+
+## Rule 1 — check the rejected list first
 
 `rejected.json`, next to this file, is every painting already considered and turned down.
 **Read it before sourcing anything.** Sourcing, resizing and measuring a candidate is
@@ -25,13 +57,13 @@ second look that was correctly refused on the first.
 If the candidate is on the list, say so, give the recorded reason, and propose something
 else. A recorded rejection is only reopened if the user explicitly overrides it.
 
-**Every rejection gets appended to that file**, whatever stage it failed at — Rule 1, the
+**Every rejection gets appended to that file**, whatever stage it failed at — Rule 2, the
 variety check, `npm run rate`, or the planner giving up. That is what stops the list going
 stale. One entry, with `title`, `artist`, `reason` from the closed set in the file's
 `comment`, a `note` saying what was actually measured or seen, and `added` as an absolute
 date.
 
-## Rule 1 — no nudity
+## Rule 2 — no nudity
 
 **Screen the candidate before anything else, and refuse any painting that fails.**
 
@@ -62,7 +94,7 @@ Safe territory, if you're asked to suggest candidates: landscape, seascape, city
 still life, architecture, clothed portraiture, and abstraction. Every painting must also
 be **public domain** and scanned from Wikimedia Commons — the credits panel says so.
 
-## Rule 2 — a rotation, not a run
+## Rule 3 — a rotation, not a run
 
 A player meets the rotation one painting at a time over months, so what matters is not
 whether a painting is good but whether it is *different from its neighbours*. Three
@@ -91,9 +123,9 @@ the wrong painting *for this slot* — say so and propose a contrasting one. Rec
 a painting that is merely mistimed should be suggested again later, not blacklisted.
 
 Note that the rules constrain the order and the order is append-only, so a failure cannot
-be fixed by moving weeks around (Rule 3). The fix is always a different painting.
+be fixed by moving weeks around (Rule 4). The fix is always a different painting.
 
-## Rule 3 — always append, never insert
+## Rule 4 — always append, never insert
 
 `daily.ts` maps calendar days onto `PUZZLES` by index. Inserting or reordering a week
 changes which painting every future day lands on, and hands people finished boards for
@@ -110,13 +142,30 @@ pushing on.
 
 ### 1. Screen and source the image
 
-Apply Rules 0, 1 and 2 in that order — rejected list, nudity, then variety against the
+Apply Rules 1, 2 and 3 in that order — rejected list, nudity, then variety against the
 tail of the rotation. They are cheap and they all come before any work that costs time, so
 none of them is worth deferring "until we see how it measures".
 
 Then put the highest-resolution scan available in `.source-images/NAME.jpg`.
 Pick a short lowercase `NAME` with no punctuation — it becomes the asset name, the puzzle
 id prefix (`NAME-mon` … `NAME-sun`) and the `image` field.
+
+Check the size *before* downloading — the Commons API reports it, and the best-known
+version of a painting is often the one that only exists as a small scan:
+
+```bash
+curl -s -A "find-me/1.0" "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=SEARCH+TERMS&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|size|extmetadata&format=json"
+```
+
+Filter the results yourself for width >= 3000 and landscape orientation, and read
+`extmetadata.LicenseShortName` to confirm public domain. Two things this saves:
+
+- **Landscape beats portrait, and big beats famous.** The asset is capped at 2600px wide
+  and never enlarged, so a 1768px-wide scan ships at 1768px. Washington Crossing the
+  Delaware is on the rejected list for having too little ground to hide in at 2600x1666;
+  a small or tall scan walks into the same failure with less canvas still.
+- Searching for the celebrated version of a title can return only a 768px file while a
+  different, equally good work by the same painter is on Commons at 4570px.
 
 `.source-images/` is gitignored: the source scan is never committed, only the generated
 asset in `public/puzzles/`.
@@ -171,7 +220,11 @@ of them, widen that list — but widen it because the painting does not fit, nev
 a choice that would trip the variety rules.
 
 While in the file, update the count in the `WEEKS` doc comment ("Eight paintings is
-therefore eight weeks"), and the painting count in `README.md` if it states one.
+therefore eight weeks"), and the painting count in `README.md` — it states one as
+"Eight paintings therefore give eight weeks -- fifty-six days", so the day count needs
+advancing by seven too. Leave alone any README number that records what was *measured*
+across the paintings of the day ("a floor of 1.5 measured across the eight paintings");
+that is a historical result, not a count of the rotation.
 
 ### 5. Plan the hiding places
 
@@ -188,6 +241,11 @@ some rung. That's the same verdict as a bad `rate`: replace the painting.
 Read the printed report. Each day's measured `texture` should be near the `want` for its
 rung, and `company` should be non-zero on Monday and Sunday especially.
 
+Re-planning re-plans the **whole week**, not the one day you were unhappy with — the
+planner places the seven days together. So after any `avoid.json` change, re-tune and
+re-judge all seven, and never assume a day you already approved survived unchanged. This
+is only safe before the week ships; a week players have been served is frozen.
+
 ### 6. Tune the camouflage in a real browser
 
 Needs the site running. Judge camouflage **only** from the browser tools — never from a
@@ -198,6 +256,11 @@ npm run build
 npx vite preview --port 4173 &
 npm run camouflage -- --solve NAME
 ```
+
+`vite preview` serves `dist/`, so **every** browser tool — the tuner, `preview:week` and
+`diag-camouflage` alike — measures the last build, not the working tree. Re-run
+`npm run build` after each re-plan and each re-tune, before rendering anything. Skip it
+and you will judge the previous week and believe it.
 
 This binary-searches each day's opacity against its rung's `scan` target and rewrites the
 seven lines with the solved `fill`, `opacity`, `ratio` and `scan`.
@@ -213,6 +276,14 @@ Then read the output, because solving is not the same as succeeding:
 - **`dimmed: it was a beacon once framed`** is usually a spot on flat paint whose local
   window took in something unrelated. Worth moving if it's Monday or Tuesday.
 - **`scan` far off its `want`** on several days — the week isn't ramping.
+
+A clean report is not proof. A day can solve to its `scan` target exactly, report a
+healthy `ratio`, print no warning at all, and still be a shape that is simply not there
+when you look at the match framing — the measurement is a whole-frame statistic and a
+small shape on dark, busy paint can satisfy it without ever becoming visible. **A solved
+opacity below about 0.15 is the tell**; treat it as a day to look at hard in step 7
+rather than a day that came out easy. The one that got through this way solved to 0.144,
+was invisible by eye, and came back at 0.34 with a ratio of 2.44 once it was moved.
 
 To move a day off a bad spot, add a circle to `scripts/avoid.json` under the painting's
 key (`{ "cx": ..., "cy": ..., "r": 260 }`) and re-run steps 5 and 6. That file is how every
@@ -234,6 +305,17 @@ Actually open the output images and look at them. Judge:
   the eye lands on.
 - **Sunday** — invisible at the fitted view, unmistakable once framed.
 - **The ramp** — each day plausibly harder than the one before, not a step change.
+
+**Judge the fitted view against a control, not against your expectations.** The fitted
+panel of `diag-camouflage` is a small render of a whole painting, and at that scale a
+shipped, known-good Monday is invisible too. So before condemning a Monday for being too
+hard, render a Monday already in the rotation the same way and compare the two — if they
+read alike, the day is fine and it is the render that is unfair. The matched panel has no
+such problem: what you see there is what the player gets, so it is the one to trust for
+"is this shape actually present".
+
+Write the diag output to the scratchpad rather than `.source-images/`, and see Rule 0 on
+what not to say about any of these renders.
 
 If a day fails on sight, move it via `avoid.json` and go back to step 5. The eye is the
 final authority here; the measurements exist to make it repeatable.
@@ -266,6 +348,9 @@ node scripts/smoke.mjs
 Finally, play the new week in the dev server via the practice URLs — `?puzzle=NAME-mon`
 through `?puzzle=NAME-sun`. They aren't recorded and don't affect a streak.
 
+`npm run lint` has two standing warnings that are not yours — an unused `searchCost` in
+`plan-weeks.mjs` and a `set-state-in-effect` in `App.tsx`. Anything beyond those two is.
+
 ### 9. Commit
 
 Commit `src/game/puzzles.ts`, `public/puzzles/NAME.jpg`, `scripts/resize-images.mjs`, any
@@ -293,5 +378,10 @@ away with nothing committed, and it is exactly the case the file exists for.
 - **Don't reorder weeks that players have already been served** to satisfy
   `curation.test.ts`. Reordering moves every painting after the one that moved, and hands
   people finished boards for puzzles they never played. Change the painting instead.
+- **Don't say where a shape ended up** — in a summary, a progress note, or a commit
+  message. See Rule 0. The reward for a week well built is that the person who asked for
+  it still gets to play it.
+- **Don't trust a clean tuner report over your own eyes.** Every day gets looked at in
+  step 7, including the ones that reported perfectly.
 - **Don't leave a rejection unrecorded.** An hour spent re-measuring a painting that was
   turned down last month is the exact cost `rejected.json` exists to avoid.
