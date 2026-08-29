@@ -288,6 +288,18 @@ export default function App() {
     reset();
   }, [reset]);
 
+  // The result card is a panel like the others, and opening one of the header panels on
+  // a board that came back already solved stacked two cards on top of each other. Any
+  // click outside the result -- the scrim over the board, or a header button -- puts the
+  // player into free roam first, so only one panel is ever up.
+  const openPanel = useCallback(
+    (open: (v: boolean) => void) => {
+      if (showResult) replay();
+      open(true);
+    },
+    [showResult, replay],
+  );
+
   const clock = solvedMs ?? (startedAt === null ? 0 : elapsed);
 
   return (
@@ -346,7 +358,7 @@ export default function App() {
           <button
             type="button"
             className="btn btn-icon"
-            onClick={() => setShowCredits(true)}
+            onClick={() => openPanel(setShowCredits)}
             title="About the painting"
           >
             i
@@ -354,7 +366,7 @@ export default function App() {
           <button
             type="button"
             className="btn btn-icon"
-            onClick={() => setShowHowTo(true)}
+            onClick={() => openPanel(setShowHowTo)}
             title="How to play"
           >
             ?
@@ -396,6 +408,10 @@ export default function App() {
         {showCredits && <Credits puzzle={puzzle} onDismiss={() => setShowCredits(false)} />}
 
         {showHowTo && <HowTo thing={puzzle.thing} rung={RAMP[puzzle.dayOfWeek].label} onDismiss={dismissHowTo} />}
+
+        {showResult && solvedMs !== null && (
+          <div className="scrim" onPointerDown={replay} />
+        )}
 
         {showResult && solvedMs !== null && (
           <ResultCard

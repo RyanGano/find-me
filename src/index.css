@@ -371,9 +371,21 @@ body,
 
 /* ---------- panels ---------- */
 
+/*
+ * Catches everything aimed at the board while the result card is up: the card is the
+ * only thing on screen that should answer, and a stray drag behind it used to move a
+ * painting the player could not see moving.
+ */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+}
+
 .howto,
 .result {
   position: absolute;
+  z-index: 5;
   left: 50%;
   bottom: 14px;
   transform: translateX(-50%);
