@@ -650,3 +650,33 @@ body,
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ---------- what's counted ---------- */
+
+/* Close leads; the tally note sits opposite it, quieter, for whoever goes looking. */
+.howto-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.btn-quiet {
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 7px 13px;
+}
+
+.btn-quiet:hover {
+  color: var(--text);
+}
+
+.privacy {
+  margin: 0 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.privacy p {
+  margin-bottom: 10px;
+}

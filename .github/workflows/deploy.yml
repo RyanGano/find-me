@@ -32,7 +32,11 @@ jobs:
 
       - run: npm test
 
+      # The tally endpoint. A repository variable rather than a secret: it is baked
+      # into the public bundle either way, and a fork without it simply does not count.
       - run: npm run build
+        env:
+          VITE_COUNT_URL: ${{ vars.COUNT_URL }}
 
       - uses: actions/configure-pages@v5
 

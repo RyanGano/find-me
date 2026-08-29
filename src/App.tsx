@@ -5,6 +5,7 @@ import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
 import { UpdateNotice } from './components/UpdateNotice';
+import { count, newRunId } from './game/count';
 import { puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
@@ -70,6 +71,9 @@ export default function App() {
   // How the run is being played, for the Find Me Age. The collector rides along with the
   // banked run, so a back-swipe costs nothing; the finished metrics go with the result.
   const tracker = useRef<Tracker>(saved?.k ?? newTracker());
+  // Identifies this run to the daily tally, and nothing beyond it. A resumed run carries
+  // the id it was banked with, so a back-swipe is not counted as a second player.
+  const runId = useRef<string>(saved?.r ?? newRunId());
   const [metrics, setMetrics] = useState<RunMetrics | null>(prior?.m ?? null);
   const [showResult, setShowResult] = useState(Boolean(prior));
   // The reveal ring is a spoiler once the hunt is over, so let the player hide it
@@ -149,6 +153,15 @@ export default function App() {
     });
   }, [startedAt, solvedMs, elapsed]);
 
+  // The clock starting is what counts as a play. Reported once; a resumed run was
+  // already reported when it first began, under the same id.
+  const reportedStart = useRef(Boolean(saved) || isPractice);
+  useEffect(() => {
+    if (startedAt === null || reportedStart.current) return;
+    reportedStart.current = true;
+    count(runId.current, day, 'start');
+  }, [startedAt, day]);
+
   const handleInteract = useCallback(() => {
     if (solvedMs !== null) return;
     setStartedAt((prev) => prev ?? performance.now());
@@ -205,6 +218,7 @@ export default function App() {
     if (!isPractice) {
       saveResult(day, ms, puzzle.version, run);
       clearProgress();
+      count(runId.current, day, 'solved', ms);
     }
     setStats(getStats(day));
   }, [match?.solved, running, startedAt, day, isPractice, puzzle.version]);
@@ -231,17 +245,22 @@ export default function App() {
       const run = live.current;
       const box = stage.current;
       if (!run || !box) return;
+      // Read the clock now, not at the last render: a run banked while it is still live
+      // is worth exactly what it reads at the moment the page goes away.
+      const ms = run.paused ? run.elapsed : performance.now() - run.startedAt;
       saveProgress({
         day,
         v: puzzle.version,
-        // Read the clock now, not at the last render: a run banked while it is still live
-        // is worth exactly what it reads at the moment the page goes away.
-        ms: run.paused ? run.elapsed : performance.now() - run.startedAt,
+        ms,
         t: run.t,
         w: box.w,
         h: box.h,
         k: tracker.current,
+        r: runId.current,
       });
+      // A run the player walked away from. If they come back and solve it, the solve
+      // supersedes this; if they never do, this is how long they lasted.
+      count(runId.current, day, 'left', ms);
     };
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') bank();

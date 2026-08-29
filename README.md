@@ -385,6 +385,20 @@ Pushing to `main` runs lint, tests and a build, then publishes `dist/` to GitHub
 The site is served from a subpath, so `base` in `vite.config.ts` and `SITE_URL` in
 `src/game/share.ts` both have to agree with the repository name.
 
+## Counting
+
+The site keeps an anonymous tally: how many runs are started each day, how many are
+solved, and how long both take. One row per run, keyed by a random id the page mints when
+the clock starts and forgets when the run ends -- no account, no cookie, and nothing that
+outlives a single run, so the rows cannot be grouped by person even in principle. Practice
+runs are never counted.
+
+`What's counted` in the how-to panel says as much to the player, and switches it off.
+
+The client half is `src/game/count.ts`, and it posts to whatever `VITE_COUNT_URL` the
+build was given. Everything on the other end of that URL -- where the rows go, and how to
+read them -- is deliberately not in this repository.
+
 ## Credits
 
 All paintings are in the public domain, sourced from Wikimedia Commons. The `i` button in

@@ -138,6 +138,12 @@ export interface Progress {
    * Optional: a run banked by an older build has no collector, and gets a fresh one.
    */
   k?: Tracker;
+  /**
+   * The run id used for the daily tally, so a resumed run keeps reporting as the run it
+   * already was rather than counting as a second player. Optional: a run banked by an
+   * older build has none, and reports under a fresh one. See `count.ts`.
+   */
+  r?: string;
   /** When it was stored, so a run left open overnight is not resumed days later. */
   at: string;
 }

@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .source-images/
+
+# Everything about where the tally is stored, and how to reach it. Never committed.
+/local/
