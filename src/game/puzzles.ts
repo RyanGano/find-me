@@ -48,7 +48,7 @@ interface WeekSeed {
  *
  * A player gets a whole week with one painting and seven different things to find in
  * it, each harder than the last -- see `difficulty.ts` for what "harder" means and how
- * each rung is measured. Eight paintings is therefore eight weeks, not eight days.
+ * each rung is measured. Nine paintings is therefore nine weeks, not nine days.
  *
  * The order of this list is held to a spread of painters and kinds by
  * `curation.test.ts`; a painting that has shipped cannot be moved without moving every
@@ -206,6 +206,24 @@ const WEEKS: WeekSeed[] = [
       { shape: 'crescent', cx: 257, cy: 617, size: 28, angle: -70, fill: '#648253', opacity: 0.344, blend: 'multiply', blur: 0.5, ratio: 2.18, scan: 0.498 },
       { shape: 'heart', cx: 2465, cy: 1121, size: 25, angle: 104, fill: '#408b7b', opacity: 0.606, blend: 'multiply', blur: 0.5, ratio: 4.01, scan: 0.466 },
       { shape: 'anchor', cx: 2393, cy: 521, size: 22, angle: -148, fill: '#274a48', opacity: 0.55, blend: 'multiply', blur: 0.5, ratio: 1.2, scan: 0.436 },
+    ],
+  },
+  {
+    image: 'deheem',
+    title: 'Still Life with Fruit and a Self-Portrait',
+    artist: 'Jan Davidsz. de Heem',
+    year: '1628',
+    genre: 'still-life',
+    width: 2600,
+    height: 2107,
+    days: [
+      { shape: 'snowflake', cx: 1961, cy: 1265, size: 40, angle: 72, fill: '#452822', opacity: 1, blend: 'screen', blur: 0.5, ratio: 2.33, scan: 0.621 },
+      { shape: 'star', cx: 1553, cy: 1001, size: 37, angle: 47, fill: '#d57087', opacity: 0.237, blend: 'screen', blur: 0.5, ratio: 1.7, scan: 0.506 },
+      { shape: 'clover', cx: 689, cy: 1769, size: 34, angle: 34, fill: '#c57b7e', opacity: 0.34, blend: 'screen', blur: 0.5, ratio: 2.44, scan: 0.464 },
+      { shape: 'anchor', cx: 665, cy: 473, size: 31, angle: -46, fill: '#c86c6f', opacity: 0.276, blend: 'screen', blur: 0.5, ratio: 1.3, scan: 0.428 },
+      { shape: 'fish', cx: 2417, cy: 1697, size: 28, angle: 70, fill: '#b78e8f', opacity: 0.179, blend: 'screen', blur: 0.5, ratio: 1.97, scan: 0.414 },
+      { shape: 'bolt', cx: 161, cy: 1553, size: 25, angle: -104, fill: '#c27174', opacity: 0.245, blend: 'screen', blur: 0.5, ratio: 1.74, scan: 0.387 },
+      { shape: 'arrow', cx: 305, cy: 209, size: 22, angle: 148, fill: '#d0595a', opacity: 0.213, blend: 'screen', blur: 0.5, ratio: 1.12, scan: 0.362 },
     ],
   },
 ];

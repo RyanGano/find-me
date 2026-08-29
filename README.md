@@ -114,7 +114,7 @@ meets the sand, and played easy.
 Within a week no shape, and no hiding place, is ever reused. Across weeks they are, and
 that is fine.
 
-Eight paintings therefore give eight weeks -- fifty-six days -- and `week.test.ts`
+Nine paintings therefore give nine weeks -- sixty-three days -- and `week.test.ts`
 asserts the rules rather than the numbers: seven days per painting, seven different
 shapes, every hiding place 400px from the others, and each day strictly smaller, fainter
 and further round than the one before it.
