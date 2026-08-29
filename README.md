@@ -67,7 +67,9 @@ player actually experiences. Targets, and the levers that reach them
   texture of the paint immediately around it, and then by that canvas's own **search
   cost** — how much ground there is to cover and how much of it looks like something.
 
-  All three parts had to be there, and each was learned by being wrong. Raw peak
+  All three parts had to be there, and each was learned by being wrong. The calibration
+  numbers below are from a Rousseau week that is no longer in the rotation; they are kept
+  because they are what the formula was fitted against. Raw peak
   brightness said Rousseau's smooth sky and Bruegel's crowd were comparable when one was
   a beacon. Dividing by local texture fixed that within a painting but not across them:
   Rousseau at 0.45 cost 16 seconds while the Mona Lisa at 0.53 cost nearly four minutes,
@@ -157,7 +159,7 @@ Two paintings have been dropped this way, failing at opposite ends.
 
 **Bosch's *Garden of Earthly Delights*** had no quiet paint anywhere: its quietest measures
 29.9 where every painting that tunes cleanly sits at 18.5 or below, so its Monday could not
-be made easy at any fill or opacity. Rousseau's *The Sleeping Gypsy* replaced it.
+be made easy at any fill or opacity.
 
 **Turner's *The Fighting Temeraire*** failed the other way, and was caught only after the
 ramp started aiming at times. A median texture of 8.2 means there is nothing anywhere for a
@@ -187,12 +189,10 @@ holding more than a third of the rotation, and at least four kinds of painting i
 Two weeks of a kind together is allowed — a pair reads as variety with a rhyme in it, and
 banning it would make the list hard to extend for no gain.
 
-The rules constrain the order, and the order is append-only: `daily.ts` maps the calendar
-onto `PUZZLES` by index, so a week that has shipped cannot be moved to satisfy a rule
-without moving every painting after it. A failure is therefore always about the painting
-being added, and the fix is a different painting rather than a different position. The one
-repeat that predates the rule -- Bruegel's *Tower of Babel* following his *Hunters in the
-Snow* -- is recorded in `GRANDFATHERED_REPEAT_PAINTER` for exactly that reason.
+The rules constrain the order, and the order is effectively append-only: `daily.ts` maps
+the calendar onto `PUZZLES` by index, so moving a week that players have already been
+served moves every painting after it too. A failure is therefore about the painting being
+added, and the fix is normally a different painting rather than a different position.
 
 ### Fairness
 

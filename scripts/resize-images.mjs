@@ -2,7 +2,7 @@ import sharp from 'sharp';
 import { mkdirSync } from 'node:fs';
 const OUT = 'public/puzzles';
 mkdirSync(OUT, { recursive: true });
-const files = ['mona:.source-images/mona.jpg','wave:.source-images/wave.jpg','starry:.source-images/starry.jpg','proverbs:.source-images/proverbs.jpg','jatte:.source-images/jatte.jpg','athens:.source-images/athens.jpg','hunters:.source-images/hunters.jpg','babel:.source-images/babel.jpg'];
+const files = ['mona:.source-images/mona.jpg','wave:.source-images/wave.jpg','starry:.source-images/starry.jpg','boating:.source-images/boating.jpg','jatte:.source-images/jatte.jpg','issus:.source-images/issus.jpg','hunters:.source-images/hunters.jpg','babel:.source-images/babel.jpg'];
 const MAX = 2600;
 for (const f of files) {
   const [name, src] = f.split(':');

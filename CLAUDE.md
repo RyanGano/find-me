@@ -116,8 +116,8 @@ clock, resume, solve, result card).
   calendar into `PUZZLES`, so reordering moves every painting after it.
 - Each week declares a `genre`, and [src/game/curation.test.ts](src/game/curation.test.ts)
   holds the running order to it: no painter twice running, no genre three times running,
-  no painter over a third of the rotation. `GRANDFATHERED_REPEAT_PAINTER` records the one
-  repeat that shipped before the rule; never add to it to quiet a failure.
+  no painter over a third of the rotation. Fix a failure by choosing a different painting,
+  not by reordering weeks players have already been served.
 - The site is served at the root of the custom domain in `public/CNAME`
   (https://findme.ryangano.com). `base` in [vite.config.ts](vite.config.ts) is `/`, and
   `SITE_URL` in [src/game/share.ts](src/game/share.ts) and the local URLs in the

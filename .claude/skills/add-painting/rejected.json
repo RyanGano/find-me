@@ -14,6 +14,41 @@
       "reason": "too-smooth",
       "note": "Median texture 8.2 -- nothing anywhere for a shape to hide in, so hard-to-scan and visible-once-framed became mutually exclusive. All seven days had to be raised to stay visible and none could be made hard. Caught only after the ramp started aiming at times.",
       "added": "2026-08-28"
+    },
+    {
+      "title": "The School of Athens",
+      "artist": "Raphael",
+      "reason": "nudity",
+      "note": "The Apollo in the upper-left niche is a full-frontal nude statue, and the caryatid figures along the lower frieze are bare-breasted. Depicted sculpture counts. It tuned perfectly well and was in the rotation for a time, which is exactly why the screening step now comes before any measurement.",
+      "added": "2026-08-28"
+    },
+    {
+      "title": "Netherlandish Proverbs",
+      "artist": "Pieter Bruegel the Elder",
+      "reason": "nudity",
+      "note": "Two bare-buttocked figures in the outhouse over the water, right of centre -- the 'they both shit through the same hole' proverb. Invisible at thumbnail size and unmissable at the match framing, which is the whole reason the crowded-genre-scene trap is called out in the skill.",
+      "added": "2026-08-28"
+    },
+    {
+      "title": "Washington Crossing the Delaware",
+      "artist": "Emanuel Leutze",
+      "reason": "cannot-hold-a-week",
+      "note": "Rates ok (quietest 3.6, busiest 80.6) and plans beautifully -- every day within 2 of its texture rung -- then fails in the browser at the hard end. Search cost 0.97, the lowest of any canvas tried: a short wide painting is only 2600x1666, so there is too little ground to cover for a small shape to stay lost. Saturday and Sunday both had to be raised to stay visible and overshot their scan targets (0.497 against 0.306), breaking the ramp. Two independent re-plans on different spots failed identically, so it is the canvas, not the placement.",
+      "added": "2026-08-28"
+    },
+    {
+      "title": "The Night Watch",
+      "artist": "Rembrandt van Rijn",
+      "reason": "too-smooth",
+      "note": "Median texture 15.2 and a search cost of 0.86, worse than the Delaware it was tried as a replacement for. Dark and broadly smooth once reduced to 2600px, so the hard end of the week has nowhere to hide. Not measured in the browser; the rate was decisive.",
+      "added": "2026-08-28"
+    },
+    {
+      "title": "The Feast of Saint Nicholas",
+      "artist": "Jan Steen",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH outright: median 12.0 against a floor of 15. An interior with large areas of plain wall and floor -- the hard end of the week cannot hide there.",
+      "added": "2026-08-28"
     }
   ]
 }

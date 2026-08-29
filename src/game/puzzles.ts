@@ -50,8 +50,9 @@ interface WeekSeed {
  * it, each harder than the last -- see `difficulty.ts` for what "harder" means and how
  * each rung is measured. Eight paintings is therefore eight weeks, not eight days.
  *
- * New paintings are appended, never inserted -- see `GRANDFATHERED_REPEAT_PAINTER` below
- * and `curation.test.ts` for what the order of this list is held to.
+ * The order of this list is held to a spread of painters and kinds by
+ * `curation.test.ts`; a painting that has shipped cannot be moved without moving every
+ * painting after it, so the rules are satisfied by choosing, not by reordering.
  *
  * Coordinates are in the pixel space of the generated asset in `public/puzzles`
  * (2600px wide -- see `npm run images`), so re-generating at a different width means
@@ -118,21 +119,21 @@ const WEEKS: WeekSeed[] = [
     ],
   },
   {
-    image: 'proverbs',
-    title: 'Netherlandish Proverbs',
-    artist: 'Pieter Bruegel the Elder',
-    year: '1559',
+    image: 'boating',
+    title: 'Luncheon of the Boating Party',
+    artist: 'Pierre-Auguste Renoir',
+    year: '1881',
     genre: 'genre-scene',
     width: 2600,
-    height: 1841,
+    height: 1926,
     days: [
-      { shape: 'triangle', cx: 257, cy: 1073, size: 40, angle: -132, fill: '#2c251c', opacity: 1, blend: 'screen', blur: 0.5, ratio: 2.91, scan: 0.674 },
-      { shape: 'snowflake', cx: 785, cy: 353, size: 37, angle: -155, fill: '#d19876', opacity: 0.249, blend: 'screen', blur: 0.5, ratio: 2.36, scan: 0.561 },
-      { shape: 'star', cx: 1697, cy: 761, size: 34, angle: -106, fill: '#c4a77f', opacity: 0.261, blend: 'screen', blur: 0.5, ratio: 1.95, scan: 0.507 },
-      { shape: 'heart', cx: 689, cy: 1385, size: 31, angle: 46, fill: '#cba17b', opacity: 0.237, blend: 'screen', blur: 0.5, ratio: 1.47, scan: 0.464 },
-      { shape: 'anchor', cx: 2177, cy: 305, size: 28, angle: -70, fill: '#caa887', opacity: 0.59, blend: 'screen', blur: 0.5, ratio: 1.86, scan: 0.452 },
-      { shape: 'fish', cx: 1481, cy: 329, size: 25, angle: 104, fill: '#cda77d', opacity: 0.252, blend: 'screen', blur: 0.5, ratio: 1.12, scan: 0.432 },
-      { shape: 'bolt', cx: 2225, cy: 1193, size: 22, angle: -148, fill: '#c5a485', opacity: 0.598, blend: 'screen', blur: 0.5, ratio: 1.45, scan: 0.405 },
+      { shape: 'triangle', cx: 2249, cy: 1313, size: 40, angle: -132, fill: '#d6bfd3', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 2.55, scan: 0.658 },
+      { shape: 'snowflake', cx: 233, cy: 1529, size: 37, angle: -155, fill: '#93a0ba', opacity: 0.362, blend: 'screen', blur: 0.5, ratio: 2.7, scan: 0.54 },
+      { shape: 'star', cx: 1025, cy: 1025, size: 34, angle: -106, fill: '#a7c29f', opacity: 0.284, blend: 'screen', blur: 0.5, ratio: 1.65, scan: 0.485 },
+      { shape: 'heart', cx: 2201, cy: 161, size: 31, angle: 46, fill: '#7ebec2', opacity: 0.155, blend: 'screen', blur: 0.5, ratio: 2.01, scan: 0.466 },
+      { shape: 'anchor', cx: 425, cy: 713, size: 28, angle: -70, fill: '#6c454b', opacity: 0.327, blend: 'multiply', blur: 0.5, ratio: 1.37, scan: 0.434 },
+      { shape: 'fish', cx: 809, cy: 1769, size: 25, angle: 104, fill: '#755a4b', opacity: 0.398, blend: 'multiply', blur: 0.5, ratio: 3.07, scan: 0.414 },
+      { shape: 'bolt', cx: 1025, cy: 233, size: 22, angle: -148, fill: '#4d3731', opacity: 0.371, blend: 'multiply', blur: 0.5, ratio: 1.57, scan: 0.402 },
     ],
   },
   {
@@ -154,24 +155,6 @@ const WEEKS: WeekSeed[] = [
     ],
   },
   {
-    image: 'athens',
-    title: 'The School of Athens',
-    artist: 'Raphael',
-    year: 'c. 1510',
-    genre: 'history',
-    width: 2600,
-    height: 2017,
-    days: [
-      { shape: 'star', cx: 809, cy: 593, size: 40, angle: -156, fill: '#dfd6b6', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 2.12, scan: 0.685 },
-      { shape: 'clover', cx: 1961, cy: 761, size: 37, angle: -155, fill: '#8c8235', opacity: 0.319, blend: 'multiply', blur: 0.5, ratio: 1.52, scan: 0.556 },
-      { shape: 'triangle', cx: 1649, cy: 281, size: 34, angle: -34, fill: '#c6baa1', opacity: 0.269, blend: 'screen', blur: 0.5, ratio: 1.34, scan: 0.502 },
-      { shape: 'crescent', cx: 2225, cy: 1409, size: 31, angle: 46, fill: '#d4ac92', opacity: 0.468, blend: 'screen', blur: 0.5, ratio: 1.68, scan: 0.468 },
-      { shape: 'heart', cx: 2153, cy: 1865, size: 28, angle: -70, fill: '#d8a370', opacity: 0.28, blend: 'screen', blur: 0.5, ratio: 1.72, scan: 0.448 },
-      { shape: 'anchor', cx: 1001, cy: 1865, size: 25, angle: 104, fill: '#e9ac65', opacity: 0.503, blend: 'screen', blur: 0.5, ratio: 1.63, scan: 0.428 },
-      { shape: 'fish', cx: 1337, cy: 689, size: 22, angle: -148, fill: '#817034', opacity: 0.362, blend: 'multiply', blur: 0.5, ratio: 1.34, scan: 0.403 },
-    ],
-  },
-  {
     image: 'hunters',
     title: 'The Hunters in the Snow',
     artist: 'Pieter Bruegel the Elder',
@@ -180,13 +163,31 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 1850,
     days: [
-      { shape: 'clover', cx: 1649, cy: 305, size: 40, angle: 12, fill: '#1e281a', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.98, scan: 0.755 },
-      { shape: 'triangle', cx: 2129, cy: 209, size: 37, angle: -145, fill: '#b2c8a8', opacity: 0.297, blend: 'screen', blur: 0.5, ratio: 2.1, scan: 0.635 },
-      { shape: 'star', cx: 1073, cy: 521, size: 34, angle: -38, fill: '#bfd0b6', opacity: 0.66, blend: 'screen', blur: 0.5, ratio: 2.35, scan: 0.567 },
-      { shape: 'fish', cx: 1985, cy: 1313, size: 31, angle: -46, fill: '#bfc8a9', opacity: 0.571, blend: 'screen', blur: 0.5, ratio: 2.92, scan: 0.533 },
-      { shape: 'bolt', cx: 233, cy: 305, size: 28, angle: 70, fill: '#b9cdb0', opacity: 0.519, blend: 'screen', blur: 0.5, ratio: 1.43, scan: 0.504 },
-      { shape: 'arrow', cx: 137, cy: 1001, size: 25, angle: -104, fill: '#cda174', opacity: 0.457, blend: 'screen', blur: 0.5, ratio: 1.52, scan: 0.492 },
-      { shape: 'key', cx: 2153, cy: 1721, size: 22, angle: 148, fill: '#b5c9aa', opacity: 0.685, blend: 'screen', blur: 0.5, ratio: 1.66, scan: 0.463 },
+      { shape: 'star', cx: 1649, cy: 305, size: 40, angle: -156, fill: '#1b2518', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.76, scan: 0.767 },
+      { shape: 'clover', cx: 2129, cy: 209, size: 37, angle: -155, fill: '#b2c8a8', opacity: 0.218, blend: 'screen', blur: 0.5, ratio: 1.57, scan: 0.647 },
+      { shape: 'triangle', cx: 1073, cy: 521, size: 34, angle: -34, fill: '#bfd0b6', opacity: 0.5, blend: 'screen', blur: 0.5, ratio: 1.86, scan: 0.568 },
+      { shape: 'crescent', cx: 1985, cy: 1313, size: 31, angle: 46, fill: '#bfc8a9', opacity: 0.728, blend: 'screen', blur: 0.5, ratio: 2.92, scan: 0.533 },
+      { shape: 'heart', cx: 233, cy: 305, size: 28, angle: -70, fill: '#b9cdb0', opacity: 0.304, blend: 'screen', blur: 0.5, ratio: 1.16, scan: 0.513 },
+      { shape: 'anchor', cx: 137, cy: 1001, size: 25, angle: 104, fill: '#cda174', opacity: 0.567, blend: 'screen', blur: 0.5, ratio: 1.29, scan: 0.489 },
+      { shape: 'fish', cx: 2153, cy: 1721, size: 22, angle: -148, fill: '#b5c9aa', opacity: 0.567, blend: 'screen', blur: 0.5, ratio: 1.99, scan: 0.459 },
+    ],
+  },
+  {
+    image: 'issus',
+    title: 'The Battle of Alexander at Issus',
+    artist: 'Albrecht Altdorfer',
+    year: '1529',
+    genre: 'history',
+    width: 2600,
+    height: 3397,
+    days: [
+      { shape: 'clover', cx: 881, cy: 1073, size: 40, angle: 12, fill: '#3a4f5a', opacity: 1, blend: 'screen', blur: 0.5, ratio: 3.67, scan: 0.735 },
+      { shape: 'triangle', cx: 281, cy: 1481, size: 37, angle: -145, fill: '#89a0b8', opacity: 0.234, blend: 'screen', blur: 0.5, ratio: 2.68, scan: 0.62 },
+      { shape: 'star', cx: 281, cy: 401, size: 34, angle: -38, fill: '#88a4bf', opacity: 0.205, blend: 'screen', blur: 0.5, ratio: 2.51, scan: 0.536 },
+      { shape: 'fish', cx: 2393, cy: 3065, size: 31, angle: -46, fill: '#cb9871', opacity: 0.209, blend: 'screen', blur: 0.5, ratio: 1.66, scan: 0.505 },
+      { shape: 'bolt', cx: 1601, cy: 617, size: 28, angle: 70, fill: '#99b6d0', opacity: 0.45, blend: 'screen', blur: 0.5, ratio: 2.48, scan: 0.493 },
+      { shape: 'arrow', cx: 1601, cy: 1649, size: 25, angle: -104, fill: '#9bb6c7', opacity: 0.336, blend: 'screen', blur: 0.5, ratio: 2.62, scan: 0.475 },
+      { shape: 'key', cx: 2465, cy: 425, size: 22, angle: 148, fill: '#92afca', opacity: 0.782, blend: 'screen', blur: 0.5, ratio: 3.33, scan: 0.44 },
     ],
   },
   {
@@ -266,12 +267,3 @@ export const CREDITS = WEEKS.map((w) => ({
   genre: w.genre,
 }));
 
-/**
- * The one adjacency that predates the rule that no painter may hold two weeks running.
- *
- * `babel` follows `hunters` and both are Bruegel. Weeks cannot be reordered to fix it:
- * `daily.ts` maps the calendar onto `PUZZLES` by index, so moving one would move every
- * painting after it and hand people finished boards for puzzles they never played. It is
- * recorded here instead, and `curation.test.ts` holds every other pair to the rule.
- */
-export const GRANDFATHERED_REPEAT_PAINTER = new Set(['babel']);

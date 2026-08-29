@@ -290,8 +290,8 @@ away with nothing committed, and it is exactly the case the file exists for.
 - **Don't judge camouflage from a `sharp` composite.** The browser applies opacity and
   `mix-blend-mode` in a different order; a shape sharp calls a whisper renders as a bright
   white snowflake.
-- **Don't reorder weeks to satisfy `curation.test.ts`,** and don't add to
-  `GRANDFATHERED_REPEAT_PAINTER` to silence it. That set records one repeat that shipped
-  before the rule existed; it is a scar, not an escape hatch. Change the painting.
+- **Don't reorder weeks that players have already been served** to satisfy
+  `curation.test.ts`. Reordering moves every painting after the one that moved, and hands
+  people finished boards for puzzles they never played. Change the painting instead.
 - **Don't leave a rejection unrecorded.** An hour spent re-measuring a painting that was
   turned down last month is the exact cost `rejected.json` exists to avoid.

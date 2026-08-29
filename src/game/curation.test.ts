@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CREDITS, GENRES, GRANDFATHERED_REPEAT_PAINTER } from './puzzles';
+import { CREDITS, GENRES } from './puzzles';
 
 /**
  * What the rotation as a whole has to look like, as rules rather than as taste.
@@ -16,11 +16,10 @@ import { CREDITS, GENRES, GRANDFATHERED_REPEAT_PAINTER } from './puzzles';
  * these are for.
  *
  * They constrain the *order* of the list, never its contents, and the order is
- * append-only -- `daily.ts` maps the calendar onto `PUZZLES` by index, so a week that has
- * shipped cannot be moved to satisfy a rule. That is why the one pre-existing repeat is
- * recorded in `GRANDFATHERED_REPEAT_PAINTER` rather than reordered away, and it is also
- * why a failure here is nearly always about the painting being added: the fix is a
- * different painting, not a different position.
+ * effectively append-only -- `daily.ts` maps the calendar onto `PUZZLES` by index, so
+ * moving a week that players have already been served moves every painting after it. A
+ * failure here is therefore about the painting being added, and the fix is a different
+ * painting rather than a different position.
  */
 describe('the rotation', () => {
   it('says what kind of painting each week is', () => {
@@ -31,11 +30,11 @@ describe('the rotation', () => {
 
   it('never runs the same painter two weeks together', () => {
     for (const [i, week] of CREDITS.entries()) {
-      if (i === 0 || GRANDFATHERED_REPEAT_PAINTER.has(week.id)) continue;
+      if (i === 0) continue;
       expect(
         week.artist,
         `${week.id} follows ${CREDITS[i - 1].id} and both are ${week.artist} -- ` +
-          'a week cannot be moved once it has shipped, so this one needs a different painting',
+          'weeks that have shipped cannot be moved, so this one needs a different painting',
       ).not.toBe(CREDITS[i - 1].artist);
     }
   });
