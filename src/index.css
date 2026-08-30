@@ -143,6 +143,77 @@ button.clock:focus-visible {
   gap: 6px;
 }
 
+/* The site is still being tuned, and a player who sets a streak deserves to know it can
+   move. The pill is permanent and deliberately quiet -- it is the only coloured thing in
+   the bar, which is enough to be seen without competing with the clock -- and the note it
+   opens is what actually says what beta costs them. */
+.beta-pill {
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 2px 7px;
+  margin-left: -6px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.beta-pill:hover,
+.beta-pill.is-open {
+  color: var(--bg);
+  background: var(--accent);
+}
+
+.beta-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.beta-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 14px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--muted);
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--line);
+}
+
+.beta-note strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.beta-note-close {
+  margin-left: auto;
+  flex: none;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.beta-note-close:hover {
+  color: var(--text);
+}
+
+.beta-note-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .practice-note {
   margin: 0;
   padding: 5px 14px;
@@ -610,6 +681,12 @@ button.reference:focus-visible {
 }
 
 @media (max-width: 420px) {
+  /* Four buttons, a clock and a title already fill the bar on a phone. */
+  .beta-pill {
+    padding: 2px 5px;
+    letter-spacing: 0.08em;
+  }
+
   .reference {
     top: 8px;
     right: 8px;

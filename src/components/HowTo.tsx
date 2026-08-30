@@ -74,6 +74,11 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         each day harder than the last. Today is <strong>{rung}</strong>.
       </p>
 
+      <p className="howto-note">
+        Find Me is still in beta: the puzzles are being tuned as people play, so times,
+        ages and streaks may change or reset.
+      </p>
+
       <div className="howto-foot">
         <button type="button" className="btn btn-primary" onClick={onDismiss}>
           Close

@@ -27,6 +27,7 @@ import { useGestures } from './hooks/useGestures';
 import { useUpdateAvailable } from './hooks/useUpdateAvailable';
 
 const HOWTO_SEEN = 'find-me:howto-seen';
+const BETA_SEEN = 'find-me:beta-seen';
 
 interface Size {
   w: number;
@@ -90,6 +91,12 @@ export default function App() {
   const [showHowTo, setShowHowTo] = useState(
     () => !prior && !saved && !isPractice && !localStorage.getItem(HOWTO_SEEN),
   );
+
+  // The game is still being tuned, so a time, an age or a streak can move under someone
+  // who earned it. The sentence saying so opens itself once, on a first visit, and then
+  // folds back into the pill -- which stays for good, because the warning outlasts the
+  // one moment it was read.
+  const [showBetaNote, setShowBetaNote] = useState(() => !localStorage.getItem(BETA_SEEN));
 
   // Track the stage box; it drives both the fitted view and the target size.
   useEffect(() => {
@@ -282,6 +289,11 @@ export default function App() {
     if (size) setTransform(fit(size));
   }, [size, fit]);
 
+  const toggleBetaNote = useCallback(() => {
+    localStorage.setItem(BETA_SEEN, '1');
+    setShowBetaNote((prev) => !prev);
+  }, []);
+
   const dismissHowTo = useCallback(() => {
     localStorage.setItem(HOWTO_SEEN, '1');
     setShowHowTo(false);
@@ -350,6 +362,19 @@ export default function App() {
           </button>{' '}
           <span className="title-day">#{puzzleNumber(day)}</span>
         </h1>
+        {/* Small enough to read as a label on the title rather than a banner, but it is
+            the one thing in the bar that is a colour of its own, so it gets noticed --
+            and pressing it says what being in beta costs the player. */}
+        <button
+          type="button"
+          className={`beta-pill${showBetaNote ? ' is-open' : ''}`}
+          onClick={toggleBetaNote}
+          title="Find Me is still in beta"
+          aria-expanded={showBetaNote}
+          aria-controls="beta-note"
+        >
+          beta
+        </button>
         {/* Second door back to the result, for anyone whose eye goes up to their time
             rather than down to the badge. Costs no space: it is the clock either way. */}
         {solvedMs !== null ? (
@@ -412,6 +437,23 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {showBetaNote && (
+        <p className="beta-note" id="beta-note">
+          <span>
+            <strong>Find Me is in beta.</strong> The puzzles are still being tuned, so
+            times, ages and streaks may change or reset at any point.
+          </span>
+          <button
+            type="button"
+            className="beta-note-close"
+            onClick={toggleBetaNote}
+            aria-label="Hide the beta note"
+          >
+            &times;
+          </button>
+        </p>
+      )}
 
       {isPractice && <p className="practice-note">practice mode — this run is not recorded</p>}
 
