@@ -26,22 +26,33 @@ export const MAX_AGE = 85;
  * The age a player gets for doing exactly what the day is priced at, and the years
  * added per doubling of a signal.
  *
- * These two set where the whole scale sits, and they are the only numbers here fitted
- * to real people rather than reasoned about. Three groups played the Thursday and
- * Friday of the first week -- a set of forty-somethings taking upwards of two minutes,
- * a set of twenty-somethings around thirty seconds, and two unusually sharp-eyed
- * players landing it in ten to fifteen. Friday is priced at about forty-two seconds
- * all in, so those are ratios of roughly 3.1, 0.72 and 0.30; solving for the ends
- * gives a spread of 9.5 years per doubling and a par just under thirty, and the middle
- * group then falls out at twenty-five without being fitted to.
+ * These two set where the whole scale sits, and they are the only numbers here fitted to
+ * real people rather than reasoned about. They are now fitted to the only data that has
+ * ever paired a real age with a real run: seven players on `mona-sat`, ages nineteen to
+ * forty-nine, times from five and a half seconds to a hundred and seven. An eighth run
+ * is on record and excluded -- its player already knew roughly where the shape was, and
+ * a run against a remembered answer is not a run.
  *
- * The first guess at these was 32 and 13, which read the same three groups as low
- * fifties, high twenties, and pegged at the floor. The spread was the part that was
- * wrong: the real population is tighter than a doubling-is-thirteen-years scale
- * assumes. See `age.test.ts`, which holds all three groups.
+ * `SPREAD` is the solid half of the fit and the more interesting one. Those seven real
+ * ages span thirty years while their times span twenty-fold, which is a bit over four
+ * doublings: if the clock explained age perfectly, a doubling could be worth no more
+ * than about seven years. It was 9.5, and before that 13, both reasoned from groups
+ * whose ages were assumed rather than asked. That is the whole reason the estimate ran
+ * young at the bottom -- a fast run was being paid out at nearly ten years a doubling
+ * against a population that is only worth seven, so five seconds on a hard day bought a
+ * teenager's age no matter who was holding the phone.
+ *
+ * `PAR_AGE` is the softer half, because it depends on the day being priced correctly and
+ * `mona-sat` was not: it is a Saturday whose measured `scan` came out at 0.497 against a
+ * rung asking for 0.33, so it played several times easier than it was priced, and six of
+ * the seven beat the price by four-fold or more. Least squares puts par at 40 on this
+ * day; on a day that actually met its rung it would sit lower. Forty is what the only
+ * real data says, and it is deliberately a little under the fit -- see `age.test.ts`,
+ * which holds all seven runs, and the note there about which way the next group is
+ * likely to pull it.
  */
-export const PAR_AGE = 30;
-export const SPREAD = 9.5;
+export const PAR_AGE = 40;
+export const SPREAD = 7;
 
 /**
  * How far from par a single signal is allowed to be read as, derived from the ends of

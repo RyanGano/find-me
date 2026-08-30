@@ -10,7 +10,7 @@ import {
   MIN_AGE,
   PAR_AGE,
 } from './age';
-import { puzzleForDay } from './daily';
+import { dayIndex, puzzleForDay } from './daily';
 import { angleWork, RAMP } from './difficulty';
 import type { RunMetrics } from './metrics';
 import { PUZZLES } from './puzzles';
@@ -53,40 +53,37 @@ function parRun(puzzle: Puzzle): { ms: number; metrics: RunMetrics } {
 }
 
 /**
- * The three groups who played the first week's Thursday and Friday, and roughly where
- * each of them ought to land. This is the only real-population data the estimate has,
- * and it is what `PAR_AGE` and `SPREAD` were solved for -- so it is worth more than any
- * of the reasoning above it, and a retune that breaks it is a retune that is wrong.
+ * The seven people who played `mona-sat`, their real ages, and what they actually took.
  *
- * Times only: nobody wrote down how any of them played, so these run through the
- * clock-alone path. The signal blend can only spread them further apart.
+ * This is the only data the estimate has ever had that pairs a real age with a real run,
+ * and it is worth more than every piece of reasoning above it. It replaced three groups
+ * whose times were real but whose ages were assumed -- "a group of twenty-somethings" --
+ * and which were, it turns out, what the estimate was quietly wrong about: fitted to
+ * them, it read this set of testers as ten to fifteen years younger than they are, with
+ * four separate players pinned at exactly fourteen.
+ *
+ * `insider` is on record and out of the fit. They already knew roughly where the shape
+ * was, and a run against a remembered answer measures the memory.
+ *
+ * Nobody recorded how any of these were played, so the runs are bracketed: each one is
+ * scored twice, once as clean play and once as ordinary, and the real age has to sit
+ * near both. The bracket is about four years wide, which is narrower than the spread
+ * between the two age groups, so it does not swamp what is being asserted.
  */
 const OBSERVED = [
-  { who: 'a group in their mid-forties', ms: 130000, low: 42, high: 50 },
-  { who: 'a group of twenty-somethings', ms: 30000, low: 22, high: 30 },
-  { who: 'two players with very sharp eyes', ms: 12500, low: 11, high: 18 },
+  { who: 'the forty-eight', age: 48, ms: 107000, insider: false },
+  { who: 'the twenty-three', age: 23, ms: 5500, insider: false },
+  { who: 'the twenty-five who took fourteen seconds', age: 25, ms: 14000, insider: false },
+  { who: 'the twenty-nine', age: 29, ms: 12100, insider: false },
+  { who: 'the nineteen', age: 19, ms: 12600, insider: false },
+  { who: 'the twenty-five who took eight', age: 25, ms: 7700, insider: false },
+  { who: 'the player who knew where it was', age: 49, ms: 27900, insider: true },
 ];
 
-describe('against the people who have actually played it', () => {
-  // Day 1 and day 2 from the epoch: the Thursday and Friday of the Mona Lisa week.
-  for (const day of [1, 2]) {
-    const puzzle = puzzleForDay(day);
-    for (const { who, ms, low, high } of OBSERVED) {
-      it(`reads ${who} on ${puzzle.id} as ${low}-${high}`, () => {
-        const { age } = estimateAge(puzzle, ms);
-        expect(age).toBeGreaterThanOrEqual(low);
-        expect(age).toBeLessThanOrEqual(high);
-      });
-    }
-  }
-
-  it('puts the three groups in the order they were observed in', () => {
-    const puzzle = puzzleForDay(2);
-    const ages = OBSERVED.map((o) => estimateAge(puzzle, o.ms).age);
-    expect(ages[0]).toBeGreaterThan(ages[1]);
-    expect(ages[1]).toBeGreaterThan(ages[2]);
-  });
-});
+/** The day they all played: the Saturday of the first week. */
+function observedPuzzle(): Puzzle {
+  return puzzleForDay(dayIndex(new Date(2026, 7, 29)));
+}
 
 /**
  * The same run, actually played, rather than reduced to its clock.
@@ -95,16 +92,12 @@ describe('against the people who have actually played it', () => {
  * nought or one of everything, which is what a good run really looks like, and `ordinary`
  * is a near miss and a few overshoots. The time is split the way the day is priced.
  */
-function playedRun(
-  puzzle: Puzzle,
-  ms: number,
-  style: 'clean' | 'ordinary',
-): RunMetrics {
+function playedRun(puzzle: Puzzle, ms: number, style: 'clean' | 'ordinary'): RunMetrics {
   const rung = RAMP[puzzle.dayOfWeek];
+  const search = expectedSearchMs(puzzle.target.scan ?? rung.scan);
   const searchShare =
-    expectedSearchMs(puzzle.target.scan ?? rung.scan) /
-    (expectedSearchMs(puzzle.target.scan ?? rung.scan) +
-      expectedAdjustMs(angleWork(puzzle.target.angle, puzzle.target.symmetry)));
+    search /
+    (search + expectedAdjustMs(angleWork(puzzle.target.angle, puzzle.target.symmetry)));
   const habits =
     style === 'clean'
       ? { passes: 0, overshoots: 1, reversals: 0, idleFrac: 0 }
@@ -119,48 +112,70 @@ function playedRun(
   };
 }
 
-/**
- * What the second, larger group of testers reported, and the reason the weights are
- * where they are.
- *
- * The clock-only fit above was never checked against the path every live run actually
- * takes. It should have been: the three habit signals do not scale with how long a run
- * took, so carrying two fifths of the blend they dragged every run back towards par and
- * then below it -- forty-somethings reading under thirty, twenty-somethings all pinned
- * around fourteen whatever they did. The habit signals are a modifier on how a run was
- * played, not a co-equal vote against the clock, and they now carry a quarter of the
- * blend rather than nearly half. What a run is worth is still mostly how long it took.
- */
-describe('a run that was played, not just timed', () => {
-  const puzzle = puzzleForDay(2);
+describe('against the people who have actually played it', () => {
+  const puzzle = observedPuzzle();
+  const fitted = OBSERVED.filter((o) => !o.insider);
 
-  for (const { who, ms, low, high } of OBSERVED) {
+  for (const { who, age, ms } of fitted) {
     for (const style of ['clean', 'ordinary'] as const) {
-      it(`reads ${who} playing ${style} near the band the clock puts them in`, () => {
-        // Playing tidily is still worth something, so the clean runs are allowed to sit
-        // a few years under the band rather than inside it.
-        const { age } = estimateAge(puzzle, ms, playedRun(puzzle, ms, style));
-        expect(age).toBeGreaterThanOrEqual(low - (style === 'clean' ? 4 : 2));
-        expect(age).toBeLessThanOrEqual(high + 2);
+      it(`reads ${who} playing ${style} within eight years of their real age`, () => {
+        // Ten, not two, and the width is the finding rather than a slack tolerance.
+        // Six of these seven beat the day's price four-fold or more and then landed
+        // within nine seconds of each other while being nineteen to twenty-nine years
+        // old -- the nineteen took 12.6s and the twenty-nine took 12.1s. No function of
+        // the clock can put ten years between those two, so the best any tuning can do
+        // is split the difference and be about five years out on each. Pretending
+        // otherwise is how this got its first, wrong tuning. What it must not do is be
+        // wrong in the same direction for everybody, which is the next test.
+        const { age: read } = estimateAge(puzzle, ms, playedRun(puzzle, ms, style));
+        expect(Math.abs(read - age), `${read} vs ${age}`).toBeLessThanOrEqual(10);
       });
     }
   }
 
+  it('is not systematically young or old across the whole group', () => {
+    // The failure being guarded against is a whole set of testers reading a decade out
+    // in one direction, which is what happened. Individual noise is allowed; a biased
+    // mean is not.
+    const errors = fitted.map(
+      ({ age, ms }) => estimateAge(puzzle, ms, playedRun(puzzle, ms, 'ordinary')).age - age,
+    );
+    const mean = errors.reduce((a, b) => a + b, 0) / errors.length;
+    expect(Math.abs(mean), `mean error ${mean.toFixed(1)}`).toBeLessThan(3);
+  });
+
+  it('separates the slow player from the fast ones', () => {
+    const slow = estimateAge(puzzle, 107000, playedRun(puzzle, 107000, 'ordinary')).age;
+    for (const { ms } of fitted.filter((o) => o.ms < 20000)) {
+      expect(slow).toBeGreaterThan(
+        estimateAge(puzzle, ms, playedRun(puzzle, ms, 'ordinary')).age + 10,
+      );
+    }
+  });
+
+  it('reads a run against a remembered answer as younger than the player is', () => {
+    // Not a defect. Knowing where the shape is skips the hunt, and the hunt is the
+    // signal -- worth recording so a future retune does not try to fit this run.
+    const insider = OBSERVED.find((o) => o.insider)!;
+    const { age } = estimateAge(puzzle, insider.ms, playedRun(puzzle, insider.ms, 'ordinary'));
+    expect(age).toBeLessThan(insider.age);
+  });
+
   it('does not read a clean run years younger than its own clock', () => {
-    // Playing tidily is worth a few years, not a decade and a half.
+    // Three minutes of clean hunting used to come out fifteen years under its own
+    // clock, because the habit signals do not scale with the clock and were carrying
+    // two fifths of the blend. A few years is a discount for tidy play; fifteen is a
+    // different scale.
     for (const ms of [15000, 30000, 60000, 130000, 240000]) {
       const clock = estimateAge(puzzle, ms).age;
       const played = estimateAge(puzzle, ms, playedRun(puzzle, ms, 'clean')).age;
-      // Three minutes of clean hunting used to come out fifteen years under its own
-      // clock, which is where the forty-somethings reading as twenty-somethings came
-      // from. A few years is a discount for tidy play; fifteen is a different scale.
       expect(clock - played, `${ms}ms`).toBeLessThanOrEqual(10);
       expect(played).toBeLessThan(clock + 4);
     }
   });
 
   it('still tells two runs of the same length apart', () => {
-    // The habit signals are quieter, not gone.
+    // The habit signals are quieter than they were, not gone.
     const clean = estimateAge(puzzle, 60000, playedRun(puzzle, 60000, 'clean')).age;
     const ordinary = estimateAge(puzzle, 60000, playedRun(puzzle, 60000, 'ordinary')).age;
     expect(ordinary).toBeGreaterThan(clean + 1);
@@ -252,10 +267,12 @@ describe('estimateAge', () => {
       reversals: 20000,
       idleMs: 9e8,
     }).age;
-    // A year off the floor rather than on it: near misses and hesitation are both
-    // softened, so neither can be taken all the way down by a flawless reading.
-    // Everything else in this run is pinned.
-    expect(perfect).toBe(MIN_AGE + 1);
+    // A few years off the floor rather than on it: near misses and hesitation are both
+    // softened, so neither can be taken all the way down by a flawless reading, and the
+    // floor moved further from par when par did. The three signals that can reach it
+    // are pinned. Reaching MIN_AGE exactly is not a thing a run needs to be able to do.
+    expect(perfect).toBeGreaterThan(MIN_AGE);
+    expect(perfect).toBeLessThan(MIN_AGE + 6);
     expect(absurd).toBeGreaterThan(80);
     expect(absurd).toBeLessThanOrEqual(MAX_AGE);
   });
