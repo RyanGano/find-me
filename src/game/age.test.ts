@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   estimateAge,
   expectedAdjustMs,
+  expectedDither,
+  expectedIdleMs,
+  expectedPasses,
   expectedSearchMs,
   MAX_AGE,
   MIN_AGE,
@@ -41,10 +44,10 @@ function parRun(puzzle: Puzzle): { ms: number; metrics: RunMetrics } {
     metrics: {
       searchMs,
       adjustMs,
-      passes: 0.8 + 0.35 * puzzle.dayOfWeek,
-      overshoots: 3 + work / 30,
+      passes: expectedPasses(puzzle.dayOfWeek),
+      overshoots: expectedDither(work),
       reversals: 0,
-      idleMs: Math.max(4000, 0.15 * ms),
+      idleMs: expectedIdleMs(ms),
     },
   };
 }
@@ -82,6 +85,85 @@ describe('against the people who have actually played it', () => {
     const ages = OBSERVED.map((o) => estimateAge(puzzle, o.ms).age);
     expect(ages[0]).toBeGreaterThan(ages[1]);
     expect(ages[1]).toBeGreaterThan(ages[2]);
+  });
+});
+
+/**
+ * The same run, actually played, rather than reduced to its clock.
+ *
+ * `style` is how the player handled the shape once the clock was running: `clean` is
+ * nought or one of everything, which is what a good run really looks like, and `ordinary`
+ * is a near miss and a few overshoots. The time is split the way the day is priced.
+ */
+function playedRun(
+  puzzle: Puzzle,
+  ms: number,
+  style: 'clean' | 'ordinary',
+): RunMetrics {
+  const rung = RAMP[puzzle.dayOfWeek];
+  const searchShare =
+    expectedSearchMs(puzzle.target.scan ?? rung.scan) /
+    (expectedSearchMs(puzzle.target.scan ?? rung.scan) +
+      expectedAdjustMs(angleWork(puzzle.target.angle, puzzle.target.symmetry)));
+  const habits =
+    style === 'clean'
+      ? { passes: 0, overshoots: 1, reversals: 0, idleFrac: 0 }
+      : { passes: 1, overshoots: 3, reversals: 1, idleFrac: 0.1 };
+  return {
+    searchMs: ms * searchShare,
+    adjustMs: ms * (1 - searchShare),
+    passes: habits.passes,
+    overshoots: habits.overshoots,
+    reversals: habits.reversals,
+    idleMs: ms * habits.idleFrac,
+  };
+}
+
+/**
+ * What the second, larger group of testers reported, and the reason the weights are
+ * where they are.
+ *
+ * The clock-only fit above was never checked against the path every live run actually
+ * takes. It should have been: the three habit signals do not scale with how long a run
+ * took, so carrying two fifths of the blend they dragged every run back towards par and
+ * then below it -- forty-somethings reading under thirty, twenty-somethings all pinned
+ * around fourteen whatever they did. The habit signals are a modifier on how a run was
+ * played, not a co-equal vote against the clock, and they now carry a quarter of the
+ * blend rather than nearly half. What a run is worth is still mostly how long it took.
+ */
+describe('a run that was played, not just timed', () => {
+  const puzzle = puzzleForDay(2);
+
+  for (const { who, ms, low, high } of OBSERVED) {
+    for (const style of ['clean', 'ordinary'] as const) {
+      it(`reads ${who} playing ${style} near the band the clock puts them in`, () => {
+        // Playing tidily is still worth something, so the clean runs are allowed to sit
+        // a few years under the band rather than inside it.
+        const { age } = estimateAge(puzzle, ms, playedRun(puzzle, ms, style));
+        expect(age).toBeGreaterThanOrEqual(low - (style === 'clean' ? 4 : 2));
+        expect(age).toBeLessThanOrEqual(high + 2);
+      });
+    }
+  }
+
+  it('does not read a clean run years younger than its own clock', () => {
+    // Playing tidily is worth a few years, not a decade and a half.
+    for (const ms of [15000, 30000, 60000, 130000, 240000]) {
+      const clock = estimateAge(puzzle, ms).age;
+      const played = estimateAge(puzzle, ms, playedRun(puzzle, ms, 'clean')).age;
+      // Three minutes of clean hunting used to come out fifteen years under its own
+      // clock, which is where the forty-somethings reading as twenty-somethings came
+      // from. A few years is a discount for tidy play; fifteen is a different scale.
+      expect(clock - played, `${ms}ms`).toBeLessThanOrEqual(10);
+      expect(played).toBeLessThan(clock + 4);
+    }
+  });
+
+  it('still tells two runs of the same length apart', () => {
+    // The habit signals are quieter, not gone.
+    const clean = estimateAge(puzzle, 60000, playedRun(puzzle, 60000, 'clean')).age;
+    const ordinary = estimateAge(puzzle, 60000, playedRun(puzzle, 60000, 'ordinary')).age;
+    expect(ordinary).toBeGreaterThan(clean + 1);
   });
 });
 
@@ -170,7 +252,10 @@ describe('estimateAge', () => {
       reversals: 20000,
       idleMs: 9e8,
     }).age;
-    expect(perfect).toBe(MIN_AGE);
+    // A year off the floor rather than on it: near misses and hesitation are both
+    // softened, so neither can be taken all the way down by a flawless reading.
+    // Everything else in this run is pinned.
+    expect(perfect).toBe(MIN_AGE + 1);
     expect(absurd).toBeGreaterThan(80);
     expect(absurd).toBeLessThanOrEqual(MAX_AGE);
   });

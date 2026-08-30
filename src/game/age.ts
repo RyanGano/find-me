@@ -9,8 +9,9 @@ import type { Puzzle } from './types';
  * run scored against what the day is worth: how long the hunt took, how cleanly the
  * final approach went, how often the shape slipped past, how much the view dithered,
  * how long the player sat frozen. Five signals, each turned into an age of its own, then
- * blended. Par on every one of them is `PAR_AGE`; each halving of a signal takes
- * `SPREAD` years off, each doubling puts the same back on.
+ * blended -- three quarters of it the clock, the rest how the run was played. Par on
+ * every one of them is `PAR_AGE`; each halving of a signal takes `SPREAD` years off,
+ * each doubling puts the same back on.
  *
  * Normalising against the day matters more than any of the weights. Sunday's shape takes
  * minutes to find where Monday's takes seconds, so a raw clock would hand every player a
@@ -55,13 +56,31 @@ export const SPREAD = 9.5;
 const RATIO_FLOOR = 2 ** ((MIN_AGE - PAR_AGE) / SPREAD);
 const RATIO_CEILING = 2 ** ((MAX_AGE - PAR_AGE) / SPREAD);
 
-/** Fractions of the whole, and they must stay fractions of the whole. */
+/**
+ * Fractions of the whole, and they must stay fractions of the whole.
+ *
+ * Three quarters of the blend is the clock, and that split is the second thing here
+ * fitted to real people rather than reasoned about. It was an even 60/40 to begin with,
+ * on the reasoning that how a run was played says as much as how long it took. It does
+ * not, because the three habit signals do not scale with the clock: a player who hunts
+ * for three minutes and then lands the shape in one clean move still shows nought near
+ * misses, nought dither and nought dead air, exactly like a player who did the same in
+ * twenty seconds. Carrying two fifths of the blend between them, they dragged every run
+ * back towards par and then under it -- a second, wider group of testers came back with
+ * forty-somethings reading in the twenties and twenty-somethings all pinned around
+ * fourteen whatever they did. Three minutes of clean play came out fifteen years under
+ * its own clock; it is now within a few.
+ *
+ * They are a modifier on how a run was played, not a co-equal vote against the clock.
+ * At a quarter of the blend they are still worth several years either way, which is
+ * enough to tell the sharp eye from the shaky hand and not enough to overrule the hunt.
+ */
 const WEIGHTS = {
-  search: 0.34,
-  adjust: 0.26,
-  passes: 0.16,
-  dither: 0.14,
-  idle: 0.1,
+  search: 0.46,
+  adjust: 0.3,
+  passes: 0.1,
+  dither: 0.08,
+  idle: 0.06,
 };
 
 export interface AgePart {
@@ -105,20 +124,36 @@ export function expectedAdjustMs(work: number): number {
   return 6000 + 45 * work;
 }
 
-/** Everybody sails past it at least once; the harder days earn more forgiveness. */
-function expectedPasses(dayOfWeek: number): number {
-  return 0.8 + 0.35 * dayOfWeek;
+/**
+ * Everybody sails past it at least once; the harder days earn more forgiveness. Priced
+ * for what a real run shows rather than what a generous one would: this and the two
+ * expectations below all sat high enough that ordinary play scored under par on every
+ * one of them at once, which is a systematic discount rather than a compliment.
+ */
+export function expectedPasses(dayOfWeek: number): number {
+  return 0.5 + 0.3 * dayOfWeek;
 }
 
 /** Overshoots plus zoom reversals. More rotation to undo means more chances to miss. */
-function expectedDither(work: number): number {
-  return 3 + work / 30;
+export function expectedDither(work: number): number {
+  return 2 + work / 40;
 }
 
-/** A run is allowed to be about a sixth pauses before it reads as hesitation. */
-function expectedIdleMs(totalMs: number): number {
-  return Math.max(4000, 0.15 * totalMs);
+/** A run is allowed to be about a twelfth pauses before it reads as hesitation. */
+export function expectedIdleMs(totalMs: number): number {
+  return Math.max(3000, 0.08 * totalMs);
 }
+
+/**
+ * The softening on hesitation, as a fraction of what the day expects rather than a fixed
+ * number of ms: a run with no dead air in it at all is a good run, not an infinitely good
+ * one, and a bare zero otherwise takes the logarithm to the floor on the strength of one
+ * signal. Half the expectation puts a flawless reading at a third of par however long the
+ * run was -- an absolute softening would have quietly punished the slow players it was
+ * meant to protect, since their expected idle grows with the clock and a fixed few
+ * seconds of grace shrinks against it.
+ */
+const IDLE_SOFTENING = 0.5;
 
 /** Observed over expected, held inside the range the scale can express. */
 function ratioOf(observed: number, expected: number): number {
@@ -179,7 +214,12 @@ export function estimateAge(
       metrics.overshoots + metrics.reversals + 1,
       expectedDither(work) + 1,
     ],
-    ['idle', 'hesitation', metrics.idleMs, expectedIdleMs(ms)],
+    [
+      'idle',
+      'hesitation',
+      metrics.idleMs + IDLE_SOFTENING * expectedIdleMs(ms),
+      (1 + IDLE_SOFTENING) * expectedIdleMs(ms),
+    ],
   ];
 
   const parts: AgePart[] = raw.map(([key, label, observed, expected]) => {
