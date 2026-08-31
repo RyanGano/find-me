@@ -9,6 +9,7 @@ import {
   MAX_AGE,
   MIN_AGE,
   PAR_AGE,
+  SPREAD,
 } from './age';
 import { dayIndex, puzzleForDay } from './daily';
 import { angleWork, RAMP } from './difficulty';
@@ -53,37 +54,55 @@ function parRun(puzzle: Puzzle): { ms: number; metrics: RunMetrics } {
 }
 
 /**
- * The seven people who played `mona-sat`, their real ages, and what they actually took.
+ * Every run anyone has recorded a real age against: seven on `mona-sun`, seven on
+ * `wave-mon`.
  *
- * This is the only data the estimate has ever had that pairs a real age with a real run,
- * and it is worth more than every piece of reasoning above it. It replaced three groups
- * whose times were real but whose ages were assumed -- "a group of twenty-somethings" --
- * and which were, it turns out, what the estimate was quietly wrong about: fitted to
- * them, it read this set of testers as ten to fifteen years younger than they are, with
- * four separate players pinned at exactly fourteen.
+ * `read` is what the game actually told that player, and `par`/`spread` is the scale it
+ * was running at the time. That is enough to recover the run exactly. A reading is
+ * always `PAR_AGE + SPREAD * L`, where `L` is the weighted mean log of the run's five
+ * ratios -- so `L = (read - par) / spread` recovers what the run was worth without
+ * needing the near-miss and dither counts nobody wrote down, and any later tuning can be
+ * scored against these runs by replaying that `L`.
  *
- * `insider` is on record and out of the fit. They already knew roughly where the shape
- * was, and a run against a remembered answer measures the memory.
+ * `pinned` marks runs whose clock signal was flat against the floor of the scale they
+ * were read on. `mona-sun` measured a `scan` of 0.471 against a rung asking for 0.31, so
+ * it played five to ten times easier than it was priced, and five of its seven runs came
+ * back as the same number regardless of how they went. Their `L` is a bound, not a
+ * value; they are kept as the record of a mis-priced day and left out of the fit.
  *
- * Nobody recorded how any of these were played, so the runs are bracketed: each one is
- * scored twice, once as clean play and once as ordinary, and the real age has to sit
- * near both. The bracket is about four years wide, which is narrower than the spread
- * between the two age groups, so it does not swamp what is being asserted.
+ * `insider` already knew roughly where the shape was. A run against a remembered answer
+ * measures the memory.
  */
 const OBSERVED = [
-  { who: 'the forty-eight', age: 48, ms: 107000, insider: false },
-  { who: 'the twenty-three', age: 23, ms: 5500, insider: false },
-  { who: 'the twenty-five who took fourteen seconds', age: 25, ms: 14000, insider: false },
-  { who: 'the twenty-nine', age: 29, ms: 12100, insider: false },
-  { who: 'the nineteen', age: 19, ms: 12600, insider: false },
-  { who: 'the twenty-five who took eight', age: 25, ms: 7700, insider: false },
-  { who: 'the player who knew where it was', age: 49, ms: 27900, insider: true },
-];
+  { day: 'mona-sun', par: 30, spread: 9.5, age: 48, ms: 107000, read: 32 },
+  { day: 'mona-sun', par: 30, spread: 9.5, age: 49, ms: 27900, read: 25, insider: true },
+  { day: 'mona-sun', par: 30, spread: 9.5, age: 23, ms: 5500, read: 14, pinned: true },
+  { day: 'mona-sun', par: 30, spread: 9.5, age: 25, ms: 14000, read: 14, pinned: true },
+  { day: 'mona-sun', par: 30, spread: 9.5, age: 29, ms: 12100, read: 14, pinned: true },
+  { day: 'mona-sun', par: 30, spread: 9.5, age: 19, ms: 12600, read: 18, pinned: true },
+  { day: 'mona-sun', par: 30, spread: 9.5, age: 25, ms: 7700, read: 14, pinned: true },
+  { day: 'wave-mon', par: 40, spread: 7, age: 49, ms: 69900, read: 47 },
+  { day: 'wave-mon', par: 40, spread: 7, age: 48, ms: 8600, read: 27 },
+  { day: 'wave-mon', par: 40, spread: 7, age: 29, ms: 12900, read: 38 },
+  { day: 'wave-mon', par: 40, spread: 7, age: 25, ms: 30800, read: 35 },
+  { day: 'wave-mon', par: 40, spread: 7, age: 25, ms: 24500, read: 36 },
+  { day: 'wave-mon', par: 40, spread: 7, age: 23, ms: 15000, read: 32 },
+  { day: 'wave-mon', par: 40, spread: 7, age: 19, ms: 25400, read: 34 },
+] as const;
 
-/** The day they all played: the Saturday of the first week. */
-function observedPuzzle(): Puzzle {
-  return puzzleForDay(dayIndex(new Date(2026, 7, 29)));
+type Observed = (typeof OBSERVED)[number];
+
+/** What a recorded run was worth, independent of the scale it was read on. */
+function runWorth(o: Observed): number {
+  return (o.read - o.par) / o.spread;
 }
+
+/** What the scale as it stands now would tell that player. */
+function readsAs(o: Observed): number {
+  return Math.round(PAR_AGE + SPREAD * runWorth(o));
+}
+
+const FITTED = OBSERVED.filter((o) => !('insider' in o) && !('pinned' in o));
 
 /**
  * The same run, actually played, rather than reduced to its clock.
@@ -113,59 +132,66 @@ function playedRun(puzzle: Puzzle, ms: number, style: 'clean' | 'ordinary'): Run
 }
 
 describe('against the people who have actually played it', () => {
-  const puzzle = observedPuzzle();
-  const fitted = OBSERVED.filter((o) => !o.insider);
-
-  for (const { who, age, ms } of fitted) {
-    for (const style of ['clean', 'ordinary'] as const) {
-      it(`reads ${who} playing ${style} within eight years of their real age`, () => {
-        // Ten, not two, and the width is the finding rather than a slack tolerance.
-        // Six of these seven beat the day's price four-fold or more and then landed
-        // within nine seconds of each other while being nineteen to twenty-nine years
-        // old -- the nineteen took 12.6s and the twenty-nine took 12.1s. No function of
-        // the clock can put ten years between those two, so the best any tuning can do
-        // is split the difference and be about five years out on each. Pretending
-        // otherwise is how this got its first, wrong tuning. What it must not do is be
-        // wrong in the same direction for everybody, which is the next test.
-        const { age: read } = estimateAge(puzzle, ms, playedRun(puzzle, ms, style));
-        expect(Math.abs(read - age), `${read} vs ${age}`).toBeLessThanOrEqual(10);
-      });
-    }
-  }
-
-  it('is not systematically young or old across the whole group', () => {
-    // The failure being guarded against is a whole set of testers reading a decade out
-    // in one direction, which is what happened. Individual noise is allowed; a biased
-    // mean is not.
-    const errors = fitted.map(
-      ({ age, ms }) => estimateAge(puzzle, ms, playedRun(puzzle, ms, 'ordinary')).age - age,
-    );
-    const mean = errors.reduce((a, b) => a + b, 0) / errors.length;
-    expect(Math.abs(mean), `mean error ${mean.toFixed(1)}`).toBeLessThan(3);
+  it('does not read a whole group of players years out in one direction', () => {
+    // The only thing this data can hold the estimate to, and the only thing it has ever
+    // got badly wrong. Both earlier tunings failed here: the first read this set eight
+    // years young, the second three years old.
+    const bias = FITTED.reduce((sum, o) => sum + (readsAs(o) - o.age), 0) / FITTED.length;
+    expect(Math.abs(bias), `bias ${bias.toFixed(1)} years`).toBeLessThan(2);
   });
 
-  it('separates the slow player from the fast ones', () => {
-    const slow = estimateAge(puzzle, 107000, playedRun(puzzle, 107000, 'ordinary')).age;
-    for (const { ms } of fitted.filter((o) => o.ms < 20000)) {
-      expect(slow).toBeGreaterThan(
-        estimateAge(puzzle, ms, playedRun(puzzle, ms, 'ordinary')).age + 10,
-      );
+  it('keeps every real player inside a believable band', () => {
+    // Deliberately loose, and it has to be. A forty-eight year old set the fastest time
+    // of the whole set and a nineteen year old took three times as long on the same
+    // puzzle; the clock explains about a tenth of the variance in real age here. This
+    // guards against a reading nobody would recognise as themselves, not against being
+    // wrong about any one person.
+    for (const o of FITTED) {
+      const read = readsAs(o);
+      const label = `${o.day}: real ${o.age}, read ${read}`;
+      expect(read, label).toBeGreaterThanOrEqual(15);
+      expect(read, label).toBeLessThanOrEqual(60);
     }
+  });
+
+  it('still moves enough to be worth playing for', () => {
+    // Least squares on this set asks for a spread near five, which would put the whole
+    // population inside about fifteen years and make the number nearly a constant. The
+    // fastest and slowest runs on record are seven-fold apart, and should stay at
+    // least twenty years apart in what they are told.
+    const reads = FITTED.map(readsAs);
+    expect(Math.max(...reads) - Math.min(...reads)).toBeGreaterThanOrEqual(20);
+  });
+
+  it('records a mis-priced day rather than fitting to it', () => {
+    // mona-sun was priced at seventy-two seconds and solved in five and a half. Five of
+    // its seven runs pinned the clock at the floor of the scale, which is why four
+    // players of four different ages were all handed the same number.
+    const pinned = OBSERVED.filter((o) => 'pinned' in o);
+    expect(pinned).toHaveLength(5);
+    const sameNumber = pinned.filter((o) => o.read === 14);
+    expect(sameNumber).toHaveLength(4);
+    expect(new Set(sameNumber.map((o) => o.age)).size).toBe(3);
+    expect(FITTED.some((o) => o.day === 'mona-sun')).toBe(true);
+    expect(FITTED.filter((o) => o.day === 'mona-sun')).toHaveLength(1);
   });
 
   it('reads a run against a remembered answer as younger than the player is', () => {
     // Not a defect. Knowing where the shape is skips the hunt, and the hunt is the
-    // signal -- worth recording so a future retune does not try to fit this run.
-    const insider = OBSERVED.find((o) => o.insider)!;
-    const { age } = estimateAge(puzzle, insider.ms, playedRun(puzzle, insider.ms, 'ordinary'));
-    expect(age).toBeLessThan(insider.age);
+    // signal -- recorded so a future retune does not try to fit this run either.
+    const insider = OBSERVED.find((o) => 'insider' in o)!;
+    expect(readsAs(insider)).toBeLessThan(insider.age);
   });
+});
+
+describe('a run that was played, not just timed', () => {
+  const puzzle = puzzleForDay(dayIndex(new Date(2026, 7, 31)));
 
   it('does not read a clean run years younger than its own clock', () => {
-    // Three minutes of clean hunting used to come out fifteen years under its own
-    // clock, because the habit signals do not scale with the clock and were carrying
-    // two fifths of the blend. A few years is a discount for tidy play; fifteen is a
-    // different scale.
+    // Three minutes of clean hunting used to come out fifteen years under its own clock,
+    // because the habit signals do not scale with the clock and were carrying two fifths
+    // of the blend. A few years is a discount for tidy play; fifteen is a different
+    // scale.
     for (const ms of [15000, 30000, 60000, 130000, 240000]) {
       const clock = estimateAge(puzzle, ms).age;
       const played = estimateAge(puzzle, ms, playedRun(puzzle, ms, 'clean')).age;

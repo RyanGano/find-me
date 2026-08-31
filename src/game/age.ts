@@ -27,31 +27,34 @@ export const MAX_AGE = 85;
  * added per doubling of a signal.
  *
  * These two set where the whole scale sits, and they are the only numbers here fitted to
- * real people rather than reasoned about. They are now fitted to the only data that has
- * ever paired a real age with a real run: seven players on `mona-sat`, ages nineteen to
- * forty-nine, times from five and a half seconds to a hundred and seven. An eighth run
- * is on record and excluded -- its player already knew roughly where the shape was, and
- * a run against a remembered answer is not a run.
+ * real people rather than reasoned about. Fourteen runs now pair a real age with a real
+ * time: seven on `mona-sun` and seven on `wave-mon`, ages nineteen to forty-nine. They
+ * are held in `age.test.ts`, and they are worth more than every line of reasoning above
+ * them -- including the reasoning that produced the two previous tunings, both of which
+ * were fitted to groups whose ages were assumed rather than asked, and both of which
+ * were wrong in a direction nobody could see until somebody wrote the ages down.
  *
- * `SPREAD` is the solid half of the fit and the more interesting one. Those seven real
- * ages span thirty years while their times span twenty-fold, which is a bit over four
- * doublings: if the clock explained age perfectly, a doubling could be worth no more
- * than about seven years. It was 9.5, and before that 13, both reasoned from groups
- * whose ages were assumed rather than asked. That is the whole reason the estimate ran
- * young at the bottom -- a fast run was being paid out at nearly ten years a doubling
- * against a population that is only worth seven, so five seconds on a hard day bought a
- * teenager's age no matter who was holding the phone.
+ * What those fourteen runs actually say is worth stating plainly, because it is not what
+ * a scoring number wants to hear: **the clock barely knows how old anybody is.** Across
+ * the usable runs the time explains about a tenth of the variance in real age. The
+ * fastest run of the whole set, eight and a half seconds, belongs to a forty-eight year
+ * old; a nineteen year old took three times as long on the same puzzle. Any tuning that
+ * reads that set well individually is fitting noise.
  *
- * `PAR_AGE` is the softer half, because it depends on the day being priced correctly and
- * `mona-sat` was not: it is a Saturday whose measured `scan` came out at 0.497 against a
- * rung asking for 0.33, so it played several times easier than it was priced, and six of
- * the seven beat the price by four-fold or more. Least squares puts par at 40 on this
- * day; on a day that actually met its rung it would sit lower. Forty is what the only
- * real data says, and it is deliberately a little under the fit -- see `age.test.ts`,
- * which holds all seven runs, and the note there about which way the next group is
- * likely to pull it.
+ * So the fit is aimed at the one thing it can honestly hit: no bias. `PAR_AGE` sits where
+ * the group's mean reading matches the group's mean age, and `SPREAD` is held a little
+ * wider than least squares asks (it wants about 5) so the number still moves when a
+ * player genuinely improves. What the estimate cannot do is tell one twenty-five year
+ * old from one forty-eight year old on a single day's clock, and it should not be tuned
+ * as though it can.
+ *
+ * A run on a mis-priced day is outside all of this. `mona-sun` was a Sunday whose
+ * measured `scan` came out at 0.471 against a rung asking for 0.31: it played five to
+ * ten times easier than it was priced, five of its seven runs pinned the clock signal at
+ * the floor, and no age scale can rescue a day the ramp got that wrong. Those runs are
+ * recorded and excluded.
  */
-export const PAR_AGE = 40;
+export const PAR_AGE = 37;
 export const SPREAD = 7;
 
 /**
