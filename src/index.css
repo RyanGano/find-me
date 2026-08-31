@@ -240,6 +240,55 @@ button.clock:focus-visible {
   background: var(--accent);
 }
 
+/* ---------- ?diag ---------- */
+
+.diag {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 24px 18px 48px;
+  line-height: 1.5;
+}
+
+.diag h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+
+.diag-lead {
+  font-size: 0.9rem;
+  color: #bdb3a5;
+}
+
+.diag dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 14px;
+  margin: 20px 0;
+  font-size: 0.9rem;
+}
+
+.diag dt {
+  color: #bdb3a5;
+}
+
+.diag dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.diag dd.ok {
+  color: #7bc86c;
+}
+
+.diag dd.bad {
+  color: #ff8f6b;
+}
+
+.diag a {
+  color: var(--accent);
+}
+
 /* ---------- buttons ---------- */
 
 .btn {
