@@ -5,6 +5,7 @@ import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
 import { UpdateNotice } from './components/UpdateNotice';
+import { isInAppBrowser } from './game/browser';
 import { count, newRunId } from './game/count';
 import { puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
@@ -30,6 +31,7 @@ import { useUpdateAvailable } from './hooks/useUpdateAvailable';
 
 const HOWTO_SEEN = 'find-me:howto-seen';
 const BETA_SEEN = 'find-me:beta-seen';
+const WARNING_SEEN = 'find-me:storage-warning-seen';
 
 interface Size {
   w: number;
@@ -122,10 +124,28 @@ export default function App() {
   // one moment it was read.
   const [showBetaNote, setShowBetaNote] = useState(() => !flag(BETA_SEEN));
 
-  // Nothing this page writes will outlive the browser being quit -- a private tab, or
-  // website data switched off. Checked by writing and reading back, because both states
-  // otherwise look exactly like a working browser right up until the streak is gone.
-  const [storageLost] = useState(() => !isPractice && !isPersistent());
+  /**
+   * Whether this browser will still have the player's streak tomorrow, and why not.
+   *
+   * `in-app` is a link opened inside another app -- from a message, a feed, a chat.
+   * The web view it lands in has its own storage, dropped when the view closes, so the
+   * player solves the puzzle, comes back the next day through the same link and finds a
+   * game that has never met them. It reads as a bug in the game, and it is the single
+   * most common way a streak is actually lost.
+   *
+   * `blocked` is a browser that refuses to keep anything at all: a private tab, or
+   * website data switched off. Checked by writing and reading back, since both states
+   * look exactly like a working browser right up until the moment the streak is gone.
+   *
+   * Neither is fixable from in here. Both are worth saying out loud before the player
+   * spends a fortnight building something the browser is going to throw away.
+   */
+  const [storageWarning] = useState<'in-app' | 'blocked' | null>(() => {
+    if (isPractice) return null;
+    if (isInAppBrowser()) return 'in-app';
+    return isPersistent() ? null : 'blocked';
+  });
+  const [warningSeen, setWarningSeen] = useState(() => flag(WARNING_SEEN));
 
   // Re-arm the backup copy of the results on the way in. On iOS its lifetime is capped
   // and refreshed on write, so opening the game has to be enough to keep it alive --
@@ -330,6 +350,14 @@ export default function App() {
     setShowBetaNote((prev) => !prev);
   }, []);
 
+  // Dismissible, but the flag that remembers it is written to the very storage the
+  // warning is about -- so in the case it exists for, it comes back on the next visit.
+  // That is the right way round: the warning outlasts the tab it was dismissed in.
+  const dismissWarning = useCallback(() => {
+    setFlag(WARNING_SEEN);
+    setWarningSeen(true);
+  }, []);
+
   const dismissHowTo = useCallback(() => {
     setFlag(HOWTO_SEEN);
     setShowHowTo(false);
@@ -491,11 +519,32 @@ export default function App() {
         </p>
       )}
 
-      {storageLost && (
+      {storageWarning && !warningSeen && (
         <p className="storage-note">
-          <strong>This browser is not saving anything.</strong> Your time and streak will
-          be gone when you close it. Private browsing, or website data turned off in
-          Settings, will both do this.
+          <span>
+            {storageWarning === 'in-app' ? (
+              <>
+                <strong>Your streak will not be saved here.</strong> You have opened Find
+                Me inside another app, which gives it its own throwaway storage. Open
+                findme.ryangano.com in Safari — or use Share → Add to Home Screen, which
+                keeps it for good.
+              </>
+            ) : (
+              <>
+                <strong>This browser is not saving anything.</strong> Your time and streak
+                will be gone when you close it. Private browsing, or website data turned
+                off in Settings, will both do this.
+              </>
+            )}
+          </span>
+          <button
+            type="button"
+            className="beta-note-close"
+            onClick={dismissWarning}
+            aria-label="Hide this warning"
+          >
+            &times;
+          </button>
         </p>
       )}
 

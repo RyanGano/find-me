@@ -427,11 +427,38 @@ before the metrics existed. localStorage always wins where both remember a day, 
 visit writes whatever only the cookie has back into localStorage, so a swept store heals
 itself rather than living on the fallback.
 
+The commonest way a streak is actually lost is none of the above: the player opens the
+game from a link inside another app. That web view gets its own storage container,
+dropped when the view closes, so they solve today's puzzle, come back tomorrow through
+the same link, and meet a game that has never heard of them. `src/game/browser.ts` spots
+it from the user agent -- on iOS, every real browser carries the `Safari/` token and a
+bare `WKWebView` does not -- and the board says so, with the way out.
+
+That test is deliberately blunt and only ever drives a dismissible sentence. It also has
+one blind spot it cannot close: `SFSafariViewController`, the other way an app can open a
+link, *is* Safari and reports Safari's exact user agent, while still getting storage of
+its own. Nothing distinguishes it from inside the page, which is why the notice
+recommends Add to Home Screen as well -- an installed copy has durable storage of its own
+and is exempt from the seven-day sweep, and it is the one answer that holds however the
+link was opened.
+
 What none of this can fix is a browser that keeps nothing at all -- a private tab, or
 "Block All Cookies" in Settings. That case now says so instead of failing silently:
 `isPersistent()` writes a value and reads it back, in both stores, and the page carries a
 plain warning above the board when neither survives. Trusting the calls not to throw is
 not enough; a private tab accepts every write and simply forgets it.
+
+### `?diag`
+
+`/?diag` reports what the browser actually kept: a marker stamped on first open and how
+old it is, what is in each store, whether cookies are on, the storage quota, and whether
+the page was opened from the Home Screen or a tab. It is not linked from anywhere.
+
+It exists because the durability of storage cannot be measured in one session -- a web
+view accepts every write and reads it straight back, right up until it is closed. Across
+sessions it is obvious. Open it, quit the browser, open it again: two markers still
+reading "written just now" means nothing this site writes survives, and that is the whole
+diagnosis.
 
 ## Deployment
 

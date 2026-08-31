@@ -217,6 +217,9 @@ button.clock:focus-visible {
 /* Louder than the beta note on purpose: this one is telling the player that the thing
    they are about to spend two minutes earning will not be there tomorrow. */
 .storage-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   margin: 0;
   padding: 8px 14px;
   font-size: 0.8rem;
