@@ -1,4 +1,5 @@
 import { Shape } from './Shape';
+import { useApparentFill } from '../hooks/useApparentFill';
 import { formatTime } from '../game/format';
 import type { MatchState } from '../game/match';
 import type { Puzzle } from '../game/types';
@@ -21,8 +22,15 @@ interface Props {
  * The colour matters as much as the size. This badge is the only description of what
  * is hidden, so drawing it in a house colour rather than the target's own fill sends
  * people hunting for the wrong thing. It sits on a neutral well because the fills range
- * from pale ice blue to dark slate and both have to read; the shape is drawn at full
- * opacity, since the blend against the painting cannot be reproduced on a flat card.
+ * from pale ice blue to dark slate and both have to read.
+ *
+ * The colour shown is the one the shape ends up, not the one it is declared as. Nearly
+ * every day carries an opacity and a blend mode, so the declared fill is only an
+ * ingredient: a cream star multiplied into Hokusai's wave arrives dark blue, and a
+ * badge showing the cream sends the player looking for a thing that is not there.
+ * `useApparentFill` composites the shape over the paint it is hiding in and hands back
+ * what came out, which is then drawn opaque -- the swatch has to read on a flat card,
+ * and a translucent badge would only be blending into the wrong background.
  *
  * The badge is also where the closeness hint lives. It lights when the view is nearly
  * right on size and angle, and greens on the match. Putting that hint on the hidden
@@ -46,6 +54,7 @@ interface Props {
  */
 export function ReferenceCard({ puzzle, targetSize, match, solvedMs, onReopen }: Props) {
   const solved = solvedMs !== null;
+  const fill = useApparentFill(puzzle);
   const state = solved ? ' is-solved' : match?.near ? ' is-near' : '';
 
   const inner = (
@@ -54,7 +63,7 @@ export function ReferenceCard({ puzzle, targetSize, match, solvedMs, onReopen }:
         <Shape
           shape={puzzle.target.shape}
           size={targetSize}
-          fill={puzzle.target.fill ?? 'var(--accent)'}
+          fill={fill ?? 'var(--accent)'}
         />
       </div>
       <p className="reference-label">

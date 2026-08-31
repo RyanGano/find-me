@@ -37,6 +37,7 @@ npm run camouflage -- --solve              # solve each day's paint, rewrite puz
 npm run preview:week -- mona               # seven rows of three, to look at the ramp
 node scripts/diag-camouflage.mjs mona '[{}]' out.jpg   # one hiding place at match zoom
 node scripts/diag-size.mjs                 # badge vs shape geometry check
+node scripts/diag-badge.mjs               # badge colour vs the shape as painted
 ```
 
 Browser smoke test (Playwright against a real Chrome/Edge, no download):

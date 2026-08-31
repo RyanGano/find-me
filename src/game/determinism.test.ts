@@ -35,12 +35,18 @@ describe('determinism', () => {
     }
   });
 
-  it('draws the reference badge in the target\'s own colour', () => {
+  it('draws the reference badge in the colour the target really is', () => {
     // The badge is the only description of what is hidden. If it is drawn in a house
-    // colour, players go looking for the wrong thing.
+    // colour, players go looking for the wrong thing -- and so they do if it is drawn
+    // in the declared fill, which on most days is only an ingredient of what a blend
+    // mode and an opacity finally put on the canvas. It has to come from the
+    // measurement of the shape as it is actually painted into the picture.
     const card = readFileSync('src/components/ReferenceCard.tsx', 'utf8');
-    expect(card).toContain('puzzle.target.fill');
-    expect(card).not.toContain('fill="var(--accent)"');
+    expect(card).toContain('useApparentFill(puzzle)');
+    expect(card).not.toContain(`fill="var(--accent)"`);
+    // And the measurement is of that day's own paint, falling back to its own fill.
+    const hook = readFileSync('src/hooks/useApparentFill.ts', 'utf8');
+    expect(hook).toContain('puzzle.target.fill');
   });
 
   it('has no randomness anywhere in the game logic', () => {

@@ -207,8 +207,28 @@ holds that line -- it pins the day-to-puzzle mapping, checks every target is ful
 specified, and fails the build if `Math.random` or a crypto random ever appears in
 `src/`.
 
-The corner badge is drawn in the target's **own** fill colour, not a house colour, since
-it is the only description a player gets of what they are hunting for.
+The corner badge is drawn in the target's **own** colour, not a house colour, since it
+is the only description a player gets of what they are hunting for. That means the
+colour the shape *ends up*, not the one it is declared as. `fill` is only an ingredient:
+every day but Monday is painted at partial opacity through a blend mode, so the fill and
+the finished shape can be a long way apart -- Hokusai's Monday star is declared as
+near-white cream and lands the colour of wet sand, and the Mona Lisa's Monday snowflake
+screens on to arrive markedly lighter than the dark brown it is declared as. A badge showing the declared colour sends the player hunting for a
+thing that is not in the painting.
+
+So the badge asks the render instead. `src/game/apparent.ts` composites the shape over
+the paint it is actually hiding in -- same fill, same opacity, same blend -- and averages
+the result over the shape's own footprint, so a crescent is measured across the crescent
+rather than the square around it. It is drawn opaque on the neutral well: the swatch has
+to read on a flat card, and re-applying the transparency there would only blend it into
+the wrong background. Until the painting is decoded, and if the measurement cannot be
+made at all, the declared fill stands in.
+
+`node scripts/diag-badge.mjs` is the check. It compares every day's badge against a
+completely separate render of the same shape over the same paint -- the browser's own
+CSS `mix-blend-mode` over a crop cut by sharp -- so an error in the canvas maths cannot
+agree with itself into looking right. The whole rotation currently sits within 6 levels
+per channel of that second opinion, which is resampling drift rather than arithmetic.
 
 ### Feedback
 
@@ -306,6 +326,7 @@ else.
 | `src/game/shapes.ts` | Shape paths and their rotational symmetry |
 | `scripts/tune-camouflage.mjs` | Measures and solves how well a shape hides, in-browser |
 | `scripts/diag-camouflage.mjs` | Screenshots the match zoom, to look at a hiding place |
+| `scripts/diag-badge.mjs` | Checks each badge against the shape's real colour on the canvas |
 | `src/game/daily.ts` | Which puzzle a given day gets |
 | `src/game/storage.ts` | Recorded times, versioned by puzzle definition |
 | `src/hooks/useGestures.ts` | Pointer, wheel, Safari gesture and keyboard input |
