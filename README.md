@@ -404,6 +404,35 @@ Keep `size` small, around 1.5% of the image width. Smaller means more zoom to re
 match, which is the fair way to make a puzzle harder; it also means the painting is shown
 further above its native resolution at the moment of the match, so there is a floor.
 
+### Keeping a streak on an iPhone
+
+`localStorage` is the primary store, and on iOS it is the least durable thing a page can
+write. WebKit deletes *all* script-writable storage -- localStorage, IndexedDB, the Cache
+API -- for a site the player has not opened as first-party in seven days, and in a private
+tab it never survives the tab at all. Neither shows any sign at the time. The player earns
+a streak, quits Safari, comes back and the game has forgotten them.
+
+Cookies live under a different rule. They are not taken by that sweep; instead a
+script-set cookie's lifetime is *capped* at seven days and re-armed every time it is
+written. So `src/game/backup.ts` keeps a second, compact copy of the results in a cookie,
+`storage.ts` reads it behind localStorage and fills in any day only the cookie remembers,
+and `touch()` rewrites it on every visit -- on the way in, not on the solve, or anyone who
+opens the game without finishing would still lose the streak they already had.
+
+The mirror is lossy on purpose: a cookie holds 4KB, so it carries the most recent 150 days
+as day, time and puzzle version, plus the lifetime played count and best time for
+everything older. It does not carry the per-run metrics, so a result restored from the
+cookie shows a Find Me Age taken from its clock alone, exactly like a result recorded
+before the metrics existed. localStorage always wins where both remember a day, and a
+visit writes whatever only the cookie has back into localStorage, so a swept store heals
+itself rather than living on the fallback.
+
+What none of this can fix is a browser that keeps nothing at all -- a private tab, or
+"Block All Cookies" in Settings. That case now says so instead of failing silently:
+`isPersistent()` writes a value and reads it back, in both stores, and the page carries a
+plain warning above the board when neither survives. Trusting the calls not to throw is
+not enough; a private tab accepts every write and simply forgets it.
+
 ## Deployment
 
 Pushing to `main` runs lint, tests and a build, then publishes `dist/` to GitHub Pages.

@@ -1,3 +1,4 @@
+import * as backup from './backup';
 import { isTracker, type RunMetrics, type Tracker } from './metrics';
 import type { Transform } from './types';
 
@@ -26,9 +27,14 @@ interface Store {
   results: Record<string, Result>;
   /** The single run in progress, if the player left mid-hunt. See `Progress`. */
   progress?: Progress;
+  /**
+   * Totals carried by the cookie mirror for days too old to be mirrored individually.
+   * They can only ever raise `played` or lower `best`, never invent a streak.
+   */
+  carried?: { played: number; best: number | null };
 }
 
-function read(): Store {
+function readLocal(): Store {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { results: {} };
@@ -44,12 +50,91 @@ function read(): Store {
   }
 }
 
+/**
+ * The store as the player should see it: whatever localStorage still has, with anything
+ * only the cookie mirror remembers filled in behind it.
+ *
+ * localStorage always wins where both have a day, because it is the fuller record -- it
+ * keeps the run metrics the mirror cannot afford. The mirror only ever adds days back.
+ * On a browser that has not lost anything this is a no-op; on an iPhone that has just
+ * had its script-writable storage swept, it is the streak.
+ */
+function read(): Store {
+  const store = readLocal();
+  const mirror = backup.load();
+  if (!mirror) return store;
+
+  let results = store.results;
+  for (const entry of mirror.entries) {
+    const key = String(entry.day);
+    if (results[key]) continue;
+    if (results === store.results) results = { ...results };
+    // No `at` and no `m`: the mirror does not carry them. `at` is unused by anything
+    // that reads a restored result, and a missing `m` reads its age from the clock.
+    results[key] = { ms: entry.ms, at: '', v: entry.v };
+  }
+  return { ...store, results, carried: { played: mirror.played, best: mirror.best } };
+}
+
 function write(store: Store): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(store));
+    // `carried` belongs to the mirror and is recomputed from it on every read, so it is
+    // not part of what the primary store holds.
+    localStorage.setItem(KEY, JSON.stringify({ results: store.results, progress: store.progress }));
   } catch {
-    // Private browsing, quota, or storage disabled: the game still plays fine.
+    // Private browsing, quota, or storage disabled: the cookie mirror may still hold.
   }
+  mirror(store);
+}
+
+/** Push the results into the cookie, and re-arm how long that cookie is kept. */
+function mirror(store: Store): void {
+  const days = Object.keys(store.results)
+    .map(Number)
+    .filter((n) => Number.isFinite(n));
+  let best: number | null = store.carried?.best ?? null;
+  for (const d of days) {
+    const ms = store.results[String(d)].ms;
+    if (best === null || ms < best) best = ms;
+  }
+  backup.save({
+    entries: days.map((day) => ({ day, ms: store.results[String(day)].ms, v: store.results[String(day)].v })),
+    played: Math.max(days.length, store.carried?.played ?? 0),
+    best,
+  });
+}
+
+/**
+ * Rewrite the mirror on a plain visit, without waiting for a solve.
+ *
+ * A script-set cookie's life is capped and re-armed on write, so on iOS the mirror only
+ * outlives the storage sweep if opening the game is enough to refresh it. Someone who
+ * looks at today's painting and does not finish it must not lose last week's streak.
+ */
+export function touch(): void {
+  // A full write, not just the cookie: whatever only the mirror still remembers is put
+  // back into localStorage at the same time, so a swept store heals on the way in
+  // rather than waiting for the player to finish another puzzle.
+  write(read());
+}
+
+/**
+ * Whether anything written here will still be here after the browser is quit, checked
+ * by writing and reading back rather than by trusting the call not to throw. False in a
+ * private tab and with cookies blocked -- the two states where a player earns a streak,
+ * closes Safari and finds it gone, with nothing so far to warn them.
+ */
+export function isPersistent(): boolean {
+  try {
+    const probe = `${KEY}:probe`;
+    localStorage.setItem(probe, '1');
+    const ok = localStorage.getItem(probe) === '1';
+    localStorage.removeItem(probe);
+    if (ok) return true;
+  } catch {
+    // Fall through: the cookie mirror is the other half of the answer.
+  }
+  return backup.persists();
 }
 
 /** Any recorded result for a day, whatever version it was set on. Feeds the stats. */
@@ -89,7 +174,8 @@ export interface Stats {
 }
 
 export function getStats(today: number): Stats {
-  const results = read().results;
+  const store = read();
+  const results = store.results;
   const days = Object.keys(results)
     .map(Number)
     .filter((n) => Number.isFinite(n))
@@ -109,7 +195,14 @@ export function getStats(today: number): Stats {
     cursor--;
   }
 
-  return { played: days.length, best, streak };
+  // Days the mirror could only count, not name, still show up in the totals -- but
+  // never in the streak, which needs to know which days they were.
+  const carried = store.carried;
+  if (carried) {
+    if (carried.best !== null && (best === null || carried.best < best)) best = carried.best;
+  }
+
+  return { played: Math.max(days.length, carried?.played ?? 0), best, streak };
 }
 
 /**

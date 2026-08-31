@@ -16,8 +16,10 @@ import {
   getCurrentResult,
   getProgress,
   getStats,
+  isPersistent,
   saveProgress,
   saveResult,
+  touch,
   type Stats,
 } from './game/storage';
 import { compose, constrainPan, fitTransform } from './game/transform';
@@ -32,6 +34,28 @@ const BETA_SEEN = 'find-me:beta-seen';
 interface Size {
   w: number;
   h: number;
+}
+
+/**
+ * `localStorage` on its own, wrapped so a browser that refuses to hand it over cannot
+ * take the whole page down with it. Reading `localStorage` throws outright -- not
+ * returns null -- when a browser is set to block all website data, which is exactly the
+ * setting a player who loses their streak is most likely to be running.
+ */
+function flag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function setFlag(key: string): void {
+  try {
+    localStorage.setItem(key, '1');
+  } catch {
+    // Nothing is being kept on this browser; `storagePersists` already says so.
+  }
 }
 
 export default function App() {
@@ -89,14 +113,26 @@ export default function App() {
   const updateAvailable = useUpdateAvailable();
 
   const [showHowTo, setShowHowTo] = useState(
-    () => !prior && !saved && !isPractice && !localStorage.getItem(HOWTO_SEEN),
+    () => !prior && !saved && !isPractice && !flag(HOWTO_SEEN),
   );
 
   // The game is still being tuned, so a time, an age or a streak can move under someone
   // who earned it. The sentence saying so opens itself once, on a first visit, and then
   // folds back into the pill -- which stays for good, because the warning outlasts the
   // one moment it was read.
-  const [showBetaNote, setShowBetaNote] = useState(() => !localStorage.getItem(BETA_SEEN));
+  const [showBetaNote, setShowBetaNote] = useState(() => !flag(BETA_SEEN));
+
+  // Nothing this page writes will outlive the browser being quit -- a private tab, or
+  // website data switched off. Checked by writing and reading back, because both states
+  // otherwise look exactly like a working browser right up until the streak is gone.
+  const [storageLost] = useState(() => !isPractice && !isPersistent());
+
+  // Re-arm the backup copy of the results on the way in. On iOS its lifetime is capped
+  // and refreshed on write, so opening the game has to be enough to keep it alive --
+  // waiting for a solve would lose the streak of anyone who visits and does not finish.
+  useEffect(() => {
+    if (!isPractice) touch();
+  }, [isPractice]);
 
   // Track the stage box; it drives both the fitted view and the target size.
   useEffect(() => {
@@ -290,12 +326,12 @@ export default function App() {
   }, [size, fit]);
 
   const toggleBetaNote = useCallback(() => {
-    localStorage.setItem(BETA_SEEN, '1');
+    setFlag(BETA_SEEN);
     setShowBetaNote((prev) => !prev);
   }, []);
 
   const dismissHowTo = useCallback(() => {
-    localStorage.setItem(HOWTO_SEEN, '1');
+    setFlag(HOWTO_SEEN);
     setShowHowTo(false);
     stageRef.current?.focus();
   }, []);
@@ -452,6 +488,14 @@ export default function App() {
           >
             &times;
           </button>
+        </p>
+      )}
+
+      {storageLost && (
+        <p className="storage-note">
+          <strong>This browser is not saving anything.</strong> Your time and streak will
+          be gone when you close it. Private browsing, or website data turned off in
+          Settings, will both do this.
         </p>
       )}
 

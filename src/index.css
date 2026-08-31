@@ -214,6 +214,22 @@ button.clock:focus-visible {
   outline-offset: 2px;
 }
 
+/* Louder than the beta note on purpose: this one is telling the player that the thing
+   they are about to spend two minutes earning will not be there tomorrow. */
+.storage-note {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text);
+  background: #4a1f14;
+  border-bottom: 1px solid #7a3a24;
+}
+
+.storage-note strong {
+  color: #ffb59a;
+}
+
 .practice-note {
   margin: 0;
   padding: 5px 14px;

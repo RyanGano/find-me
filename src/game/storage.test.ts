@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   clearProgress,
+  isPersistent,
+  touch,
   getCurrentResult,
   getProgress,
   getResult,
@@ -27,11 +29,53 @@ function installStorage(): void {
   });
 }
 
+/** Storage that accepts everything and keeps nothing: a private tab, in miniature. */
+function installDeadStorage(): void {
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+      clear: () => {},
+    },
+  });
+}
+
+/**
+ * Minimal `document.cookie`, with the get/set asymmetry the real one has. No expiry
+ * handling: what the browser does with `max-age` is the browser's business, and what
+ * this needs to prove is that the mirror round-trips.
+ */
+function installCookies(): void {
+  const jar = new Map<string, string>();
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    get: () => ({
+      get cookie() {
+        return [...jar].map(([k, v]) => `${k}=${v}`).join('; ');
+      },
+      set cookie(value: string) {
+        const [pair, ...attrs] = value.split('; ');
+        const eq = pair.indexOf('=');
+        const name = pair.slice(0, eq);
+        if (attrs.some((a) => a.toLowerCase() === 'max-age=0')) jar.delete(name);
+        else jar.set(name, pair.slice(eq + 1));
+      },
+    }),
+  });
+}
+
+function removeCookies(): void {
+  Reflect.deleteProperty(globalThis, 'document');
+}
+
 const V1 = 'aaaa';
 const V2 = 'bbbb';
 
 beforeEach(() => {
   installStorage();
+  removeCookies();
 });
 
 describe('saveResult / getCurrentResult', () => {
@@ -192,5 +236,100 @@ describe('progress', () => {
     saveResult(3, 12345, V1);
     expect(getProgress(3, V1)?.ms).toBe(8000);
     expect(getStats(3).played).toBe(1);
+  });
+});
+
+
+/**
+ * The backup copy, which is the whole reason iPhone players stop losing streaks: WebKit
+ * sweeps localStorage on its own schedule, and a cookie is the one thing a page can
+ * write that the sweep does not take.
+ */
+describe('the cookie mirror', () => {
+  beforeEach(() => {
+    installCookies();
+  });
+
+  it('hands the results back after localStorage is wiped under the player', () => {
+    saveResult(10, 30000, V1);
+    saveResult(11, 20000, V1);
+    saveResult(12, 25000, V1);
+
+    // Exactly what iOS does: script-writable storage gone, cookies untouched.
+    installStorage();
+
+    expect(getStats(12)).toEqual({ played: 3, best: 20000, streak: 3 });
+    // ...and the day itself is still finished, so nobody is asked to solve it twice.
+    expect(getCurrentResult(12, V1)?.ms).toBe(25000);
+  });
+
+  it('keeps the version, so a re-hidden day still comes back playable', () => {
+    saveResult(12, 25000, V1);
+    installStorage();
+    expect(getCurrentResult(12, V2)).toBeUndefined();
+    expect(getResult(12)?.ms).toBe(25000);
+  });
+
+  it('heals localStorage from the mirror on the way in', () => {
+    saveResult(10, 30000, V1);
+    installStorage();
+    touch();
+
+    // Back in the primary store, not just in the cookie, before anything else happens.
+    removeCookies();
+    expect(getStats(10)).toEqual({ played: 1, best: 30000, streak: 1 });
+  });
+
+  it('prefers the fuller localStorage record where both remember a day', () => {
+    const m: RunMetrics = {
+      searchMs: 20000,
+      adjustMs: 5000,
+      passes: 2,
+      overshoots: 4,
+      reversals: 3,
+      idleMs: 1200,
+    };
+    saveResult(10, 25000, V1, m);
+    // The mirror cannot afford the metrics; the primary store must still win.
+    expect(getCurrentResult(10, V1)?.m).toEqual(m);
+  });
+
+  it('re-arms the cookie on a visit, not only on a solve', () => {
+    saveResult(10, 30000, V1);
+    installCookies(); // the cookie expired; the localStorage copy is still there
+    touch();
+    installStorage();
+    expect(getStats(10).streak).toBe(1);
+  });
+
+  it('survives a mangled cookie without losing the days it can still read', () => {
+    saveResult(10, 30000, V1);
+    saveResult(11, 20000, V1);
+    document.cookie = 'fm-results=1~2~ffk~a:n5c:aaaa,@@@:zz';
+    installStorage();
+    expect(getResult(11)).toBeUndefined();
+    expect(getResult(10)?.ms).toBe(30000);
+  });
+
+  it('ignores a mirror written by a format it does not know', () => {
+    document.cookie = 'fm-results=9~zz~zz~nonsense';
+    expect(getStats(11)).toEqual({ played: 0, best: null, streak: 0 });
+  });
+});
+
+describe('isPersistent', () => {
+  it('is true when localStorage keeps what it is given', () => {
+    expect(isPersistent()).toBe(true);
+  });
+
+  it('is true on the strength of cookies alone', () => {
+    installDeadStorage();
+    installCookies();
+    expect(isPersistent()).toBe(true);
+  });
+
+  it('is false when nothing keeps anything, however quietly it accepts it', () => {
+    installDeadStorage();
+    expect(isPersistent()).toBe(false);
   });
 });
