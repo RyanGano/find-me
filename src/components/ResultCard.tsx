@@ -3,7 +3,7 @@ import { estimateAge, type AgePart } from '../game/age';
 import { msUntilTomorrow } from '../game/daily';
 import { formatCountdown, formatTime } from '../game/format';
 import type { RunMetrics } from '../game/metrics';
-import { buildShareText, shareResult, speedBar } from '../game/share';
+import { buildAgeDataText, buildShareText, shareResult, speedBar } from '../game/share';
 import type { Stats } from '../game/storage';
 import type { Puzzle } from '../game/types';
 
@@ -20,6 +20,9 @@ interface Props {
 
 export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onReplay }: Props) {
   const [status, setStatus] = useState<'idle' | 'shared' | 'copied' | 'failed'>('idle');
+  const [dataStatus, setDataStatus] = useState<'idle' | 'shared' | 'copied' | 'failed'>(
+    'idle',
+  );
   const countdown = useCountdown(!isPractice);
 
   // Derived, never stored: retuning the estimate re-reads old runs rather than leaving
@@ -32,6 +35,14 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
   const share = async () => {
     const text = buildShareText(day, puzzle, ms, stats.streak, age);
     setStatus(await shareResult(text));
+  };
+
+  // Beta only, and deliberately a second button rather than more lines in the share
+  // text: what a player posts in public should stay short and spoiler-free, and this is
+  // an instrument for tuning the estimate, not a result.
+  const shareAgeData = async () => {
+    const text = buildAgeDataText(day, puzzle, ms, age, metrics, isPractice);
+    setDataStatus(await shareResult(text));
   };
 
   return (
@@ -73,6 +84,16 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
           {isPractice ? 'Play again' : 'Free roam'}
         </button>
       </div>
+
+      <button type="button" className="result-age-data" onClick={shareAgeData}>
+        {dataStatus === 'copied'
+          ? 'Copied — paste it back with your real age'
+          : dataStatus === 'shared'
+            ? 'Sent — add your real age'
+            : dataStatus === 'failed'
+              ? 'Copy failed'
+              : 'Share age data'}
+      </button>
 
       {!isPractice && countdown && <p className="result-next">Next puzzle in {countdown}</p>}
     </div>

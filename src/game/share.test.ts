@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { formatCountdown, formatTime } from './format';
 import { PUZZLES } from './puzzles';
-import { buildShareText, speedBar } from './share';
+import { PAR_AGE, SPREAD } from './age';
+import type { RunMetrics } from './metrics';
+import { buildAgeDataText, buildShareText, speedBar } from './share';
 
 describe('formatTime', () => {
   it('shows sub-minute times in seconds', () => {
@@ -65,5 +67,60 @@ describe('buildShareText', () => {
   it('adds the streak only once it is worth bragging about', () => {
     expect(buildShareText(1, PUZZLES[0], 1000, 1, 20)).not.toContain('streak');
     expect(buildShareText(1, PUZZLES[0], 1000, 4, 20)).toContain('🔥 4 day streak');
+  });
+});
+
+describe('buildAgeDataText', () => {
+  const puzzle = PUZZLES[0];
+  const metrics: RunMetrics = {
+    searchMs: 18200,
+    adjustMs: 6300,
+    passes: 1,
+    overshoots: 2,
+    reversals: 1,
+    idleMs: 1400,
+  };
+
+  it('carries everything a retune needs, and nothing about the hiding place', () => {
+    const text = buildAgeDataText(7, puzzle, 24500, 33, metrics, false);
+    expect(text).toContain(`puzzle: ${puzzle.id}`);
+    expect(text).toContain('time: 24.5s');
+    expect(text).toContain(`read: 33 (par ${PAR_AGE}, spread ${SPREAD})`);
+    expect(text).toContain('search: 18.2s');
+    expect(text).toContain('adjust: 6.3s');
+    expect(text).toContain('passes: 1');
+    expect(text).toContain('overshoots: 2');
+    expect(text).toContain('reversals: 1');
+    expect(text).toContain('idle: 1.4s');
+    // The hiding place is the one thing a tester must not be able to paste around.
+    expect(text).not.toContain(String(puzzle.target.cx));
+    expect(text).not.toContain(String(puzzle.target.cy));
+  });
+
+  it('records the scale it was read on, so the run survives the next retune', () => {
+    // Two tunings have already moved under runs that were only ever written down as an
+    // age. A reading is par + spread * L, so keeping both recovers L afterwards.
+    const text = buildAgeDataText(7, puzzle, 24500, 33, metrics, false);
+    expect(text).toContain(`par ${PAR_AGE}`);
+    expect(text).toContain(`spread ${SPREAD}`);
+  });
+
+  it('opens with a blank for the one thing the game cannot know', () => {
+    expect(buildAgeDataText(7, puzzle, 24500, 33, metrics, false).split('\n')[1]).toBe(
+      'real age: ',
+    );
+  });
+
+  it('marks a practice run, which is not comparable with a real one', () => {
+    expect(buildAgeDataText(7, puzzle, 24500, 33, metrics, true)).toContain('(practice)');
+    expect(buildAgeDataText(7, puzzle, 24500, 33, metrics, false)).not.toContain(
+      '(practice)',
+    );
+  });
+
+  it('says so when a run was read on the clock alone', () => {
+    const text = buildAgeDataText(7, puzzle, 24500, 33, null, false);
+    expect(text).toContain('metrics: none');
+    expect(text).not.toContain('passes:');
   });
 });
