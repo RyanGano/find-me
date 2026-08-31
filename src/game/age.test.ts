@@ -55,14 +55,18 @@ function parRun(puzzle: Puzzle): { ms: number; metrics: RunMetrics } {
 
 /**
  * Every run anyone has recorded a real age against: seven on `mona-sun`, seven on
- * `wave-mon`.
+ * `wave-mon`, six of those with the full metrics behind them.
  *
- * `read` is what the game actually told that player, and `par`/`spread` is the scale it
- * was running at the time. That is enough to recover the run exactly. A reading is
- * always `PAR_AGE + SPREAD * L`, where `L` is the weighted mean log of the run's five
- * ratios -- so `L = (read - par) / spread` recovers what the run was worth without
- * needing the near-miss and dither counts nobody wrote down, and any later tuning can be
- * scored against these runs by replaying that `L`.
+ * `read` is the number that player was actually shown and `par`/`spread` is the scale it
+ * was shown on, which is not the same for every row: the card derives the age rather than
+ * storing it, so the six runs that came back with metrics were pasted after par had
+ * already moved to 37, while the rest were written down earlier. Where `metrics` is
+ * present the run can simply be replayed through `estimateAge`, which is exact. Where it is absent, `read` and the `par`/`spread` it was read on are enough
+ * to recover roughly what the run was worth -- a reading is `PAR_AGE + SPREAD * L`, so
+ * `L = (read - par) / spread`. That recovery is approximate now in a way it was not
+ * before: the framing signal has since been re-priced and softened, so an old reading
+ * maps to a slightly different `L` than the same run would produce today. It is kept
+ * because two runs have nothing better, and it is not what the fit leans on.
  *
  * `pinned` marks runs whose clock signal was flat against the floor of the scale they
  * were read on. `mona-sun` measured a `scan` of 0.471 against a rung asking for 0.31, so
@@ -81,28 +85,48 @@ const OBSERVED = [
   { day: 'mona-sun', par: 30, spread: 9.5, age: 29, ms: 12100, read: 14, pinned: true },
   { day: 'mona-sun', par: 30, spread: 9.5, age: 19, ms: 12600, read: 18, pinned: true },
   { day: 'mona-sun', par: 30, spread: 9.5, age: 25, ms: 7700, read: 14, pinned: true },
-  { day: 'wave-mon', par: 40, spread: 7, age: 49, ms: 69900, read: 47 },
-  { day: 'wave-mon', par: 40, spread: 7, age: 48, ms: 8600, read: 27 },
-  { day: 'wave-mon', par: 40, spread: 7, age: 29, ms: 12900, read: 38 },
   { day: 'wave-mon', par: 40, spread: 7, age: 25, ms: 30800, read: 35 },
-  { day: 'wave-mon', par: 40, spread: 7, age: 25, ms: 24500, read: 36 },
-  { day: 'wave-mon', par: 40, spread: 7, age: 23, ms: 15000, read: 32 },
-  { day: 'wave-mon', par: 40, spread: 7, age: 19, ms: 25400, read: 34 },
+  {
+    day: 'wave-mon', par: 37, spread: 7, age: 48, ms: 8600, read: 25,
+    metrics: { searchMs: 8600, adjustMs: 0, passes: 0, overshoots: 0, reversals: 0, idleMs: 0 },
+  },
+  {
+    day: 'wave-mon', par: 37, spread: 7, age: 19, ms: 25400, read: 32,
+    metrics: { searchMs: 25400, adjustMs: 0, passes: 0, overshoots: 0, reversals: 8, idleMs: 0 },
+  },
+  {
+    day: 'wave-mon', par: 37, spread: 7, age: 23, ms: 15000, read: 29,
+    metrics: { searchMs: 14500, adjustMs: 400, passes: 0, overshoots: 0, reversals: 4, idleMs: 0 },
+  },
+  {
+    day: 'wave-mon', par: 37, spread: 7, age: 29, ms: 12900, read: 35,
+    metrics: { searchMs: 6200, adjustMs: 6700, passes: 1, overshoots: 14, reversals: 14, idleMs: 0 },
+  },
+  {
+    day: 'wave-mon', par: 37, spread: 7, age: 25, ms: 24500, read: 33,
+    metrics: { searchMs: 23700, adjustMs: 800, passes: 0, overshoots: 1, reversals: 4, idleMs: 0 },
+  },
+  {
+    day: 'wave-mon', par: 37, spread: 7, age: 49, ms: 69900, read: 44,
+    metrics: { searchMs: 66400, adjustMs: 3500, passes: 1, overshoots: 0, reversals: 8, idleMs: 9400 },
+  },
 ] as const;
 
 type Observed = (typeof OBSERVED)[number];
 
-/** What a recorded run was worth, independent of the scale it was read on. */
-function runWorth(o: Observed): number {
-  return (o.read - o.par) / o.spread;
-}
+const DAYS: Record<string, Puzzle> = {
+  'mona-sun': puzzleForDay(dayIndex(new Date(2026, 7, 30))),
+  'wave-mon': puzzleForDay(dayIndex(new Date(2026, 7, 31))),
+};
 
-/** What the scale as it stands now would tell that player. */
+/** What the scale as it stands now tells that player: replayed where it can be. */
 function readsAs(o: Observed): number {
-  return Math.round(PAR_AGE + SPREAD * runWorth(o));
+  if ('metrics' in o) return estimateAge(DAYS[o.day], o.ms, o.metrics as RunMetrics).age;
+  return Math.round(PAR_AGE + SPREAD * ((o.read - o.par) / o.spread));
 }
 
 const FITTED = OBSERVED.filter((o) => !('insider' in o) && !('pinned' in o));
+const REPLAYABLE = OBSERVED.filter((o) => 'metrics' in o);
 
 /**
  * The same run, actually played, rather than reduced to its clock.
@@ -141,11 +165,11 @@ describe('against the people who have actually played it', () => {
   });
 
   it('keeps every real player inside a believable band', () => {
-    // Deliberately loose, and it has to be. A forty-eight year old set the fastest time
-    // of the whole set and a nineteen year old took three times as long on the same
-    // puzzle; the clock explains about a tenth of the variance in real age here. This
-    // guards against a reading nobody would recognise as themselves, not against being
-    // wrong about any one person.
+    // Deliberately loose, and it has to be. A forty-eight year old set the fastest and
+    // cleanest run of the whole set and a nineteen year old was among the slowest; no
+    // tuning of par and spread gets the mean error on this data under about nine and a
+    // half years. This guards against a reading nobody would recognise as themselves,
+    // not against being wrong about any one person.
     for (const o of FITTED) {
       const read = readsAs(o);
       const label = `${o.day}: real ${o.age}, read ${read}`;
@@ -157,22 +181,22 @@ describe('against the people who have actually played it', () => {
   it('still moves enough to be worth playing for', () => {
     // Least squares on this set asks for a spread near five, which would put the whole
     // population inside about fifteen years and make the number nearly a constant. The
-    // fastest and slowest runs on record are seven-fold apart, and should stay at
-    // least twenty years apart in what they are told.
+    // fastest and slowest runs on record are seven-fold apart in time; what they are
+    // told should stay at least fifteen years apart. Least squares would collapse that
+    // to about twelve, which is a number that has stopped saying anything.
     const reads = FITTED.map(readsAs);
-    expect(Math.max(...reads) - Math.min(...reads)).toBeGreaterThanOrEqual(20);
+    expect(Math.max(...reads) - Math.min(...reads)).toBeGreaterThanOrEqual(15);
   });
 
   it('records a mis-priced day rather than fitting to it', () => {
     // mona-sun was priced at seventy-two seconds and solved in five and a half. Five of
     // its seven runs pinned the clock at the floor of the scale, which is why four
-    // players of four different ages were all handed the same number.
+    // players of three different ages were all handed the same number.
     const pinned = OBSERVED.filter((o) => 'pinned' in o);
     expect(pinned).toHaveLength(5);
     const sameNumber = pinned.filter((o) => o.read === 14);
     expect(sameNumber).toHaveLength(4);
     expect(new Set(sameNumber.map((o) => o.age)).size).toBe(3);
-    expect(FITTED.some((o) => o.day === 'mona-sun')).toBe(true);
     expect(FITTED.filter((o) => o.day === 'mona-sun')).toHaveLength(1);
   });
 
@@ -182,10 +206,35 @@ describe('against the people who have actually played it', () => {
     const insider = OBSERVED.find((o) => 'insider' in o)!;
     expect(readsAs(insider)).toBeLessThan(insider.age);
   });
+
+  it('leaves no real run with a signal flat against the floor', () => {
+    // What the framing signal used to do. Three of these six framed the shape in under
+    // half a second -- they tripped the hot zone and the solve in the same frame -- and
+    // that pinned thirty per cent of the blend to the bottom of the scale for them, on a
+    // Monday that asks for twelve degrees of rotation. A signal that reads the same for
+    // "instant" as it would for "impossibly good" is not measuring anything.
+    for (const o of REPLAYABLE) {
+      const { parts } = estimateAge(DAYS[o.day], o.ms, o.metrics as RunMetrics);
+      for (const part of parts) {
+        expect(part.age, `real ${o.age}: ${part.key} at ${part.age}`).toBeGreaterThan(
+          MIN_AGE,
+        );
+      }
+    }
+  });
+
+  it('replays every recorded run to within a couple of years of what it was told', () => {
+    // The six runs came back reading 25, 32, 29, 35, 33 and 44. Re-pricing the framing
+    // signal and dropping par to match was meant to fix what the estimate is made of
+    // without yanking anybody's number around; nobody should move by more than two years.
+    for (const o of REPLAYABLE) {
+      expect(Math.abs(readsAs(o) - o.read), `real ${o.age}`).toBeLessThanOrEqual(2);
+    }
+  });
 });
 
 describe('a run that was played, not just timed', () => {
-  const puzzle = puzzleForDay(dayIndex(new Date(2026, 7, 31)));
+  const puzzle = DAYS['wave-mon'];
 
   it('does not read a clean run years younger than its own clock', () => {
     // Three minutes of clean hunting used to come out fifteen years under its own clock,

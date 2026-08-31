@@ -48,13 +48,24 @@ export const MAX_AGE = 85;
  * old from one forty-eight year old on a single day's clock, and it should not be tuned
  * as though it can.
  *
+ * Six of those runs later came back with their full metrics, which settles two things
+ * that were open. First, no signal here rescues the clock. Against real age the
+ * correlations run 0.15 for total time, 0.16 for search and for framing, 0.41 for near
+ * misses, *minus* 0.42 for dither, and 0.63 for hesitation -- and that last one is five
+ * zeroes and a single nine-second pause, so it is one data point wearing a coefficient.
+ * Nothing there is evidence, and the weights have deliberately not been moved on it.
+ * Second, no tuning of these two numbers gets the mean error under about nine and a half
+ * years on that set. The forty-eight year old set the fastest and cleanest run of the
+ * whole group and the nineteen year old was among the slowest. That is not a tuning
+ * problem, and the next person to reach for these constants should know it is not.
+ *
  * A run on a mis-priced day is outside all of this. `mona-sun` was a Sunday whose
  * measured `scan` came out at 0.471 against a rung asking for 0.31: it played five to
  * ten times easier than it was priced, five of its seven runs pinned the clock signal at
  * the floor, and no age scale can rescue a day the ramp got that wrong. Those runs are
  * recorded and excluded.
  */
-export const PAR_AGE = 37;
+export const PAR_AGE = 32;
 export const SPREAD = 7;
 
 /**
@@ -131,11 +142,23 @@ export function expectedSearchMs(scan: number): number {
 }
 
 /**
- * How long sizing and squaring up should take, in ms: a fixed cost for getting the zoom
- * onto a 4% window, plus the rotation the day actually asks for.
+ * How long sizing and squaring up should take, in ms: a small fixed cost for settling the
+ * zoom, plus the rotation the day actually asks for.
+ *
+ * The fixed cost was 6000, on the reasoning that getting the zoom onto a 4% window takes
+ * about six seconds. It does -- but almost none of that time lands in this signal.
+ * `metrics.ts` splits the run at the *last entry into the hot zone*, and the hot zone
+ * already requires the shape to be between 0.45x and 2.5x its final size and near the
+ * middle of the stage. Nearly all of the zooming is therefore spent while the run is
+ * still counted as searching, and what is left here is the last touch of sizing plus the
+ * twist. Six real runs on `wave-mon` framed in 0.0, 0.0, 0.4, 0.8, 3.5 and 6.7 seconds
+ * against an expectation of 6.5, and three of the six came in so far under it that the
+ * signal pinned at the floor of the age scale -- thirty per cent of the blend reading
+ * "as good as anything can be" for half the players, on a day that asks for twelve
+ * degrees of rotation.
  */
 export function expectedAdjustMs(work: number): number {
-  return 6000 + 45 * work;
+  return 1500 + 45 * work;
 }
 
 /**
@@ -157,6 +180,19 @@ export function expectedDither(work: number): number {
 export function expectedIdleMs(totalMs: number): number {
   return Math.max(3000, 0.08 * totalMs);
 }
+
+/**
+ * The softening on framing, as a fraction of what the day expects.
+ *
+ * Framing time is the third signal to need this, after the counts and hesitation, and for
+ * the same reason: it can legitimately come in at zero. A player who zooms in already
+ * square to the shape trips the hot zone and the solve in the same frame, which is a very
+ * good run and not an infinitely good one -- but a raw ratio of zero takes the logarithm
+ * to the floor and pins nearly a third of the blend to the bottom of the scale. A third
+ * of the expectation puts an instant framing at about a quarter of par, which is worth
+ * roughly a decade off and nothing more.
+ */
+const ADJUST_SOFTENING = 0.35;
 
 /**
  * The softening on hesitation, as a fraction of what the day expects rather than a fixed
@@ -220,7 +256,12 @@ export function estimateAge(
   // breakdown shows as much as in the ratio the blend uses.
   const raw: [AgePart['key'], string, number, number][] = [
     ['search', 'finding it', metrics.searchMs, search],
-    ['adjust', 'framing it', metrics.adjustMs, adjust],
+    [
+      'adjust',
+      'framing it',
+      metrics.adjustMs + ADJUST_SOFTENING * adjust,
+      (1 + ADJUST_SOFTENING) * adjust,
+    ],
     ['passes', 'near misses', metrics.passes + 1, expectedPasses(puzzle.dayOfWeek) + 1],
     [
       'dither',
