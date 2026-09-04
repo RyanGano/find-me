@@ -741,14 +741,14 @@ button.reference:focus-visible {
   justify-content: center;
 }
 
-/* A beta instrument, not an action: quiet enough that it does not compete with Share,
-   plain enough that a tester can find it when asked to. */
-.result-age-data {
-  margin: 12px auto 0;
-  display: block;
+/* The way in to the explanation. Sits with the age it explains rather than down with
+   the actions, and stays a quiet link: an answer for whoever wants it, not a step. */
+.result-age-info {
+  margin: 6px 0 0;
+  display: inline-block;
   border: 0;
   background: none;
-  padding: 4px 6px;
+  padding: 2px 0;
   font: inherit;
   font-size: 0.78rem;
   color: var(--muted);
@@ -757,11 +757,11 @@ button.reference:focus-visible {
   cursor: pointer;
 }
 
-.result-age-data:hover {
+.result-age-info:hover {
   color: var(--text);
 }
 
-.result-age-data:focus-visible {
+.result-age-info:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;

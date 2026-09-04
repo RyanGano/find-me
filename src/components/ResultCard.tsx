@@ -23,6 +23,9 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
   const [dataStatus, setDataStatus] = useState<'idle' | 'shared' | 'copied' | 'failed'>(
     'idle',
   );
+  // Folded away rather than printed under every result: most players want the number and
+  // the next puzzle, and the ones asking how it works have gone looking for the answer.
+  const [showAgeInfo, setShowAgeInfo] = useState(false);
   const countdown = useCountdown(!isPractice);
 
   // Derived, never stored: retuning the estimate re-reads old runs rather than leaving
@@ -37,13 +40,59 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
     setStatus(await shareResult(text));
   };
 
-  // Beta only, and deliberately a second button rather than more lines in the share
-  // text: what a player posts in public should stay short and spoiler-free, and this is
-  // an instrument for tuning the estimate, not a result.
+  // Beta only, and never folded into the share text: what a player posts in public
+  // should stay short and spoiler-free, and this is an instrument for tuning the
+  // estimate, not a result. It lives behind the explanation because that is where a
+  // tester asked to send their data has just been reading what the data is.
   const shareAgeData = async () => {
     const text = buildAgeDataText(day, puzzle, ms, age, metrics, isPractice);
     setDataStatus(await shareResult(text));
   };
+
+  // The explanation takes the card over rather than stacking a second panel on top of
+  // it, the same way the tally note takes over the how-to: one dialog at a time, and
+  // nothing for a phone to trap the player under.
+  if (showAgeInfo) {
+    return (
+      <div className="howto" role="dialog" aria-label="About your Find Me Age">
+        <h2>About your Find Me Age</h2>
+        <p>
+          It comes from five things about how you played this run: how long you took to
+          spot the {puzzle.thing}, how long to frame it, how often it slipped back out of
+          frame, how steady you held the view, and how long you spent stopped.
+        </p>
+        <p>
+          Those are weighed against what that day is <em>worth</em> rather than against
+          the clock alone &mdash; Sunday hides its shape far better than Monday does, so a
+          plain stopwatch would only ever tell you what day it was.
+        </p>
+        <p className="howto-note">
+          It is a bit of fun, not a measurement. Even across players who told us their
+          real ages, how fast somebody finds a shape says very little about how old they
+          are. Nothing personal goes into it: the whole thing is worked out on your own
+          device, from this run.
+        </p>
+        <div className="howto-foot">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setShowAgeInfo(false)}
+          >
+            Back
+          </button>
+          <button type="button" className="btn btn-quiet" onClick={shareAgeData}>
+            {dataStatus === 'copied'
+              ? 'Copied — paste it back with your real age'
+              : dataStatus === 'shared'
+                ? 'Sent — add your real age'
+                : dataStatus === 'failed'
+                  ? 'Copy failed'
+                  : 'Share age data'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="result" role="dialog" aria-label="Puzzle solved">
@@ -59,6 +108,13 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
             the whole list is a wall of jargon, and the interesting thing about a run is
             always the one or two ways it was unusual. */}
         {parts.length > 0 && <p className="result-age-why">{whyLine(parts)}</p>}
+        <button
+          type="button"
+          className="result-age-info"
+          onClick={() => setShowAgeInfo(true)}
+        >
+          How is this worked out?
+        </button>
       </div>
 
       <p className="result-art">
@@ -84,16 +140,6 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
           {isPractice ? 'Play again' : 'Free roam'}
         </button>
       </div>
-
-      <button type="button" className="result-age-data" onClick={shareAgeData}>
-        {dataStatus === 'copied'
-          ? 'Copied — paste it back with your real age'
-          : dataStatus === 'shared'
-            ? 'Sent — add your real age'
-            : dataStatus === 'failed'
-              ? 'Copy failed'
-              : 'Share age data'}
-      </button>
 
       {!isPractice && countdown && <p className="result-next">Next puzzle in {countdown}</p>}
     </div>
