@@ -73,6 +73,18 @@ binary-searches each day's opacity in a real browser against the rung's `scan` t
 then rewrites the day lines in `puzzles.ts` in place. Those lines are machine-written —
 one dense line per day; hand edits are fine but must stay on one line.
 
+**A week is seven different things.** `src/game/palette.ts` names the colour of a hiding
+place from a closed, deliberately coarse list, and a week must hide in at least four of
+them with no colour used more than twice — and a colour reused only in a different texture
+of paint. `plan-weeks.mjs` chooses the whole week under those caps (a backtracking search,
+not day-by-day greed) and refuses a painting that cannot offer four colours;
+`variety.test.ts` holds the shipped file to it. The rule is measured on the **paint**, not
+on the badge the player sees, because the tuner rewrites every day's fill and opacity
+afterwards and a rule it can move is a rule the planner cannot plan against. Texture is
+outranked by this: a day off its texture rung is still solved onto its scan target, and a
+week of identical badges cannot be fixed later. See "Variety inside a week" in README.md
+before touching any of it.
+
 **Determinism is a hard constraint.** Which painting, which day, where, how big, what
 angle, what colour — all fixed and identical for every player, rolling over at the
 player's own local midnight (`src/game/daily.ts`). `determinism.test.ts` fails the build
@@ -115,6 +127,10 @@ clock, resume, solve, result card).
   statuary; and it does not repeat the painter or extend a run of the genre at the tail of
   the rotation. New weeks are always appended, never inserted — `daily.ts` indexes the
   calendar into `PUZZLES`, so reordering moves every painting after it.
+- Changing where a day hides means re-planning and re-tuning that week, then re-running
+  the suite: `npm run plan -- <image>`, `npm run build`, `npx vite preview --port 4173 &`,
+  `npm run camouflage -- --solve <image>`. A spot that only reveals itself as unusable once
+  the browser has solved it goes in `scripts/avoid.json` — that is what it is for.
 - Each week declares a `genre`, and [src/game/curation.test.ts](src/game/curation.test.ts)
   holds the running order to it: no painter twice running, no genre three times running,
   no painter over a third of the rotation. Fix a failure by choosing a different painting,

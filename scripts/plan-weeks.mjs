@@ -16,7 +16,8 @@ import sharp from 'sharp';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { RAMP } from '../src/game/difficulty.ts';
 import { SHAPES } from '../src/game/shapes.ts';
-import { paintFor } from './lib/paint.mjs';
+import { colourAt, paintFor } from './lib/paint.mjs';
+import { MAX_DAYS_PER_COLOUR, MIN_COLOURS_PER_WEEK, generalColour } from '../src/game/palette.ts';
 import AVOID from './avoid.json' with { type: 'json' };
 
 
@@ -349,63 +350,202 @@ function viewAgreement(grey, info, cx, cy, rung, fitScale) {
 }
 
 /**
- * Seven hiding places for one painting, one per day, spread across the canvas.
+ * The colour of the paint a shape would hide in here.
  *
- * Each day asks for the texture its rung wants, but a painting is under no obligation to
- * have it: Bosch had no quiet corner anywhere and Hokusai has little else. So texture is a
- * preference here, not a rule. The ramp a player feels is set by the scan target each day
- * is solved for, and an earlier hard rule that texture must never fall through the week
- * only over-constrained the search until whole paintings had no legal Saturday left.
+ * The rule is measured on the paint rather than on the badge the player is shown, because
+ * the badge is not settled until the tuner has solved the day in a browser -- see the note
+ * at the top of `palette.ts` for why that distinction is the difference between a rule the
+ * planner can plan against and one it cannot.
  *
- * The days are picked in order rather than picked and then ranked, because each has its
- * own edge margin and Monday's is nearly twice Sunday's, and its own test of whether the
- * two views can be satisfied at once. Ranking afterwards shuffled spots between days that
- * could not legally hold them.
+ * Sampled over the shape's own footprint, and deliberately the same window
+ * `variety.test.ts` uses, so the planner and the test can never disagree about what they
+ * are looking at.
  */
-function spotsForWeek(grey, info, spots, image) {
-  const fitScale = Math.min(900 / info.width, 700 / info.height) * 0.92;
-  const taken = [];
-  for (const rung of RAMP) {
-    const margin = edgeMargin(rung.size);
-    let best = null;
-    let refused = 0;
-    for (const s of spots) {
-      if (avoided(image, s.cx, s.cy)) continue;
-      if (s.cx < margin || s.cy < margin || s.cx > info.width - margin || s.cy > info.height - margin) continue;
-      const nearest = taken.reduce((m, t) => Math.min(m, Math.hypot(t.cx - s.cx, t.cy - s.cy)), Infinity);
-      if (nearest < 420) continue;
-      const agreement = viewAgreement(grey, info, s.cx, s.cy, rung, fitScale);
-      if (agreement < VIEWS_AGREE_FLOOR || agreement > VIEWS_AGREE_CEILING) {
-        refused++;
-        continue;
-      }
-      // Texture is the real criterion; separation only breaks ties, so its penalty is
-      // capped well below the point where it could drag a day off its rung.
-      let cost = Math.abs(s.std - rung.texture) / rung.texture + Math.min(0.35, Math.max(0, (900 - nearest) / 2600));
-      // Every day trades some of its texture rung for company. The guard matters: a patch
-      // of flat sky that happens to look like the flat sky next to it is repetitive in the
-      // arithmetic and offers the shape nothing to hide in, so a spot has to be roughly on
-      // its rung before its lookalikes count for anything.
-      // Prefer the middle of the band: comfortably above the floor, well clear of the
-      // ceiling where shapes turn into beacons.
-      cost += 0.3 * Math.min(1, Math.abs(agreement - VIEWS_AGREE_BEST) / 1.2);
-      if (rung.company && cost < 1.2) cost -= rung.company * Math.max(0, repetition(grey, info, s.cx, s.cy, rung.size));
-      if (!best || cost < best.cost) best = { ...s, cost };
-    }
-    if (!best) {
-      throw new Error(
-        `${rung.label}: nothing left that clears the edge by ${margin}px, sits 420px from the other days, ` +
-          `and sits in the band where a shape can be subtle at a distance and visible but ` +
-          `not blazing close up (${refused} spots refused on that last count) -- ` +
-          `this painting cannot hold a week`,
-      );
-    }
-    best.repeat = repetition(grey, info, best.cx, best.cy, rung.size);
-    taken.push(best);
-  }
-  return taken;
+function colourOfSpot(rgb, cx, cy, rung) {
+  return generalColour(colourAt(rgb.data, rgb.info, cx, cy, Math.round(rung.size)));
 }
 
+/**
+ * How many days may share a hiding place's *kind*, as opposed to its colour.
+ *
+ * A week can use one colour twice; what it cannot do is use the same colour twice in the
+ * same kind of paint, because that is the failure this whole rule exists to stop -- two
+ * days in the same stretch of empty sky, arriving as two badges the same shade of beige.
+ * So a colour is allowed a second day only somewhere with a different texture to it: the
+ * sand of Hokusai's sky and the sand of his boats are one colour and two regions.
+ *
+ * The split is the canvas's own median, not a fixed number, because "busy" means nothing
+ * across paintings -- Bruegel's quietest snow is busier than half of the Mona Lisa.
+ */
+function regionOf(colour, std, median) {
+  return `${colour}/${std < median ? 'quiet' : 'busy'}`;
+}
+
+/** Candidates kept per day, per region. Enough for the search to have somewhere to go. */
+const PER_REGION = 8;
+
+/** A ceiling on the search, so a painting with thousands of legal spots still terminates. */
+const NODE_BUDGET = 400000;
+
+/**
+ * Every spot this day could legally take, tagged with the colour and region it would
+ * read as, and shortlisted so that each region is represented rather than only the
+ * cheapest paint on the canvas.
+ *
+ * The stratification is the point. Ranking by cost alone and keeping the top hundred
+ * hands the search a hundred spots in the same beige sky, which is exactly the week that
+ * shipped; keeping the best few of each region hands it the choice it is supposed to be
+ * making.
+ */
+function candidatesFor(grey, info, rgb, spots, image, rung, fitScale, median) {
+  const margin = edgeMargin(rung.size);
+  const byRegion = new Map();
+  let refused = 0;
+  for (const s of spots) {
+    if (avoided(image, s.cx, s.cy)) continue;
+    if (s.cx < margin || s.cy < margin || s.cx > info.width - margin || s.cy > info.height - margin) continue;
+    const agreement = viewAgreement(grey, info, s.cx, s.cy, rung, fitScale);
+    if (agreement < VIEWS_AGREE_FLOOR || agreement > VIEWS_AGREE_CEILING) {
+      refused++;
+      continue;
+    }
+    // Texture is a preference, never a rule -- and now it is outranked. Variety is what a
+    // player notices across seven days; a day landing off its texture rung loses some of
+    // the cover the paint would have given it, and the tuner solves opacity against the
+    // day's scan target afterwards either way. So this stays in the cost, where a hard
+    // constraint can overrule it, rather than becoming a gate of its own.
+    let cost = Math.abs(s.std - rung.texture) / rung.texture;
+    // Prefer the middle of the band: comfortably above the floor, well clear of the
+    // ceiling where shapes turn into beacons.
+    cost += 0.3 * Math.min(1, Math.abs(agreement - VIEWS_AGREE_BEST) / 1.2);
+    // Every day trades some of its texture rung for company. The guard matters: a patch
+    // of flat sky that happens to look like the flat sky next to it is repetitive in the
+    // arithmetic and offers the shape nothing to hide in, so flat paint's lookalikes are
+    // not allowed to count for anything.
+    //
+    // That guard used to read `cost < 1.2`, which stood in for "roughly on its rung" back
+    // when nothing could push a day off it. Now that variety can and does, the proxy
+    // failed in exactly the wrong direction: Hokusai's re-planned week came out with six
+    // of seven days off-rung and therefore earning no company at all -- and company is
+    // what makes a shape hard to *identify* rather than hard to see, which is most of what
+    // Sunday has. So the test says what it always meant: the paint must not be flat.
+    const repeat =
+      rung.company && s.std >= rung.texture * 0.6
+        ? Math.max(0, repetition(grey, info, s.cx, s.cy, rung.size))
+        : 0;
+    cost -= rung.company * repeat;
+    const colour = colourOfSpot(rgb, s.cx, s.cy, rung);
+    const region = regionOf(colour, s.std, median);
+    const bucket = byRegion.get(region) ?? [];
+    bucket.push({ ...s, cost, agreement, colour, region, repeat });
+    byRegion.set(region, bucket);
+  }
+  const out = [];
+  for (const bucket of byRegion.values()) {
+    bucket.sort((a, b) => a.cost - b.cost || a.cx - b.cx || a.cy - b.cy);
+    out.push(...bucket.slice(0, PER_REGION));
+  }
+  out.sort((a, b) => a.cost - b.cost || a.cx - b.cx || a.cy - b.cy);
+  return { list: out, refused, margin };
+}
+
+/**
+ * Seven hiding places for one painting, one per day, in four or more different colours.
+ *
+ * The days used to be picked one at a time, cheapest first, and that is what produced a
+ * whole Hokusai week in the sky: nothing in the search had any opinion about colour, and
+ * the cheapest paint on a canvas is all in one place. Picking greedily also cannot honour
+ * a constraint that spans the week -- Monday takes the last cheap sand, and Saturday,
+ * which had nowhere else to go, fails outright.
+ *
+ * So the week is chosen as a whole: a bounded depth-first search over each day's
+ * shortlist, cheapest first, that backtracks when the caps or the separation cannot be
+ * met, and keeps the cheapest complete week it finds. The bound is the sum of the
+ * remaining days' cheapest candidates, which can only understate what is left to pay, so
+ * pruning on it never discards a better week than the one already in hand.
+ *
+ * Texture is deliberately not a constraint here, only a term in the cost. A day that has
+ * to sit in busier paint than its rung asked for is still on its rung where it counts,
+ * because `tune-camouflage.mjs` solves its opacity against the day's scan target after
+ * this runs. A week where every badge is the same colour cannot be fixed later at all.
+ */
+function spotsForWeek(grey, info, rgb, spots, image) {
+  const fitScale = Math.min(900 / info.width, 700 / info.height) * 0.92;
+  const sorted = spots.map((s) => s.std).sort((a, b) => a - b);
+  const median = sorted[sorted.length >> 1];
+
+  const perDay = [];
+  for (const rung of RAMP) {
+    const found = candidatesFor(grey, info, rgb, spots, image, rung, fitScale, median);
+    if (!found.list.length) {
+      throw new Error(
+        `${rung.label}: nothing clears the edge by ${found.margin}px and sits in the band where a ` +
+          `shape can be subtle at a distance and visible but not blazing close up ` +
+          `(${found.refused} spots refused on that last count) -- this painting cannot hold a week`,
+      );
+    }
+    perDay.push(found.list);
+  }
+
+  const offered = new Set(perDay.flatMap((day) => day.map((c) => c.colour)));
+  if (offered.size < MIN_COLOURS_PER_WEEK) {
+    throw new Error(
+      `${image}: only ${offered.size} colour(s) anywhere a shape could legally hide ` +
+        `(${[...offered].sort().join(', ')}). Seven days at ${MAX_DAYS_PER_COLOUR} apiece needs ` +
+        `${MIN_COLOURS_PER_WEEK}, so the badge would read the same all week -- this painting needs ` +
+        `replacing, not re-planning`,
+    );
+  }
+
+  // The cheapest any remaining day could possibly be, for pruning. Costs go negative
+  // where a day earns its company discount, so this is a real lower bound, not zero.
+  const suffix = new Array(RAMP.length + 1).fill(0);
+  for (let d = RAMP.length - 1; d >= 0; d--) suffix[d] = suffix[d + 1] + perDay[d][0].cost;
+
+  const chosen = [];
+  const colours = new Map();
+  const regions = new Set();
+  let best = null;
+  let bestCost = Infinity;
+  let nodes = 0;
+
+  function walk(day, running) {
+    if (nodes++ > NODE_BUDGET) return;
+    if (running + suffix[day] >= bestCost) return;
+    if (day === RAMP.length) {
+      bestCost = running;
+      best = chosen.slice();
+      return;
+    }
+    for (const c of perDay[day]) {
+      if ((colours.get(c.colour) ?? 0) >= MAX_DAYS_PER_COLOUR) continue;
+      if (regions.has(c.region)) continue;
+      const nearest = chosen.reduce((m, t) => Math.min(m, Math.hypot(t.cx - c.cx, t.cy - c.cy)), Infinity);
+      if (nearest < 420) continue;
+      // Separation only breaks ties, so its penalty is capped well below the point where
+      // it could drag a day off its rung.
+      const step = c.cost + Math.min(0.35, Math.max(0, (900 - nearest) / 2600));
+      if (running + step + suffix[day + 1] >= bestCost) continue;
+      chosen.push(c);
+      colours.set(c.colour, (colours.get(c.colour) ?? 0) + 1);
+      regions.add(c.region);
+      walk(day + 1, running + step);
+      regions.delete(c.region);
+      colours.set(c.colour, colours.get(c.colour) - 1);
+      chosen.pop();
+    }
+  }
+  walk(0, 0);
+
+  if (!best) {
+    throw new Error(
+      `${image}: no seven hiding places can be ${MAX_DAYS_PER_COLOUR}-per-colour, one-per-region and ` +
+        `420px apart all at once -- the colours are there (${[...offered].sort().join(', ')}) but not ` +
+        `in places this week can legally use them`,
+    );
+  }
+  return best;
+}
 /** Every week seed in puzzles.ts, with the extent of its days block. */
 function weeks(source) {
   const out = [];
@@ -435,7 +575,7 @@ for (const [w, week] of [...found.entries()].reverse()) {
 
   const shapes = shapesForWeek(w);
   const surveyed = survey(grey.data, grey.info);
-  const spots = spotsForWeek(grey.data, grey.info, surveyed, week.image);
+  const spots = spotsForWeek(grey.data, grey.info, rgb, surveyed, week.image);
   const lines = [];
   const report = [];
   for (const [d, rung] of RAMP.entries()) {
@@ -451,7 +591,7 @@ for (const [w, week] of [...found.entries()].reverse()) {
     report.push(
       `  ${rung.key}  ${shape.padEnd(10)} at ${String(spot.cx).padStart(4)},${String(spot.cy).padStart(4)}` +
         `  texture ${spot.std.toFixed(1).padStart(5)} (want ${rung.texture})  ${blend} ${fill}  angle ${String(angle).padStart(4)}` +
-        `  company ${spot.repeat.toFixed(2)}`,
+        `  company ${spot.repeat.toFixed(2)}  reads ${spot.colour}`,
     );
   }
   console.log(week.image + '\n' + report.join('\n'));

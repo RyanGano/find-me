@@ -171,6 +171,12 @@ the top and dense detail below, which is the shape of a canvas that can hold a w
 The thresholds in `rate-painting.mjs` are calibrated against the paintings already tuned
 rather than guessed, and the browser tuner stays the authority.
 
+A canvas also has to have enough *colour* in it to hold a week, not just enough texture:
+four different colours of paint, in places a week can legally use them. `npm run plan`
+refuses a painting that cannot manage it and says which colours it found — see
+[Variety inside a week](#variety-inside-a-week). No painting in the rotation has failed on
+this, but a monochrome candidate would.
+
 Every painting turned down is recorded in `.claude/skills/add-painting/rejected.json` with
 what it failed on, so a candidate is sourced and measured once rather than every few
 months.
@@ -193,6 +199,81 @@ The rules constrain the order, and the order is effectively append-only: `daily.
 the calendar onto `PUZZLES` by index, so moving a week that players have already been
 served moves every painting after it too. A failure is therefore about the painting being
 added, and the fix is normally a different painting rather than a different position.
+
+### Variety inside a week
+
+The section above is about not serving the same *painting* twice running. The same problem
+happens inside a single week, and for a long time nothing caught it.
+
+Hokusai's week shipped with six of its seven days hidden in the same sandy paint — five of
+them within two degrees of the same hue — and every one of those in the empty cream sky.
+Nothing was in the blue of the wave, the foam, or the boats. Every day measured correctly
+against its own rung and the badge honestly reported the colour it found; the failure was
+only visible across the week, which was the one view nothing had. It was not one bad week
+either. Measured against the rule that now exists, **all nine weeks in the rotation failed
+it** — Bruegel's hunters and Altdorfer's battle were each six days of one colour, de Heem
+six days of red.
+
+The cause was that nothing in `plan-weeks.mjs` had any opinion about colour, and the
+cheapest paint on a canvas is all in one place. The `viewAgreement` band compounded it:
+asking for paint that is smooth close up and busier further out is very nearly a
+description of empty background, so the water and the foam were refused and the sky was
+not.
+
+So a week now has to hide in at least **four different colours, with no colour used more
+than twice** — seven days at two apiece is four — and a colour may only be used twice in
+two different textures of paint, so that the second sandy day is a boat rather than more
+sky. `palette.ts` holds the closed list of colour names and `variety.test.ts` holds the
+shipped file to the rule. A painting that cannot offer four colours fails planning outright
+with a message saying so, and the fix is a different painting.
+
+**The rule is measured on the paint, not on the badge.** That is not the obvious choice —
+the badge is what a player is actually shown — and the obvious choice was tried first and
+does not work. A day's badge is not settled until `tune-camouflage.mjs` has solved it in a
+browser, and it solves opacity anywhere from 0.17 to 0.99 for camouflage reasons that have
+nothing to do with colour; a week planned as four colours came back from the tuner as
+three, five times out of nine. A rule the planner cannot plan against is not a rule. The
+paint can be planned against, because tuning rewrites `fill`, `opacity`, `ratio` and `scan`
+and never `cx` or `cy`. It is also not a dodge: `paintFor` builds every fill out of the
+local hue and moves lightness only, so the badge shows the hue of the paint it came out of
+to within ten degrees across the whole rotation. `variety.test.ts` pins that rather than
+assuming it, since it is what makes naming the paint a way of naming what the player is
+sent after.
+
+The list of colour names is deliberately coarse. An earlier version separated `tan`,
+`brown` and `yellow`, and that let two days sit side by side in the same stretch of beige
+and count as two different colours — arithmetic agreeing with itself rather than anything a
+player would recognise. They are all `sand` now, and `cyan` went into `blue` for the same
+reason. Very pale and very dark paint is named for that before its hue, because Hokusai's
+foam holds a hue at saturation 0.28 and three days of it are still three days in the same
+foam; the thresholds come from the rotation's own spread rather than being picked.
+
+**Distance was the wrong lever, and was tried.** The complaint that the days were all "in
+the same place" looks like a spacing problem and is not one: the week that shipped already
+had every day 400px from its neighbours and no more than two in any ninth of the canvas.
+Tightening that actively breaks weeks — raising the minimum separation from 420px to 700px,
+or allowing only one day per ninth, both left Hokusai's Saturday with no legal spot at all
+and tripled Friday's cost. Days that are all one colour are all in one place because a
+stretch of paint one colour throughout *is* a region of the picture, so constraining colour
+constrains position for free: the re-planned Hokusai week lands in seven of the nine cells
+without any rule mentioning geometry.
+
+Two other things had to move with it:
+
+- **The week is now chosen as a whole.** Picking days one at a time cheapest-first cannot
+  honour a constraint that spans the week — Monday takes the last cheap sand and Saturday,
+  which had nowhere else to go, fails. `spotsForWeek` is a bounded depth-first search over
+  each day's shortlist that backtracks when the caps cannot be met, and the shortlist is
+  stratified by region so the search is handed a real choice rather than a hundred spots in
+  the same sky.
+- **Texture stopped being able to veto.** A day off its texture rung loses some of the
+  cover the paint would have given it, and the tuner solves its opacity against the scan
+  target afterwards regardless; a week where every badge is the same colour cannot be fixed
+  later at all. So texture stays a term in the cost where a hard constraint can overrule it.
+  The knock-on was not obvious: the `company` discount was guarded by `cost < 1.2`, which
+  stood in for "roughly on its rung" back when nothing could push a day off it, and the
+  re-planned Hokusai week came out with six of seven days off-rung and therefore earning no
+  company at all. The guard now says what it always meant — the paint must not be flat.
 
 ### Fairness
 

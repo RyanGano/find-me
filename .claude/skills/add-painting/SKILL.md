@@ -180,6 +180,13 @@ The ramp needs a painting with **both** a quiet corner for Monday and busy paint
 Sunday. Anything but `ok` or `tight` is a rejection — replace the painting, don't tune
 around it. `rate-painting.mjs` explains what each verdict cost the project to learn.
 
+A week also has to hide in **four different colours of paint, none used more than twice**,
+so that seven days do not read as one puzzle played over. This is not screened separately —
+`npm run plan` in step 5 refuses the painting outright and names the colours it could find.
+If that is how a candidate fails, it is a rejection like any other: record it in
+`rejected.json` with reason `too-few-colours` and choose another painting. Do not widen the
+rule to fit the canvas. See "Variety inside a week" in README.md.
+
 ### 3. Generate the asset
 
 Add `'NAME:.source-images/NAME.jpg'` to the end of the `files` list in
