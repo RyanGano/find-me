@@ -918,3 +918,174 @@ button.reference:focus-visible {
   color: var(--text);
 }
 
+
+/*
+ * The play-test bench. It borrows the game's shell wholesale -- the board, the badge,
+ * the top bar are the same elements doing the same job -- so what is here is only the
+ * few things the daily game has no use for: a card that stands on its own with no board
+ * behind it, and the review's two questions.
+ */
+.testbed-card,
+.review {
+  /*
+   * The daily panels sit over a board and slide up from its bottom edge, which is why
+   * they are absolutely positioned and centred with a transform. These stand on their
+   * own with nothing behind them, so they are laid out in normal flow -- and they must
+   * drop the daily animation with it, or they arrive halfway off the left of a phone
+   * because `panel-in` starts from a `translateX(-50%)` that no longer applies.
+   */
+  position: static;
+  transform: none;
+  margin: auto;
+  width: min(460px, calc(100% - 24px));
+  animation: card-in 0.2s ease-out;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.testbed {
+  justify-content: center;
+}
+
+.testbed-summary {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.testbed-summary li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.testbed-summary li span:first-child {
+  color: var(--text);
+}
+
+/* Text, not an icon: it has to be unmissable to somebody who is stuck, since a tester
+   with no way out of a hunt abandons the round rather than the puzzle. */
+.testbed-giveup {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.testbed-giveup:hover {
+  color: var(--text);
+}
+
+.review-step {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.review-q {
+  margin: 16px 0 6px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.review-hint {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/*
+ * Five rungs in a row, each a full-height target. A phone is the machine most of this
+ * gets answered on and a mis-tap is a wrong answer that looks exactly like a right one,
+ * so the buttons are as large as the width allows rather than as small as the labels.
+ */
+.review-scale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.review-rung {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 74px;
+  padding: 8px 2px;
+  font: inherit;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.review-rung:hover {
+  border-color: var(--muted);
+}
+
+.review-rung.is-on {
+  color: #1a1408;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.review-rung-n {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.review-rung-l {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.review-fair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.review-thumb {
+  padding: 12px 8px;
+  color: var(--muted);
+}
+
+.review-thumb.is-on {
+  color: #1a1408;
+  background: var(--ok);
+  border-color: var(--ok);
+  font-weight: 600;
+}
+
+.review-thumb.is-off {
+  color: var(--text);
+  background: #6b3630;
+  border-color: #6b3630;
+  font-weight: 600;
+}
+
+.review-next {
+  width: 100%;
+  margin-top: 18px;
+  padding: 13px 16px;
+  font-size: 1rem;
+}
+
+.review-next:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

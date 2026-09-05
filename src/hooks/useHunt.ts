@@ -4,12 +4,26 @@ import { finish, newTracker, sample, type RunMetrics, type Tracker } from '../ga
 import { compose, constrainPan, fitTransform } from '../game/transform';
 import type { Puzzle, Transform } from '../game/types';
 import type { GestureDelta } from '../game/transform';
-import type { Progress } from '../game/storage';
 import { useGestures } from './useGestures';
 
 export interface Size {
   w: number;
   h: number;
+}
+
+/**
+ * A run banked mid-hunt, in the only terms the hunt itself cares about: how far the
+ * clock had got, and the view it was left at. The daily game's `Progress` carries more
+ * than this -- which day, which version of it, which tally run -- and satisfies it; the
+ * play-test bench keeps far less and satisfies it too.
+ */
+export interface ResumableRun {
+  ms: number;
+  t: Transform;
+  w: number;
+  h: number;
+  /** The age collector, so an interrupted run is not scored as only its second half. */
+  k?: Tracker;
 }
 
 /** Everything the caller needs to bank a run that is being walked away from. */
@@ -33,7 +47,7 @@ export interface LeftRun {
 export interface HuntSession {
   puzzle: Puzzle;
   /** A run banked mid-hunt, handed back with its clock where it was. */
-  resume?: Progress;
+  resume?: ResumableRun;
   /** A time already recorded for this puzzle: opens as a finished board, not a clock. */
   prior?: { ms: number; metrics?: RunMetrics };
   /** True while a panel is up and the board should not be taking gestures. */
