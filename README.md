@@ -391,6 +391,20 @@ and `scannable` is the peak luminance shift at the fitted view — a single brig
 what gives a shape away when someone is scanning, so a peak reads that better than an
 average over a shape only a few pixels across.
 
+The shape's edges are softened by half an image pixel, which is a scanning-view lever:
+among specks a few pixels across, a hard vector edge is itself a tell, and every day in
+the file is tuned with that softening in place. The filter lives inside the zoom, though,
+so the radius was growing with every pinch — by the winning framing the painting is drawn
+five to ten times its native resolution and half an image pixel had become a smear several
+screen pixels wide. The player was being asked to match a smudge against a badge that is a
+crisp vector. `--stage-zoom` (`src/index.css`, set by `Stage`) divides the zoom back out,
+which holds the softening at exactly the radius it has when the whole painting is on
+screen: the fitted reading every day was solved against is untouched — measured, not
+assumed — and the shape sharpens as the player closes in, reading `found` about 30% higher
+at the match. Anything that drives the canvas transform by hand, which is all the browser
+tools in `scripts/`, has to set `--stage-zoom` alongside it or it is looking at a blur no
+player ever sees.
+
 Opacity is solved for, not chosen. The same fill and opacity that vanish into Leonardo's
 glazed landscape sit up and wave on Hokusai's flat woodblock, so no single number works
 everywhere. `npm run camouflage` measures how far the shape shifts the pixels underneath

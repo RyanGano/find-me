@@ -555,6 +555,7 @@ export default function App() {
           stageRef={stageRef}
           puzzle={puzzle}
           transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
+          fitScale={size ? fit(size).scale : 1}
           showRing={solvedMs !== null && showRing}
           blurred={paused || (startedAt === null && solvedMs === null)}
           paused={paused}

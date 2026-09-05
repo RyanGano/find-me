@@ -103,8 +103,13 @@ for (const v of variants) {
     const s = Math.sin(rot);
     const x = stage.width / 2 - (c * geo.cx * scale - s * geo.cy * scale);
     const y = stage.height / 2 - (s * geo.cx * scale + c * geo.cy * scale);
-    document.querySelector('.stage-canvas').style.transform =
+    const canvas = document.querySelector('.stage-canvas');
+    // Set `--stage-zoom` with the transform, or the shape is drawn with the fitted
+    // view's edge softening at the match -- see index.css.
+    const fitScale = new DOMMatrix(getComputedStyle(canvas).transform).a;
+    canvas.style.transform =
       'translate(' + x + 'px, ' + y + 'px) rotate(' + (rot * 180) / Math.PI + 'deg) scale(' + scale + ')';
+    canvas.style.setProperty('--stage-zoom', String(Math.max(1, scale / fitScale)));
   }, g);
   await page.waitForTimeout(150);
   const matched = await shoot(label + '  [matched -- can it be found?]');

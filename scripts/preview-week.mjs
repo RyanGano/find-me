@@ -115,10 +115,15 @@ for (const rung of RAMP) {
     const stage = document.querySelector('.stage').getBoundingClientRect();
     const c = Math.cos(rot);
     const s = Math.sin(rot);
-    document.querySelector('.stage-canvas').style.transform =
+    const canvas = document.querySelector('.stage-canvas');
+    // With the transform goes `--stage-zoom`, or the ramp is judged on a softening the
+    // player never sees at the match -- see index.css.
+    const fitScale = new DOMMatrix(getComputedStyle(canvas).transform).a;
+    canvas.style.transform =
       'translate(' + (stage.width / 2 - (c * g.cx * scale - s * g.cy * scale)) + 'px, ' +
       (stage.height / 2 - (s * g.cx * scale + c * g.cy * scale)) + 'px) rotate(' +
       (rot * 180) / Math.PI + 'deg) scale(' + scale + ')';
+    canvas.style.setProperty('--stage-zoom', String(Math.max(1, scale / fitScale)));
   }, geo);
   await page.waitForTimeout(150);
   const matched = await shoot(`${rung.label.toUpperCase()}  solved  size ${rung.size}  ratio ${rung.ratio}`);

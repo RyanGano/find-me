@@ -431,6 +431,15 @@ button.clock:focus-visible {
   pointer-events: none;
 }
 
+/* Edge softening, held at the radius it has when the whole painting is on screen: the
+   filter is inside the zoom, so `--stage-zoom` (1 at the fitted view) divides it back
+   out as the player closes in. Both variables are set by `Stage`, and anything that
+   drives the canvas transform by hand -- the browser tools in scripts/ -- has to set
+   `--stage-zoom` alongside it or it will be looking at a blur no player ever sees. */
+.stage-target svg {
+  filter: blur(calc(var(--shape-blur, 0px) / var(--stage-zoom, 1)));
+}
+
 .stage-ring {
   position: absolute;
   border-style: solid;

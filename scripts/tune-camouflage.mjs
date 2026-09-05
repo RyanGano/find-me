@@ -122,9 +122,15 @@ async function prepare(page, id) {
     const y = stage.height / 2 - (s * cx * scale + c * cy * scale);
     const canvas = document.querySelector('.stage-canvas');
     const fitted = getComputedStyle(canvas).transform;
+    // The app divides the shape's edge softening by how far past the fitted view we are
+    // (see `--stage-zoom` in index.css). Driving the transform from here bypasses the
+    // code that sets it, so it has to be set alongside, or every matched reading is
+    // taken on a blur the player never sees.
+    const fitScale = new DOMMatrix(fitted).a;
     canvas.style.transform =
       'translate(' + x + 'px, ' + y + 'px) rotate(' + (rot * 180) / Math.PI + 'deg) scale(' + scale + ')';
-    return { targetPx, cx, cy, size, angle, fitted };
+    canvas.style.setProperty('--stage-zoom', String(Math.max(1, scale / fitScale)));
+    return { targetPx, cx, cy, size, angle, fitted, fitScale };
   });
 }
 
@@ -142,6 +148,7 @@ async function frame(page, mode, geo) {
     const canvas = document.querySelector('.stage-canvas');
     if (m === 'fitted') {
       canvas.style.transform = g.fitted;
+      canvas.style.setProperty('--stage-zoom', '1');
       return;
     }
     const scale = g.targetPx / g.size;
@@ -153,6 +160,7 @@ async function frame(page, mode, geo) {
     const y = stage.height / 2 - (s * g.cx * scale + c * g.cy * scale);
     canvas.style.transform =
       'translate(' + x + 'px, ' + y + 'px) rotate(' + (rot * 180) / Math.PI + 'deg) scale(' + scale + ')';
+    canvas.style.setProperty('--stage-zoom', String(Math.max(1, scale / g.fitScale)));
   }, [mode, geo]);
   await page.waitForTimeout(80);
 }

@@ -6,6 +6,8 @@ interface Props {
   stageRef: React.RefObject<HTMLDivElement | null>;
   puzzle: Puzzle;
   transform: Transform;
+  /** The scale at which the whole painting is on screen, which fixes the shape's softening. */
+  fitScale: number;
   /** Draw the reveal ring. Only ever true once solved, and the player can turn it off. */
   showRing: boolean;
   /** Hide the detail until the player commits, so nobody can scan for free. */
@@ -26,6 +28,7 @@ export function Stage({
   stageRef,
   puzzle,
   transform,
+  fitScale,
   showRing,
   blurred,
   paused,
@@ -38,6 +41,18 @@ export function Stage({
   // Keep the reveal ring a constant thickness on screen however far we are zoomed in.
   const ringSize = target.size * 2.2;
   const ringWidth = 3 / transform.scale;
+
+  // How far past the fitted view we are, which the shape's edge softening is divided by.
+  //
+  // The softening is a scanning-view lever: it is what stops a vector edge reading as a
+  // vector edge among the specks, and every day in the file is tuned against how it looks
+  // at the fitted view. But the filter lives inside the zoom, so the radius was growing
+  // with every pinch -- by the match the painting is drawn five to ten times native and
+  // half an image pixel had become a smear several screen pixels wide, which is not what
+  // the player is asked to match: the badge beside it is a crisp vector. Dividing it out
+  // holds the softening at exactly what it is when the whole painting is on screen, so the
+  // fitted view is untouched and the shape sharpens as the player closes in.
+  const zoom = Math.max(1, transform.scale / fitScale);
 
   return (
     <div
@@ -53,7 +68,7 @@ export function Stage({
       <div className={`stage-viewport${blurred ? ' is-blurred' : ''}`}>
       <div
         className="stage-canvas"
-        style={{ width: puzzle.width, height: puzzle.height, transform: css }}
+        style={{ width: puzzle.width, height: puzzle.height, transform: css, '--stage-zoom': zoom } as React.CSSProperties}
       >
         <img
           className="stage-image"
@@ -73,7 +88,13 @@ export function Stage({
         />
         <div
           className="stage-target"
-          style={{ left: target.cx - target.size / 2, top: target.cy - target.size / 2 }}
+          style={
+            {
+              left: target.cx - target.size / 2,
+              top: target.cy - target.size / 2,
+              '--shape-blur': `${target.blur ?? 0}px`,
+            } as React.CSSProperties
+          }
         >
           <Shape
             shape={target.shape}
@@ -84,7 +105,6 @@ export function Stage({
             strokeWidth={target.strokeWidth}
             opacity={target.opacity}
             blend={target.blend}
-            blur={target.blur}
           />
         </div>
         {showRing && (
