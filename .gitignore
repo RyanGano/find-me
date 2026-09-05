@@ -24,5 +24,8 @@ dist-ssr
 *.sw?
 .source-images/
 
+# Throwaway output from the browser diag tools -- previews, diag sheets, smoke shots.
+.scratch/
+
 # Everything about where the tally is stored, and how to reach it. Never committed.
 /local/

@@ -118,6 +118,12 @@ clock, resume, solve, result card).
 
 - Practice runs, for testing: `?puzzle=starry-wed` or `?day=3`. They are not recorded and
   do not affect a streak.
+- `.source-images/` holds one file per shipped painting — the highest-resolution scan,
+  named `<image>.jpg` — and nothing else. It is gitignored, so those scans are the only
+  copy there is, and anything else left there buries them. Everything a browser tool
+  renders (week sheets, diag frames, smoke shots) is throwaway: write it to `.scratch/`,
+  which is gitignored and is what the tools default to, or to the scratchpad. Don't keep
+  the scan of a painting that was rejected — record the rejection, delete the file.
 - Adding or moving a puzzle: see "Adding a puzzle" in [README.md](README.md). Judge
   camouflage only from `diag-camouflage.mjs` (the real page at the winning framing) or
   `preview:week`, never from a composited preview.

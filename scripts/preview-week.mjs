@@ -14,10 +14,12 @@
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { RAMP } from '../src/game/difficulty.ts';
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 
 const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/';
 const image = process.argv[2] ?? 'mona';
-const out = process.argv[3] ?? `.source-images/week-${image}.jpg`;
+const out = process.argv[3] ?? `.scratch/week-${image}.jpg`;
 const SCALE = 0.62;
 
 const browser = await chromium.launch({ channel: 'chrome', args: ['--force-device-scale-factor=1'] });
@@ -143,6 +145,7 @@ for (const rung of RAMP) {
   console.log('captured', id);
 }
 
+mkdirSync(dirname(out), { recursive: true });
 await sharp({ create: { width: tile.w * 3, height: tile.h * rows.length, channels: 3, background: '#111' } })
   .composite(rows.map((input, i) => ({ input, left: 0, top: i * tile.h })))
   .jpeg({ quality: 88 })

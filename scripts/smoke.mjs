@@ -11,7 +11,7 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
 const URL = process.argv[2] ?? 'http://localhost:4173/';
-const OUT = process.argv[3] ?? '.source-images/shots';
+const OUT = process.argv[3] ?? '.scratch/shots';
 mkdirSync(OUT, { recursive: true });
 
 const CHANNELS = ['chrome', 'msedge', undefined];

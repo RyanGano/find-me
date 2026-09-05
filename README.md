@@ -492,7 +492,7 @@ that pin down two input bugs which only appear on real devices:
   drops everything.
 
 Both regressions were confirmed to fail against the unfixed code before the fix landed.
-Screenshots land in `.source-images/shots`.
+Screenshots land in `.scratch/shots`.
 
 ```bash
 npm run build
@@ -513,6 +513,15 @@ looks bigger than the badge" report was traced to gesture gain rather than geome
 1. Drop a high-resolution source image in `.source-images/` and add it to the list in
    `scripts/resize-images.mjs`, then run `npm run images`. Assets are generated at
    2600px wide into `public/puzzles/`.
+
+   `.source-images/` holds **one file per shipped painting and nothing else** — the
+   highest-resolution scan, named `<image>.jpg` for the id used in `puzzles.ts`. It is
+   gitignored, so it is the only copy of those scans there is; everything else that a
+   browser tool produces is throwaway and belongs in `.scratch/`, which the tools now
+   default to. It grew to 1.4GB of week sheets, diag renders, badge screenshots and
+   scans of paintings that had already been rejected before that rule was written down;
+   nothing in that pile was worth keeping, and the pile made the scans that were
+   irreplaceable hard to see.
 2. Add an entry to `SEEDS` in `src/game/puzzles.ts` with the image's dimensions and
    where the shape hides — `cx`, `cy`, `size` and `angle` are all in the **generated
    asset's** pixel space.

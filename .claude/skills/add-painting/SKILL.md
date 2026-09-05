@@ -43,8 +43,7 @@ The renders are spoilers in themselves: `preview:week` circles all seven answers
 `diag-camouflage` centres the frame on one. You have to look at them — the eye is the
 final authority in step 7 — but keep that to the minimum the judgement needs, view them
 and move on, and never narrate, re-post or annotate what they show. Don't send the user
-to `.source-images/week-NAME.jpg` either; it is a spoiler sheet with their whole week on
-it.
+to the `preview:week` sheet either; it is a spoiler sheet with their whole week on it.
 
 ## Rule 1 — check the rejected list first
 
@@ -168,7 +167,9 @@ Filter the results yourself for width >= 3000 and landscape orientation, and rea
   different, equally good work by the same painter is on Commons at 4570px.
 
 `.source-images/` is gitignored: the source scan is never committed, only the generated
-asset in `public/puzzles/`.
+asset in `public/puzzles/`. It holds one file per shipped painting and nothing else, so
+put the scan there under the painting's id and leave nothing else behind — a candidate
+that ends up rejected gets its scan deleted, not kept.
 
 ### 2. Rate it before investing in it
 
@@ -326,8 +327,8 @@ read alike, the day is fine and it is the render that is unfair. The matched pan
 such problem: what you see there is what the player gets, so it is the one to trust for
 "is this shape actually present".
 
-Write the diag output to the scratchpad rather than `.source-images/`, and see Rule 0 on
-what not to say about any of these renders.
+Write the diag output to the scratchpad or `.scratch/` (both gitignored) rather than
+`.source-images/`, and see Rule 0 on what not to say about any of these renders.
 
 If a day fails on sight, move it via `avoid.json` and go back to step 5. The eye is the
 final authority here; the measurements exist to make it repeatable.
@@ -367,7 +368,9 @@ through `?puzzle=NAME-sun`. They aren't recorded and don't affect a streak.
 
 Commit `src/game/puzzles.ts`, `public/puzzles/NAME.jpg`, `scripts/resize-images.mjs`, any
 `scripts/avoid.json` change, and the README/comment count updates. The source scan under
-`.source-images/` stays out, and so does anything from `local/`.
+`.source-images/` stays out, and so does anything from `local/`. Delete the week sheets,
+diag frames and any rejected candidate's scan before you finish — the only thing that
+earns a place in `.source-images/` is the new painting's own scan.
 
 Commit any `rejected.json` additions too — including when the whole session ended in a
 rejection and no painting was added. That is the one case where it is tempting to walk

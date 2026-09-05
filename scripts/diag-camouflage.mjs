@@ -16,11 +16,13 @@
  */
 import { chromium } from 'playwright';
 import sharp from 'sharp';
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 
 const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/';
 const id = process.argv[2] ?? 'mona';
 const variants = JSON.parse(process.argv[3] ?? '[{}]');
-const out = process.argv[4] ?? '.source-images/real.jpg';
+const out = process.argv[4] ?? '.scratch/real.jpg';
 
 const browser = await chromium.launch({ channel: 'chrome', args: ['--force-device-scale-factor=1'] });
 const page = await browser.newPage({ viewport: { width: 900, height: 760 } });
@@ -123,6 +125,7 @@ for (const v of variants) {
   console.log('captured', label);
 }
 
+mkdirSync(dirname(out), { recursive: true });
 await sharp({ create: { width: tile.w * 2, height: tile.h * rows.length, channels: 3, background: '#111' } })
   .composite(rows.map((input, i) => ({ input, left: 0, top: i * tile.h })))
   .jpeg({ quality: 92 })
