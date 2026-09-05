@@ -61,6 +61,62 @@ const storage = () =>
     game: localStorage.getItem('find-me:v1'),
   }));
 
+/**
+ * Give up, and check what that is supposed to do: stop the clock for good, and put the
+ * shape somewhere the tester can actually look at it. Returns the frozen clock.
+ */
+async function quit(expectReveal = true) {
+  const before = await page.evaluate(() => {
+    const m = new DOMMatrix(getComputedStyle(document.querySelector('.stage-canvas')).transform);
+    return Math.hypot(m.a, m.b);
+  });
+  await page.locator('.testbed-giveup').click();
+  await page.waitForSelector('.reveal-note');
+  const frozen = (await page.textContent('.clock')).trim();
+
+  if (expectReveal) {
+    const after = await page.evaluate(() => {
+      const stage = document.querySelector('.stage').getBoundingClientRect();
+      const m = new DOMMatrix(getComputedStyle(document.querySelector('.stage-canvas')).transform);
+      const el = document.querySelector('.stage-target');
+      const svg = el.querySelector('svg');
+      const size = Number(svg.getAttribute('width'));
+      const box = el.getBoundingClientRect();
+      const ref = document.querySelector('.reference-well svg');
+      return {
+        scale: Math.hypot(m.a, m.b),
+        rot: Math.atan2(m.b, m.a),
+        // How far the hidden shape's centre is from the middle of the stage, in pixels.
+        off: Math.hypot(
+          box.left + box.width / 2 - (stage.left + stage.width / 2),
+          box.top + box.height / 2 - (stage.top + stage.height / 2),
+        ),
+        onScreenSize: size * Math.hypot(m.a, m.b),
+        wantSize: Number(ref.getAttribute('width')),
+      };
+    });
+    check('giving up zooms in towards the shape', after.scale > before, `${before.toFixed(4)} -> ${after.scale.toFixed(4)}`);
+    check('and centres it on the stage', after.off < 30, `${after.off.toFixed(0)}px off centre`);
+    check(
+      'at close to the size it needs to be, but not on it',
+      after.onScreenSize > after.wantSize * 0.5 && after.onScreenSize < after.wantSize * 0.95,
+      `${after.onScreenSize.toFixed(0)}px vs ${after.wantSize}px wanted`,
+    );
+    check('the puzzle is not solved out from under them', (await page.$('.reference.is-solved')) === null);
+
+    // The clock must be stopped, not merely paused: a paused board blurs the painting,
+    // which is the one thing that would stop them judging what they are looking at.
+    await page.waitForTimeout(700);
+    check('the clock stays stopped', (await page.textContent('.clock')).trim() === frozen, frozen);
+    check('the painting is not blurred while they look', (await page.$('.stage-viewport.is-blurred')) === null);
+    check('there is no way to restart the run', (await page.$('.btn-pause')) === null);
+    await page.screenshot({ path: `${OUT}/3-reveal.png` });
+  }
+
+  await page.locator('.testbed-rate').click();
+  return frozen;
+}
+
 /** Answer the review card that is up: a difficulty rung, a thumb, then move on. */
 async function review(hard, fair) {
   await page.waitForSelector('.review');
@@ -112,11 +168,12 @@ await page.waitForTimeout(250);
 check('the blur lifts on the first move', (await page.$('.stage-viewport.is-blurred')) === null);
 check('the clock runs on the first move', (await page.textContent('.clock')).trim() !== 'ready');
 
-await page.locator('.testbed-giveup').click();
+const frozen = await quit();
 await page.waitForSelector('.review');
 await page.waitForTimeout(350);
 await page.screenshot({ path: `${OUT}/3-review.png` });
 check('giving up is an answer, not a dead end', (await page.textContent('.review-step')).trim() === '1 of 6');
+check('the review reports the time they gave up at', (await page.textContent('.review h2')).includes(frozen));
 
 await review(5, -1);
 await page.waitForSelector('.stage-image');
@@ -139,8 +196,20 @@ check('and does not ask them to start over', (await page.$('.testbed-card')) ===
 
 // ------------------------------------------------------------------- finishing a round
 
-for (let i = 2; i <= 6; i++) {
-  await page.locator('.testbed-giveup').click();
+// Step 2 has not been touched, so its clock still reads `ready`. Somebody who looks at a
+// painting, decides straight away they will never find it and presses the button is the
+// person most likely to press it at all -- and it used to do nothing whatsoever.
+check('the hunt is untouched before this one', (await page.textContent('.clock')).trim() === 'ready');
+await page.locator('.testbed-giveup').click();
+await page.waitForSelector('.reveal-note');
+check('giving up without ever moving still reveals and moves on', true);
+check('and unblurs the painting so they can look', (await page.$('.stage-viewport.is-blurred')) === null);
+await page.locator('.testbed-rate').click();
+await review(3, 1);
+await page.waitForSelector('.stage-image');
+
+for (let i = 3; i <= 6; i++) {
+  await quit(false);
   await review(3, 1);
   if (i < 6) await page.waitForSelector('.stage-image');
 }

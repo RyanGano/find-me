@@ -102,6 +102,15 @@ export function useHunt(session: HuntSession) {
   // moment ago, and it should say so rather than looking like a fresh puzzle.
   const [resuming, setResuming] = useState(Boolean(resume));
   const [solvedMs, setSolvedMs] = useState<number | null>(prior?.ms ?? null);
+  /**
+   * The clock at the moment the hunter gave up, if they did.
+   *
+   * It stops the run exactly as a solve does -- no ticking, no more sampling, and the
+   * solve can no longer fire -- while leaving the board live, so they can go on looking
+   * at the thing they could not find. The daily game never sets it; only the play-test
+   * bench offers a way out, because only there is quitting a useful answer.
+   */
+  const [gaveUpMs, setGaveUpMs] = useState<number | null>(null);
   // How the run is being played, for the Find Me Age. The collector rides along with the
   // banked run, so a back-swipe costs nothing; the finished metrics go with the result.
   const tracker = useRef<Tracker>(resume?.k ?? newTracker());
@@ -156,7 +165,7 @@ export function useHunt(session: HuntSession) {
     return evaluate(puzzle.target, transform, size.w, size.h, targetSize);
   }, [puzzle.target, transform, size, targetSize]);
 
-  const running = startedAt !== null && solvedMs === null && !paused;
+  const running = startedAt !== null && solvedMs === null && gaveUpMs === null && !paused;
 
   // Resuming rebases the start so the frozen elapsed time carries over untouched.
   const togglePause = useCallback(() => {
@@ -280,7 +289,61 @@ export function useHunt(session: HuntSession) {
     if (size) setTransform(fit(size));
   }, [size, fit]);
 
-  const clock = solvedMs ?? (startedAt === null ? 0 : elapsed);
+  /**
+   * Put the hidden shape in the middle of the stage, at most of the size it needs to be,
+   * without touching the rotation.
+   *
+   * For after somebody gives up. Being told where a thing was is not the same as being
+   * shown it, and the question the bench actually needs answered -- was that fair? --
+   * cannot be answered by a person who never saw the shape at all. So this hands them the
+   * framing and lets them look.
+   *
+   * Deliberately short of the winning scale, and deliberately leaving the angle alone.
+   * Landing exactly on the match would solve the puzzle out from under them the moment
+   * the view moved, which is neither satisfying nor informative; this leaves the last bit
+   * of sizing and the whole of the twist still to do, so the board stays a board.
+   */
+  const reveal = useCallback(() => {
+    if (!size) return;
+    const scale = (targetSize / puzzle.target.size) * 0.7;
+    setTransform((prev) => {
+      const rot = prev?.rot ?? 0;
+      const cos = Math.cos(rot);
+      const sin = Math.sin(rot);
+      const sx = puzzle.target.cx * scale;
+      const sy = puzzle.target.cy * scale;
+      // The inverse of `apply`: put the target where the centre of the stage is.
+      const next: Transform = {
+        scale,
+        rot,
+        x: size.w / 2 - (cos * sx - sin * sy),
+        y: size.h / 2 - (sin * sx + cos * sy),
+      };
+      return constrainPan(next, puzzle.width, puzzle.height, size.w, size.h);
+    });
+  }, [size, targetSize, puzzle.target.size, puzzle.target.cx, puzzle.target.cy, puzzle.width, puzzle.height]);
+
+  /**
+   * Stop the clock for good and show them the shape. Returns how long they hunted, which
+   * is the number worth keeping: how long somebody looked before deciding a day was
+   * hopeless says more about that day than any rating from the people who finished.
+   */
+  const giveUp = useCallback(() => {
+    if (solvedMs !== null || gaveUpMs !== null) return 0;
+    // Before the clock has even started: somebody who looks at the painting, decides
+    // straight away that they will never find it and presses the button. That is a real
+    // answer -- arguably the strongest one a day can get -- and it used to do nothing at
+    // all, because the guard here required a run to be under way.
+    const ms = startedAt === null ? 0 : paused ? elapsed : performance.now() - startedAt;
+    setGaveUpMs(ms);
+    setElapsed(ms);
+    setPaused(false);
+    setResuming(false);
+    reveal();
+    return ms;
+  }, [startedAt, solvedMs, gaveUpMs, paused, elapsed, reveal]);
+
+  const clock = solvedMs ?? gaveUpMs ?? (startedAt === null ? 0 : elapsed);
 
   const onReady = useCallback(() => setReady(true), []);
 
@@ -300,8 +363,10 @@ export function useHunt(session: HuntSession) {
     paused,
     resuming,
     solvedMs,
+    gaveUpMs,
     metrics,
     togglePause,
     reset,
+    giveUp,
   };
 }

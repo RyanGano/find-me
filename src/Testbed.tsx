@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ReviewCard } from './components/ReviewCard';
 import { Stage } from './components/Stage';
@@ -175,8 +175,9 @@ function Intro({ round, count, onStart }: { round: Round; count: number; onStart
           <li>{count} puzzles, about fifteen minutes.</li>
           <li>Stop whenever you like — this link picks up where you left off.</li>
           <li>
-            Stuck is useful. There is a <strong>give up</strong> button, and pressing it
-            tells us more than struggling on does.
+            Stuck is useful. Press <strong>give up</strong> and the clock stops and the
+            board takes you to the shape, so you can still judge whether it was findable.
+            How long you looked before quitting is the most useful thing you can tell us.
           </li>
           <li>None of this touches the real game, your streak or your times.</li>
         </ul>
@@ -252,8 +253,16 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
   // `determinism.test.ts` allows randomness in exactly one file, which is not this one.
   const runId = `${tester}-${round.id}-${puzzle.id}`;
 
+  // Set the moment they give up, and read by the solve handler below: after a reveal the
+  // board is still live and they may well go on and frame the shape, but the run is over
+  // and the time that counts is how long they hunted before quitting.
+  const quit = useRef(false);
+
   const onSolved = useCallback(
-    (ms: number, metrics: RunMetrics) => onDone({ ms, metrics, gaveUp: false }),
+    (ms: number, metrics: RunMetrics) => {
+      if (quit.current) return;
+      onDone({ ms, metrics, gaveUp: false });
+    },
     [onDone],
   );
 
@@ -279,16 +288,36 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
     paused,
     resuming,
     solvedMs,
+    gaveUpMs,
     togglePause,
     reset,
+    giveUp,
   } = useHunt({ puzzle, resume, runId, onSolved, onLeave });
 
-  // Giving up is data, not a dead end: how long somebody hunted before deciding it was
-  // not going to happen is the clearest signal a day is too hard, and a tester with no
-  // way out of a hunt they cannot finish abandons the whole round instead.
-  const giveUp = useCallback(() => {
-    onDone({ ms: startedAt === null ? 0 : elapsed, metrics: null, gaveUp: true });
-  }, [onDone, startedAt, elapsed]);
+  // Once they have given up, the reveal ring is the last resort -- offered, not forced.
+  // Somebody who still cannot see the shape with it centred and half-zoomed is telling us
+  // something worth hearing, and taking that away by drawing a circle round it first
+  // would be answering the question on their behalf.
+  const [showRing, setShowRing] = useState(false);
+
+  /**
+   * Giving up is data, not a dead end. How long somebody hunted before deciding it was
+   * hopeless is the clearest signal a day is too hard, and a tester with no way out of a
+   * hunt abandons the whole round instead of the puzzle.
+   *
+   * It does not end the hunt on the spot, though, because the round asks two questions
+   * and only one of them can be answered by somebody who never saw the shape. "Was that
+   * fair?" needs them to see where it was and judge for themselves, so the clock stops,
+   * the view goes to the hiding place, and they are left to look.
+   */
+  const onGiveUp = useCallback(() => {
+    quit.current = true;
+    giveUp();
+  }, [giveUp]);
+
+  const rate = useCallback(() => {
+    onDone({ ms: gaveUpMs ?? 0, metrics: null, gaveUp: true });
+  }, [onDone, gaveUpMs]);
 
   return (
     <div className="app testbed">
@@ -303,7 +332,7 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
           {startedAt === null ? 'ready' : formatTime(clock)}
         </p>
         <div className="topbar-actions">
-          {startedAt !== null && solvedMs === null && (
+          {startedAt !== null && solvedMs === null && gaveUpMs === null && (
             <button
               type="button"
               className="btn btn-icon btn-pause"
@@ -327,9 +356,15 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
           <button type="button" className="btn btn-icon" onClick={reset} title="Reset view">
             ⟲
           </button>
-          <button type="button" className="btn testbed-giveup" onClick={giveUp}>
-            give up
-          </button>
+          {gaveUpMs === null ? (
+            <button type="button" className="btn testbed-giveup" onClick={onGiveUp}>
+              give up
+            </button>
+          ) : (
+            <button type="button" className="btn btn-primary testbed-rate" onClick={rate}>
+              rate it
+            </button>
+          )}
         </div>
       </header>
 
@@ -339,8 +374,10 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
           puzzle={puzzle}
           transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
           fitScale={fitScale}
-          showRing={false}
-          blurred={paused || (startedAt === null && solvedMs === null)}
+          showRing={showRing}
+          // Unblurred once the run is over however it ended, including a give-up before
+          // the clock ever started -- the whole point of the reveal is being able to look.
+          blurred={paused || (startedAt === null && solvedMs === null && gaveUpMs === null)}
           paused={paused}
           resumed={resuming}
           onReady={onReady}
@@ -348,6 +385,20 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
 
         {resuming && (
           <p className="resume-note">continuing — clock held at {formatTime(elapsed)}</p>
+        )}
+
+        {gaveUpMs !== null && (
+          <div className="reveal-note">
+            <span>
+              Here it is, near enough. The clock has stopped — turn it upright if you like,
+              then say whether you think you could have found it.
+            </span>
+            {!showRing && (
+              <button type="button" className="btn reveal-show" onClick={() => setShowRing(true)}>
+                still can&rsquo;t see it
+              </button>
+            )}
+          </div>
         )}
 
         {!ready && <p className="loading">Loading the painting…</p>}

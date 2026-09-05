@@ -78,8 +78,9 @@ export function ReviewCard({ step, of, ms, gaveUp, thing, onSubmit }: Props) {
         Did it feel fair?
       </p>
       <p className="review-hint">
-        Fair means it was findable and you would have got there. Unfair means invisible,
-        or in a place nobody would think to look.
+        {gaveUp
+          ? 'Now that you have seen it: could you have found it? Unfair means invisible, or in a place nobody would think to look.'
+          : 'Fair means it was findable and you would have got there. Unfair means invisible, or in a place nobody would think to look.'}
       </p>
       <div className="review-fair" role="group" aria-labelledby="review-fair">
         <button

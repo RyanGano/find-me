@@ -1089,3 +1089,42 @@ button.reference:focus-visible {
   opacity: 0.4;
   cursor: default;
 }
+
+/*
+ * After a give-up: the clock has stopped and the board has moved to the shape. It sits
+ * over the board rather than replacing it, because the whole point is that they are
+ * looking at the painting while they read it.
+ */
+.reveal-note {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(460px, calc(100% - 24px));
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* The last resort, and deliberately not the first thing offered: somebody who still
+   cannot see the shape once it is centred is telling us something worth hearing. */
+.reveal-show {
+  flex: none;
+  padding: 6px 10px;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.testbed-rate {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+}

@@ -97,7 +97,14 @@ export const SHAPES: Record<string, ShapeDef> = {
     emoji: '⚡',
   },
   crescent: {
-    path: 'M64 4 A48 48 0 1 0 64 96 A38 38 0 1 1 64 4 Z',
+    /**
+     * The inner arc's radius has to reach between the two tips, or SVG silently inflates
+     * it to a semicircle and the crescent comes out a hairline. That is what the first
+     * version of this did -- it asked for r38 across a 92-unit chord -- and a play-tester
+     * went over the whole painting several times without ever seeing the moon. Fuller by
+     * a little over half in area, and still unmistakably a crescent.
+     */
+    path: 'M72.88 9.01 A46 46 0 1 0 72.88 90.99 A41 41 0 1 1 72.88 9.01 Z',
     symmetry: 1,
     label: 'crescent moon',
     emoji: '🌙',
