@@ -17,6 +17,7 @@
  *   npm run camouflage -- --solve       # solve each day and write puzzles.ts
  *   npm run camouflage -- --solve mona  # just one week
  *   npm run camouflage -- mona-thu      # just one day
+ *   npm run camouflage -- --testbed --solve cafe   # a play-test bench week
  *
  * Needs the site running: npx vite preview --port 4173
  */
@@ -28,8 +29,9 @@ import { paintFor } from './lib/paint.mjs';
 import { sample } from './lib/sight.mjs';
 
 const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/';
-const FILE = 'src/game/puzzles.ts';
 const args = process.argv.slice(2);
+/** The play-test bench rather than the rotation; see `--testbed` in plan-weeks.mjs. */
+const FILE = args.includes('--testbed') ? 'src/game/testbed.ts' : 'src/game/puzzles.ts';
 const solve = args.includes('--solve');
 /**
  * Measure the fitted view the way an eye scans it, rather than per-pixel.

@@ -1,4 +1,5 @@
 import { PUZZLES } from './puzzles';
+import { TESTBED_PUZZLES } from './testbed';
 import type { Puzzle } from './types';
 
 /** Local date of puzzle #1. A Wednesday, which matters -- see `puzzleForDay`. */
@@ -71,6 +72,19 @@ export function selectPuzzle(search: string, now: Date = new Date()): DailySelec
   if (byId) {
     const found = PUZZLES.findIndex((p) => p.id === byId);
     if (found >= 0) return { index: found, puzzle: PUZZLES[found], isPractice: true };
+    // A play-test bench puzzle, named the same way, so that `npm run camouflage` and
+    // `npm run preview:week` drive the bench through the real page rather than through a
+    // second one. Reachable only by asking for it by name: the calendar below indexes
+    // `PUZZLES` and cannot reach these at all.
+    //
+    // The index comes back negative because there is no day these belong to, and a
+    // number that cannot be mistaken for one is worth more here than a tidy one -- it is
+    // what makes "a bench puzzle is never recorded against a date" true by construction
+    // rather than by everyone remembering. `isPractice` already means nothing is written.
+    const bench = TESTBED_PUZZLES.findIndex((p) => p.id === byId);
+    if (bench >= 0) {
+      return { index: -1 - bench, puzzle: TESTBED_PUZZLES[bench], isPractice: true };
+    }
   }
   const day = params.get('day');
   if (day !== null && day.trim() !== '' && Number.isFinite(Number(day))) {

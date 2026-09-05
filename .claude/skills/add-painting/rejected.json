@@ -1,5 +1,5 @@
 {
-  "comment": "Paintings already considered and turned down, so the same candidate is not sourced, resized and measured a second time. Checked before anything else in the add-painting skill, and appended to on every rejection. Reasons: nudity | no-quiet-paint | too-smooth | nothing-busy | cannot-hold-a-week | not-public-domain | duplicate-painter | other.",
+  "comment": "Paintings already considered and turned down, so the same candidate is not sourced, resized and measured a second time. Checked before anything else in the add-painting skill, and appended to on every rejection. Reasons: nudity | no-quiet-paint | too-smooth | nothing-busy | cannot-hold-a-week | not-public-domain | duplicate-painter | testbed | other.",
   "rejected": [
     {
       "title": "The Garden of Earthly Delights",
@@ -49,6 +49,34 @@
       "reason": "too-smooth",
       "note": "Rated TOO SMOOTH outright: median 12.0 against a floor of 15. An interior with large areas of plain wall and floor -- the hard end of the week cannot hide there.",
       "added": "2026-08-28"
+    },
+    {
+      "title": "The Arnolfini Portrait",
+      "artist": "Jan van Eyck",
+      "reason": "too-smooth",
+      "note": "Sourced as a play-test bench painting and rated TOO SMOOTH: median texture 11.0 and quietest 4.0, well under the Mona Lisa's 24.7 and below every shipped canvas. Glazed oil with almost no visible facture once reduced to 2600px. Replaced on the bench by Holbein's The Ambassadors, which is the same northern glazed idiom but keeps a carpet, a lute and a mosaic floor to hide in.",
+      "added": "2026-09-05"
+    },
+    {
+      "title": "Netherlandish Proverbs",
+      "artist": "Pieter Bruegel the Elder",
+      "reason": "testbed",
+      "note": "Not a failure. Held permanently as one of the three play-test bench paintings in src/game/testbed.ts, where testers are asked to play it repeatedly at difficulties that are deliberately being got wrong. Never eligible for the rotation: a painting that has been play-tested is spent, and its hiding places are known to the people most likely to notice.",
+      "added": "2026-09-05"
+    },
+    {
+      "title": "Terrace of a Cafe at Night",
+      "artist": "Vincent van Gogh",
+      "reason": "testbed",
+      "note": "Not a failure. One of the three play-test bench paintings in src/game/testbed.ts -- see the Netherlandish Proverbs entry. Chosen for the bench because its quietest paint reads 9.0, exactly on the floor a Monday needs, which is the van Gogh failure mode the bench exists to experiment on.",
+      "added": "2026-09-05"
+    },
+    {
+      "title": "The Ambassadors",
+      "artist": "Hans Holbein the Younger",
+      "reason": "testbed",
+      "note": "Not a failure. One of the three play-test bench paintings in src/game/testbed.ts -- see the Netherlandish Proverbs entry. Chosen as the smooth-glaze stress case that can still hold a week: quietest 11.7, median 40.8.",
+      "added": "2026-09-05"
     }
   ]
 }

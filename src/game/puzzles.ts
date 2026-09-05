@@ -1,8 +1,5 @@
-import { RAMP } from './difficulty';
-import { getShape } from './shapes';
+import { buildWeek } from './build';
 import type { Puzzle, Target } from './types';
-
-const base = import.meta.env.BASE_URL;
 
 /**
  * What kind of painting a week is, so that "a good spread" is a property the build can
@@ -314,46 +311,11 @@ const WEEKS: WeekSeed[] = [
 ];
 
 /**
- * Short stable hash of the fields a player actually has to contend with. Cosmetic
- * edits to a title or an artist line deliberately do not change it; moving, resizing,
- * recolouring or replacing the hidden shape does.
- */
-function fingerprint(image: string, key: string, t: Target): string {
-  const canonical = [image, key, t.shape, t.cx, t.cy, t.size, t.angle, t.fill, t.opacity, t.blend].join('|');
-  let h = 0x811c9dc5;
-  for (let i = 0; i < canonical.length; i++) {
-    h ^= canonical.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(36);
-}
-
-/**
  * Every day of every week, in order: index `w * 7 + d` is day `d` of week `w`, and day
  * 0 of a week is its Monday. `daily.ts` leans on that layout to line the list up with
  * the player's own calendar.
  */
-export const PUZZLES: Puzzle[] = WEEKS.flatMap((week) =>
-  week.days.map((target, day) => {
-    const shape = getShape(target.shape);
-    const rung = RAMP[day];
-    return {
-      id: `${week.image}-${rung.key}`,
-      image: week.image,
-      dayOfWeek: day,
-      title: week.title,
-      artist: week.artist,
-      year: week.year,
-      width: week.width,
-      height: week.height,
-      src: `${base}puzzles/${week.image}.jpg`,
-      thing: shape.label,
-      emoji: shape.emoji,
-      version: fingerprint(week.image, rung.key, target),
-      target: { symmetry: shape.symmetry, ...target },
-    };
-  }),
-);
+export const PUZZLES: Puzzle[] = WEEKS.flatMap(buildWeek);
 
 /** The distinct paintings, for tooling that works per asset rather than per day. */
 export const IMAGES = WEEKS.map((w) => ({

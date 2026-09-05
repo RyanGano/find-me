@@ -21,8 +21,15 @@ import { MAX_DAYS_PER_COLOUR, MIN_COLOURS_PER_WEEK, generalColour } from '../src
 import AVOID from './avoid.json' with { type: 'json' };
 
 
-const FILE = 'src/game/puzzles.ts';
-const only = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+const args = process.argv.slice(2);
+/**
+ * `--testbed` plans the play-test bench instead of the rotation. Same planner, same
+ * rules, a different file -- which is the point: a bench planned by looser rules would
+ * not be telling us anything about the game. Nothing here can write both files in one
+ * run, so a bench experiment cannot reach a shipped week by slipping an argument.
+ */
+const FILE = args.includes('--testbed') ? 'src/game/testbed.ts' : 'src/game/puzzles.ts';
+const only = args.filter((a) => !a.startsWith('-'));
 
 /**
  * Shapes with rotational symmetry are the kind ones: a six-armed snowflake matches at

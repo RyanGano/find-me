@@ -2,7 +2,11 @@ import sharp from 'sharp';
 import { mkdirSync } from 'node:fs';
 const OUT = 'public/puzzles';
 mkdirSync(OUT, { recursive: true });
-const files = ['mona:.source-images/mona.jpg','wave:.source-images/wave.jpg','starry:.source-images/starry.jpg','boating:.source-images/boating.jpg','jatte:.source-images/jatte.jpg','issus:.source-images/issus.jpg','hunters:.source-images/hunters.jpg','babel:.source-images/babel.jpg','deheem:.source-images/deheem.jpg','venice:.source-images/venice.jpg'];
+const files = ['mona:.source-images/mona.jpg','wave:.source-images/wave.jpg','starry:.source-images/starry.jpg','boating:.source-images/boating.jpg','jatte:.source-images/jatte.jpg','issus:.source-images/issus.jpg','hunters:.source-images/hunters.jpg','babel:.source-images/babel.jpg','deheem:.source-images/deheem.jpg','venice:.source-images/venice.jpg',
+  // The play-test bench. Never in the rotation, and generated exactly the same way as
+  // one that is -- the bench is only worth anything if its paintings behave like the
+  // shipped ones in every respect but being shipped. See `src/game/testbed.ts`.
+  'proverbs:.source-images/proverbs.jpg','cafe:.source-images/cafe.jpg','ambassadors:.source-images/ambassadors.jpg'];
 const MAX = 2600;
 
 /**

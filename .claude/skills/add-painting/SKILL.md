@@ -56,6 +56,13 @@ second look that was correctly refused on the first.
 If the candidate is on the list, say so, give the recorded reason, and propose something
 else. A recorded rejection is only reopened if the user explicitly overrides it.
 
+Entries with reason `testbed` are the play-test bench paintings in `src/game/testbed.ts`.
+They were never turned down for being poor puzzles -- they are held aside so that changes
+to the game can be tried on somebody without spending a real week. They are **not**
+reopenable: testers have played them repeatedly, at difficulties that were deliberately
+being got wrong, so their hiding places are known to exactly the people most likely to
+notice. `src/game/testbed.test.ts` fails the build if one goes missing from this list.
+
 **Every rejection gets appended to that file**, whatever stage it failed at — Rule 2, the
 variety check, `npm run rate`, or the planner giving up. That is what stops the list going
 stale. One entry, with `title`, `artist`, `reason` from the closed set in the file's
