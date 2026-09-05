@@ -669,7 +669,7 @@ asked to play repeatedly, at difficulties that were deliberately being got wrong
 ### Rounds
 
 The unit is a round, not "the bench": one question, a handful of bench days chosen to
-answer it, and the fortnight it is being asked in. `/?testbed` always serves whichever
+answer it, and the fortnight it is being asked in. `/?beta` always serves whichever
 round is open today, so testers keep one link and the next round is one object added to
 `src/game/rounds.ts`.
 
@@ -721,7 +721,7 @@ node scripts/smoke-testbed.mjs                    # walk a round at phone size
 npm run fingerprint --silent > before.json        # ...and prove no shipped day moved
 ```
 
-Add the round to `ROUNDS`, deploy, and hand out `/?testbed`. `?testbed=<id>&again=1`
+Add the round to `ROUNDS`, deploy, and hand out `/?beta`. `?beta=<id>&again=1`
 re-runs a round on your own device for checking; those rows are marked `dry` and are meant
 to be excluded when the answers are read.
 

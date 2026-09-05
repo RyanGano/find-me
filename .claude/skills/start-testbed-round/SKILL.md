@@ -1,12 +1,12 @@
 ---
 name: start-testbed-round
-description: Put a new play-testing round in front of testers on the /?testbed link — pick the question, choose which bench days answer it, set the window, ship it and confirm it is live. Use when the user asks to "start a testbed round", "set up a play-test", "get people to test X", "run a round on Saturday", "test the new difficulty on real people", or has just made a change they want tried before it reaches the game. Chooses the slice from the question rather than from habit, refuses to let a round touch the rotation, and proves no shipped puzzle moved before anything is deployed.
+description: Put a new play-testing round in front of testers on the /?beta link — pick the question, choose which bench days answer it, set the window, ship it and confirm it is live. Use when the user asks to "start a testbed round", "set up a play-test", "get people to test X", "run a round on Saturday", "test the new difficulty on real people", or has just made a change they want tried before it reaches the game. Chooses the slice from the question rather than from habit, refuses to let a round touch the rotation, and proves no shipped puzzle moved before anything is deployed.
 ---
 
 # Start a play-testing round
 
 A round is one question, a handful of bench days that answer it, and the fortnight it is
-asked in. `/?testbed` serves whichever round is open, so the link never changes and the
+asked in. `/?beta` serves whichever round is open, so the link never changes and the
 work is `src/game/rounds.ts` plus a deploy.
 
 Read the **Play-testing** section of `README.md` first. It says why the bench exists and
@@ -104,7 +104,7 @@ npm run build && npx vite preview --port 4173 &
 node scripts/smoke-testbed.mjs
 ```
 
-Then walk it yourself in a browser at `/?testbed=<id>&again=1` — `again` clears this
+Then walk it yourself in a browser at `/?beta=<id>&again=1` — `again` clears this
 device's record so it can be re-run, and marks the rows `dry` so they are excluded from
 the results. Check the intro reads well and the first board loads.
 
@@ -126,7 +126,7 @@ Take the baseline **before** starting work: `npm run fingerprint --silent > befo
 
 ## 7. Ship it and confirm
 
-Commit and push to `main`; CI deploys to Pages. Then load `/?testbed` on the live site and
+Commit and push to `main`; CI deploys to Pages. Then load `/?beta` on the live site and
 confirm the round that comes back is the one you just wrote — a wrong window is invisible
 locally on the day you write it and obvious to a tester a week later.
 
@@ -134,7 +134,7 @@ locally on the day you write it and obvious to a tester a week later.
 
 Give the user the link and a sentence they can forward:
 
-> findme.ryangano.com/?testbed — six puzzles, about fifteen minutes, on paintings that
+> findme.ryangano.com/?beta — six puzzles, about fifteen minutes, on paintings that
 > are not in the game. Say how each one felt; there is a give-up button and using it
 > helps. You can stop and come back, and it will not touch your streak.
 
@@ -150,7 +150,7 @@ Say plainly:
 
 ## Things that bite
 
-- **`?testbed` alone always wins.** `?testbed=<id>` is for checking a round outside its
+- **`?beta` alone always wins.** `?beta=<id>` is for checking a round outside its
   window; testers get the bare link. Handing out the `=<id>` form works but marks nothing
   dry and will confuse the next round.
 - **A closed round is not deleted.** Leave it in `ROUNDS` — the answers are filed under

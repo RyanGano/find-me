@@ -119,7 +119,7 @@ export function finishRound(round: string): void {
 
 /**
  * Wipe this device's record of a round so it can be run again. Reached only by
- * `?testbed=<round>&again=1`, which is for checking a round works before it is sent to
+ * `?beta=<round>&again=1`, which is for checking a round works before it is sent to
  * anybody -- a run started that way is flagged as a dry run and is not counted.
  */
 export function resetRound(round: string): void {

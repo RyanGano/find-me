@@ -131,7 +131,7 @@ hunt plays belongs in the hook, so that the bench and the game cannot drift apar
 
 **Nothing is tuned on a shipped week.** `src/game/testbed.ts` holds three paintings that
 will never be in the rotation, planned and tuned by the same tools; `src/game/rounds.ts`
-declares which bench days a round of testers is asked to play and when, and `/?testbed`
+declares which bench days a round of testers is asked to play and when, and `/?beta`
 serves whichever round is open. The bench cannot reach the calendar, a player's storage or
 the tally, and `testbed.test.ts`, `testbedStore.test.ts` and `scripts/smoke-testbed.mjs`
 each hold one of those. See "Play-testing" in README.md before changing any of it.

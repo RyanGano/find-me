@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ReviewCard } from './components/ReviewCard';
 import { Stage } from './components/Stage';
+import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
 import type { RunMetrics } from './game/metrics';
 import { submitReview } from './game/review';
@@ -22,7 +23,7 @@ import { useHunt, type LeftRun } from './hooks/useHunt';
 /**
  * The play-test bench.
  *
- * `/?testbed` and nothing else: whichever round is open today, picked up wherever the
+ * `/?beta` and nothing else: whichever round is open today, picked up wherever the
  * tester left off, on paintings that are not in the game. It is the daily board with the
  * daily game taken off it -- no streak, no result card, no share, no calendar -- and one
  * question after each hunt.
@@ -39,12 +40,12 @@ import { useHunt, type LeftRun } from './hooks/useHunt';
  */
 export default function Testbed() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  // `?testbed=<id>` names a round directly, for looking at one before it opens or after
+  // `?beta=<id>` names a round directly, for looking at one before it opens or after
   // it has closed. `&again=1` clears this device's record of it so it can be walked
   // through a second time. Both mean the run is a check rather than a tester's, and it
   // is recorded as such rather than being silently dropped -- a row that says it is a
   // dry run can be excluded on the way out; a missing row cannot be reasoned about.
-  const named = params.get('testbed') ?? '';
+  const named = params.get('beta') ?? '';
   const again = params.has('again');
   const round = useMemo(() => (named ? roundById(named) : undefined) ?? openRound(), [named]);
   const dry = Boolean(round) && (again || round !== openRound());
@@ -123,13 +124,13 @@ function Session({ round, dry }: { round: Round; dry: boolean }) {
     [at, puzzles, finished, round.id, tester, dry],
   );
 
-  if (done) return <Finished round={round} answers={answers} puzzles={puzzles} dry={dry} />;
+  if (done) return <Finished answers={answers} puzzles={puzzles} dry={dry} />;
   if (!started) {
     return <Intro round={round} count={puzzles.length} onStart={() => setStarted(true)} />;
   }
 
   const puzzle = puzzles[at];
-  if (!puzzle) return <Finished round={round} answers={answers} puzzles={puzzles} dry={dry} />;
+  if (!puzzle) return <Finished answers={answers} puzzles={puzzles} dry={dry} />;
 
   if (finished) {
     return (
@@ -181,6 +182,21 @@ function Intro({ round, count, onStart }: { round: Round; count: number; onStart
           </li>
           <li>None of this touches the real game, your streak or your times.</li>
         </ul>
+        {/*
+          Said out loud, before they start, because it is the one thing here that is not
+          what somebody would assume. The daily game can be told not to count you, and
+          that switch is honoured everywhere in the game -- but a play-test round is
+          nothing but the answers, so it sends them regardless. Somebody who has turned
+          counting off has made a decision, and quietly making an exception to it would
+          be a worse thing to do than asking them to make it again knowingly.
+        */}
+        <p className="howto-note">
+          <strong>This does send your answers</strong>, even if you have turned off
+          counting for the game itself — a round is nothing but the answers, so there
+          would be nothing to run. What goes is: which puzzle, how long you took, what you
+          rated it, and a random id that ties your six together. No account, no name,
+          nothing that outlives the round.
+        </p>
         <button type="button" className="btn btn-primary review-next" onClick={onStart}>
           Start
         </button>
@@ -190,12 +206,10 @@ function Intro({ round, count, onStart }: { round: Round; count: number; onStart
 }
 
 function Finished({
-  round,
   answers,
   puzzles,
   dry,
 }: {
-  round: Round;
   answers: ReturnType<typeof answersFor>;
   puzzles: Puzzle[];
   dry: boolean;
@@ -205,18 +219,24 @@ function Finished({
     <div className="app testbed">
       <div className="howto testbed-card" role="dialog" aria-label="Round finished">
         <h2>That is the lot — thank you.</h2>
+        {/* What they did, and nothing about how the round is administered. The rule
+            that a device answers once, and which round this was, are our problem --
+            reading them here is the tester being handed the machinery. */}
         <p>
           {played.length} of {puzzles.length} answered, and every one of them is already
-          sent. {dry && 'This was a dry run and is marked as one. '}
-          You cannot run this round again on this device, which is deliberate: one
-          person&rsquo;s second opinion would read as a second person agreeing.
+          sent.{dry && ' This was a dry run and is marked as one.'}
         </p>
         <ul className="testbed-summary">
           {played.map((p) => {
             const a = answers[p.id]!;
             return (
               <li key={p.id}>
-                <span>{p.title}</span>
+                {/* The rung as well as the painting: a round usually gives the same
+                    canvas twice, and two identical rows with different results in them
+                    is a list you cannot read. */}
+                <span>
+                  {p.title} · {RAMP[p.dayOfWeek].label}
+                </span>
                 <span>
                   {a.gaveUp ? `gave up ${formatTime(a.ms)}` : formatTime(a.ms)} · hard {a.hard}/5 ·{' '}
                   {a.fair === 1 ? 'fair' : 'not fair'}
@@ -225,9 +245,6 @@ function Finished({
             );
           })}
         </ul>
-        <p className="howto-note">
-          The next round opens on this same link. Round <code>{round.id}</code>.
-        </p>
       </div>
     </div>
   );
@@ -399,10 +416,11 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
         {gaveUpMs !== null && (
           <div className="reveal-note">
             <span>
-              Here it is, near enough. The clock has stopped — turn it upright if you like,
-              then say whether you think you could have found it.
+              {match?.solved
+                ? 'That is it, framed. It does not count — the time we keep is when you gave up — but now you know what you were looking for.'
+                : 'Here it is, near enough. The clock has stopped — line it up if you like, then say whether you think you could have found it.'}
             </span>
-            {!showRing && (
+            {!showRing && !match?.solved && (
               <button type="button" className="btn reveal-show" onClick={() => setShowRing(true)}>
                 still can&rsquo;t see it
               </button>
@@ -412,11 +430,16 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
 
         {!ready && <p className="loading">Loading the painting…</p>}
 
+        {/* After a give-up the run is over, but the board is not: they can still frame
+            the shape, and the badge has to go green when they do. Leaving it stuck on
+            amber while they sat exactly on the match read as the board being broken --
+            it looked like it would let them finish and then would not. Nothing is
+            recorded either way; the time that counts is when they gave up. */}
         <ReferenceCard
           puzzle={puzzle}
           targetSize={targetSize}
           match={match}
-          solvedMs={solvedMs}
+          solvedMs={solvedMs ?? (gaveUpMs !== null && match?.solved ? gaveUpMs : null)}
           onReopen={() => {}}
         />
       </main>

@@ -65,7 +65,7 @@ const storage = () =>
  * Give up, and check what that is supposed to do: stop the clock for good, and put the
  * shape somewhere the tester can actually look at it. Returns the frozen clock.
  */
-async function quit(expectReveal = true) {
+async function quit(expectReveal = true, stayOnBoard = false) {
   // The way out stays shut until the hunt has begun, so begin it. A tester who has not
   // moved the board has not tried; the button being disabled there is the point, and is
   // checked separately below.
@@ -129,8 +129,60 @@ async function quit(expectReveal = true) {
     await page.screenshot({ path: `${OUT}/3-reveal.png` });
   }
 
-  await page.locator('.testbed-rate').click();
+  if (!stayOnBoard) await page.locator('.testbed-rate').click();
   return frozen;
+}
+
+/** The live canvas transform, as scale and rotation. */
+const readTransform = () =>
+  page.evaluate(() => {
+    const m = new DOMMatrix(getComputedStyle(document.querySelector('.stage-canvas')).transform);
+    return { scale: Math.hypot(m.a, m.b), rot: Math.atan2(m.b, m.a) };
+  });
+
+/**
+ * Finish a hunt that has already been given up on.
+ *
+ * The reveal centres the shape and leaves the size and the angle to do, so this does
+ * them -- the point being that the board must actually let them, and say so. It used to
+ * sit on amber however exactly you framed it, which read as the board being broken.
+ */
+async function finishAfterGivingUp() {
+  const plan = await page.evaluate(() => {
+    const r = document.querySelector('.stage').getBoundingClientRect();
+    const el = document.querySelector('.stage-target');
+    const svg = el.querySelector('svg');
+    const angle = Number((svg.style.transform.match(/rotate\((-?[\d.]+)deg\)/) ?? [0, 0])[1]);
+    return {
+      cx: r.left + r.width / 2,
+      cy: r.top + r.height / 2,
+      size: Number(svg.getAttribute('width')),
+      angle,
+      targetPx: Number(document.querySelector('.reference-well svg').getAttribute('width')),
+    };
+  });
+  const want = plan.targetPx / plan.size;
+  const wantRot = (-plan.angle * Math.PI) / 180;
+
+  for (let i = 0; i < 600; i++) {
+    const { scale } = await readTransform();
+    const gap = Math.log(want / scale);
+    if (Math.abs(gap) < 0.003) break;
+    await page.mouse.move(plan.cx, plan.cy);
+    await page.mouse.wheel(0, -Math.sign(gap) * Math.min(120, Math.max(4, Math.abs(gap) / 0.0004 / 3)));
+  }
+  await page.keyboard.down('Shift');
+  for (let i = 0; i < 600; i++) {
+    const { rot } = await readTransform();
+    let d = wantRot - rot;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    if (Math.abs(d) < 0.004) break;
+    await page.mouse.move(plan.cx, plan.cy);
+    await page.mouse.wheel(0, Math.sign(d) * Math.min(120, Math.max(4, Math.abs(d) / 0.0006 / 3)));
+  }
+  await page.keyboard.up('Shift');
+  await page.waitForTimeout(200);
 }
 
 /** Answer the review card that is up: a difficulty rung, a thumb, then move on. */
@@ -147,7 +199,7 @@ async function review(hard, fair) {
 
 console.log('\n== the round, on a phone ==');
 
-await page.goto(`${URL}?testbed`, { waitUntil: 'networkidle' });
+await page.goto(`${URL}?beta`, { waitUntil: 'networkidle' });
 await page.waitForSelector('.testbed-card');
 await page.waitForTimeout(350);
 await page.screenshot({ path: `${OUT}/1-intro.png` });
@@ -184,7 +236,17 @@ await page.waitForTimeout(250);
 check('the blur lifts on the first move', (await page.$('.stage-viewport.is-blurred')) === null);
 check('the clock runs on the first move', (await page.textContent('.clock')).trim() !== 'ready');
 
-const frozen = await quit();
+const frozen = await quit(true, true);
+
+// The board has to let them finish what they gave up on -- not to score it, but because
+// a badge stuck on amber while they sit exactly on the match reads as a broken board.
+await finishAfterGivingUp();
+check('framing it after a give-up completes the puzzle', (await page.$('.reference.is-solved')) !== null);
+check('and the clock still reads the give-up time', (await page.textContent('.clock')).trim() === frozen, frozen);
+check('and says the finish does not count', (await page.textContent('.reveal-note')).includes('does not count'));
+await page.screenshot({ path: `${OUT}/3-finished-anyway.png` });
+await page.locator('.testbed-rate').click();
+
 await page.waitForSelector('.review');
 await page.waitForTimeout(350);
 await page.screenshot({ path: `${OUT}/3-review.png` });
@@ -202,7 +264,7 @@ check('nothing but the bench key exists', afterOne.keys.join(',') === 'find-me:t
 
 // ------------------------------------------------------------------- coming back later
 
-await page.goto(`${URL}?testbed`, { waitUntil: 'networkidle' });
+await page.goto(`${URL}?beta`, { waitUntil: 'networkidle' });
 await page.waitForSelector('.stage-image');
 check(
   'closing the tab and coming back resumes where the tester left off',
@@ -233,7 +295,7 @@ await page.screenshot({ path: `${OUT}/4-finished.png` });
 check('the round ends on a thank-you', (await page.textContent('.testbed-card h2')).includes('thank you'));
 check('every hunt is listed back', (await page.locator('.testbed-summary li').count()) === 6);
 
-await page.goto(`${URL}?testbed`, { waitUntil: 'networkidle' });
+await page.goto(`${URL}?beta`, { waitUntil: 'networkidle' });
 await page.waitForSelector('.testbed-card');
 check(
   'the same device cannot answer the round a second time',
@@ -246,7 +308,7 @@ check('and nothing else was written either', atEnd.keys.join(',') === 'find-me:t
 
 // --------------------------------------------------------------- a round nobody is on
 
-await page.goto(`${URL}?testbed=no-such-round`, { waitUntil: 'networkidle' });
+await page.goto(`${URL}?beta=no-such-round`, { waitUntil: 'networkidle' });
 await page.waitForSelector('.testbed-card');
 const unknown = await page.textContent('.testbed-card h2');
 check('an unknown round falls back to the open one, or says there is none', unknown.length > 0, unknown.trim());

@@ -7,7 +7,7 @@ import type { Puzzle } from './types';
  *
  * The unit is the round rather than "the bench", because what needs testing changes and
  * the link must not. Testers are people doing a favour; asking them to keep a different
- * URL straight each time is how a round quietly gets no data. So `/?testbed` always
+ * URL straight each time is how a round quietly gets no data. So `/?beta` always
  * serves whichever round is open today, and the next round is one object added below.
  *
  * A round is any slice of the bench that answers its question. If Saturday feels too
