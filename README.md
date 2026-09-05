@@ -640,6 +640,91 @@ The client half is `src/game/count.ts`, and it posts to whatever `VITE_COUNT_URL
 build was given. Everything on the other end of that URL -- where the rows go, and how to
 read them -- is deliberately not in this repository.
 
+## Play-testing
+
+Every difficulty lever in this game was set by measurement, and measurement can only say
+what a day *is*, never how it *felt*. The gap between the two is where the mistakes in
+this README came from -- `size` and `company` were both plausible difficulty levers that
+measured beautifully and did nothing, and the fitted-view reading called a Rousseau sky
+subtle right up until somebody looked at it.
+
+Asking people is the only thing that closes that gap, and the rotation is the wrong place
+to ask. Re-tuning a shipped week to try an idea takes a recorded day back off everybody
+who set a time on it, and anybody willing to be asked has already played the game and
+knows where the shapes are.
+
+So there is a bench: three paintings in `src/game/testbed.ts` that are generated, planned
+and tuned exactly like a shipped week and will never be served as anybody's daily puzzle.
+Bruegel's *Netherlandish Proverbs* for maximum cover, van Gogh's *Terrace of a Café at
+Night* for brushwork with almost no quiet paint in it, and Holbein's *The Ambassadors* for
+smooth glaze that only just offers somewhere to hide. They fail in three different
+directions on purpose, because a change that helps one kind of canvas routinely hurts
+another -- van Eyck's *Arnolfini Portrait* was sourced for the third slot and rated too
+smooth to hold a week at all, which is on the rejected list with its numbers.
+
+All three are on the `add-painting` skill's rejected list with reason `testbed`, and
+`testbed.test.ts` fails the build if one goes missing from it. A painting people have been
+asked to play repeatedly, at difficulties that were deliberately being got wrong, is spent.
+
+### Rounds
+
+The unit is a round, not "the bench": one question, a handful of bench days chosen to
+answer it, and the fortnight it is being asked in. `/?testbed` always serves whichever
+round is open today, so testers keep one link and the next round is one object added to
+`src/game/rounds.ts`.
+
+That shape was chosen over a fixed set because what needs testing changes. If the end of
+the week feels too hard, the round is three paintings' Saturdays with their Fridays beside
+them as a control. If one *kind* of painting feels rough, it is all seven days of that one
+canvas. Keep a round under about twelve hunts: a long one gets abandoned partway, and the
+part that gets abandoned is the hard end, which is the part being asked about.
+
+After each hunt a tester answers two questions, in two taps, with nothing to type. **How
+hard**, one to five, is the ramp. **Was it fair** is whether the day is a puzzle at all --
+a shape tuned down until it is invisible and a shape sitting in the one patch of flat sky
+both take a long time, and only one of them is a good day. A single rating cannot tell
+those apart, and that distinction is what most of this game's past mistakes turn out to
+have been. **Giving up** is a first-class answer with a button of its own: how long
+somebody hunted before deciding it was hopeless is the clearest signal a day is wrong, and
+a tester with no way out of a hunt abandons the round rather than the puzzle.
+
+Answers post one at a time, as they are given, rather than on a submit at the end -- for
+the same reason rounds are kept short. Each row carries the deploy that served it, so two
+rounds' answers can be compared across a change.
+
+### What the bench cannot do
+
+Three things, all structural rather than remembered:
+
+- **It is not on the calendar.** `daily.ts` indexes dates into `PUZZLES`, and the bench is
+  not in `PUZZLES`. `testbed.test.ts` walks 1200 real dates to prove no date reaches it.
+  Bench days are served only by asking for one by name, and come back with a negative day
+  index that could not be mistaken for a real one.
+- **It cannot touch a player's record.** The bench writes to `find-me:testbed:v1` and
+  nothing else; the game's `find-me:v1` holds the streak, the times and the banked run.
+  `testbedStore.test.ts` asserts that from both sides, and `smoke-testbed.mjs` walks a
+  whole round in a real browser at phone size checking the game's key is absent at the
+  start, the middle and the end.
+- **It is not in the tally.** A round posts review rows, never run beacons, so six hunts
+  by one tester never read as six players.
+
+The hunt itself is deliberately *not* separate. Both the game and the bench run on
+`useHunt`, down to the gestures and the solve, because an opinion collected on a slightly
+different game is an opinion about that game.
+
+### Running a round
+
+```bash
+npm run plan -- --testbed cafe                    # re-plan a bench week
+npm run camouflage -- --testbed --solve cafe      # re-tune it against the browser
+node scripts/smoke-testbed.mjs                    # walk a round at phone size
+node scripts/fingerprint.mjs > before.json        # ...and prove no shipped day moved
+```
+
+Add the round to `ROUNDS`, deploy, and hand out `/?testbed`. `?testbed=<id>&again=1`
+re-runs a round on your own device for checking; those rows are marked `dry` and are meant
+to be excluded when the answers are read.
+
 ## Credits
 
 All paintings are in the public domain, sourced from Wikimedia Commons. The `i` button in

@@ -39,6 +39,16 @@ npm run preview:week -- mona               # seven rows of three, to look at the
 node scripts/diag-camouflage.mjs mona '[{}]' out.jpg   # one hiding place at match zoom
 node scripts/diag-size.mjs                 # badge vs shape geometry check
 node scripts/diag-badge.mjs               # badge colour vs the shape as painted
+node scripts/fingerprint.mjs              # every shipped puzzle as JSON, to diff across a change
+```
+
+The play-test bench (`src/game/testbed.ts`) is driven by the same tools behind a flag:
+
+```bash
+npm run images -- proverbs                 # bench assets are generated the same way
+npm run plan -- --testbed cafe
+npm run camouflage -- --testbed --solve cafe
+node scripts/smoke-testbed.mjs             # walk a whole round at phone size
 ```
 
 Browser smoke test (Playwright against a real Chrome/Edge, no download):
@@ -111,13 +121,35 @@ beacons per run keyed by a random id minted when the clock starts and forgotten 
 run ends — no account, no cookie, nothing that outlives a run. It fails silently and is a
 no-op without `VITE_COUNT_URL`. Practice runs are never counted.
 
-`src/App.tsx` wires all of this together and owns the run state machine (blur/pause,
-clock, resume, solve, result card).
+**One hunt, two callers.** `src/hooks/useHunt.ts` is the run state machine -- blur/pause,
+clock, gestures, match, solve, banking -- and knows nothing about storage or reporting; it
+calls back at three moments (the clock starting, the solve, the page going away mid-run).
+`src/App.tsx` turns those into a recorded result, a streak and a tally beacon.
+`src/Testbed.tsx` turns them into a play-test review. Anything that would change how a
+hunt plays belongs in the hook, so that the bench and the game cannot drift apart.
+
+**Nothing is tuned on a shipped week.** `src/game/testbed.ts` holds three paintings that
+will never be in the rotation, planned and tuned by the same tools; `src/game/rounds.ts`
+declares which bench days a round of testers is asked to play and when, and `/?testbed`
+serves whichever round is open. The bench cannot reach the calendar, a player's storage or
+the tally, and `testbed.test.ts`, `testbedStore.test.ts` and `scripts/smoke-testbed.mjs`
+each hold one of those. See "Play-testing" in README.md before changing any of it.
+
+`src/App.tsx` wires the daily game together: the calendar, storage, the streak, the result
+card and the panels.
 
 ## Working in this repo
 
 - Practice runs, for testing: `?puzzle=starry-wed` or `?day=3`. They are not recorded and
-  do not affect a streak.
+  do not affect a streak. `?puzzle=` also serves a bench day (`?puzzle=cafe-fri`), which is
+  how the browser tools drive the bench through the real page.
+- Changing anything a player already has: `node scripts/fingerprint.mjs > before.json`
+  before the change and `diff` after. An empty diff means no recorded time was invalidated
+  and no finished board was handed back as playable. Every change that is not meant to move
+  the shipped puzzles should produce one.
+- Trying out a change on real people: add a round to `src/game/rounds.ts` and hand out
+  `/?testbed`. Never re-plan or re-tune a shipped week to test an idea -- that takes the day
+  back off everyone who has already played it. The bench exists so that is never necessary.
 - `.source-images/` is staging for the painting currently being added, not a library. Only
   `resize-images.mjs` ever reads it; once the 2600px asset is committed the scan is dead
   weight, so delete it. What replaces it is the record: `source` on each week seed names
