@@ -190,11 +190,16 @@ rule to fit the canvas. See "Variety inside a week" in README.md.
 ### 3. Generate the asset
 
 Add `'NAME:.source-images/NAME.jpg'` to the end of the `files` list in
-`scripts/resize-images.mjs`, then:
+`scripts/resize-images.mjs`, then generate **only the new painting**:
 
 ```bash
-npm run images
+npm run images -- NAME
 ```
+
+Name it. Bare `npm run images` rebuilds all of them from whatever is in `.source-images/`,
+which is gitignored and therefore not guaranteed to hold the same scan a shipped asset was
+built from -- a local copy that is a different crop regenerates that painting at different
+dimensions and moves every hiding place in its week. That has happened once already.
 
 Note the reported output dimensions — they go in the seed verbatim, and a test pins them.
 

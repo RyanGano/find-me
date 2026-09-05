@@ -28,7 +28,8 @@ npm run build                # tsc -b + vite build into dist/
 Content tooling (all drive a real browser or sharp, and rewrite source):
 
 ```bash
-npm run images               # .source-images/ -> public/puzzles/ at 2600px wide
+npm run images -- venice     # .source-images/ -> public/puzzles/ at 2600px wide (one painting)
+npm run images               # ...all of them; only safe if every source scan is the shipped one
 npm run plan                 # pick every week's hiding places, shapes, angles
 npm run plan -- mona         # one painting
 npm run rate -- public/puzzles/*.jpg       # can a painting hold a week at all

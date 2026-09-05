@@ -68,7 +68,7 @@ interface WeekSeed {
  *
  * A player gets a whole week with one painting and seven different things to find in
  * it, each harder than the last -- see `difficulty.ts` for what "harder" means and how
- * each rung is measured. Nine paintings is therefore nine weeks, not nine days.
+ * each rung is measured. Ten paintings is therefore ten weeks, not ten days.
  *
  * The order of this list is held to a spread of painters and kinds by
  * `curation.test.ts`; a painting that has shipped cannot be moved without moving every
@@ -249,6 +249,24 @@ const WEEKS: WeekSeed[] = [
       { shape: 'bolt', cx: 233, cy: 761, size: 20, angle: -110, fill: '#cb896f', opacity: 0.234, blend: 'screen', blur: 0.5, ratio: 1.35, scan: 0.386 },
       { shape: 'fish', cx: 2417, cy: 641, size: 18, angle: -104, fill: '#ccc1af', opacity: 0.497, blend: 'screen', blur: 0.5, ratio: 2.02, scan: 0.361 },
       { shape: 'arrow', cx: 449, cy: 1409, size: 16, angle: 148, fill: '#c49588', opacity: 0.35, blend: 'screen', blur: 0.5, ratio: 1.32, scan: 0.339 },
+    ],
+  },
+  {
+    image: 'venice',
+    title: 'The Entrance to the Grand Canal, Venice',
+    artist: 'Canaletto',
+    year: 'c. 1730',
+    genre: 'cityscape',
+    width: 2600,
+    height: 1773,
+    days: [
+      { shape: 'star', cx: 2249, cy: 449, size: 40, angle: -156, fill: '#c0cbd6', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 3.9, scan: 0.5 },
+      { shape: 'clover', cx: 1073, cy: 1073, size: 37, angle: -155, fill: '#c3a990', opacity: 0.39, blend: 'screen', blur: 0.5, ratio: 2.26, scan: 0.454 },
+      { shape: 'triangle', cx: 185, cy: 425, size: 34, angle: -154, fill: '#448178', opacity: 0.119, blend: 'multiply', blur: 0.5, ratio: 2.07, scan: 0.418 },
+      { shape: 'arrow', cx: 1961, cy: 1601, size: 31, angle: 46, fill: '#bed1b7', opacity: 0.245, blend: 'screen', blur: 0.5, ratio: 2.35, scan: 0.393 },
+      { shape: 'key', cx: 257, cy: 1265, size: 28, angle: -70, fill: '#b29f87', opacity: 0.327, blend: 'screen', blur: 0.5, ratio: 1.53, scan: 0.376 },
+      { shape: 'crescent', cx: 1601, cy: 569, size: 25, angle: 104, fill: '#5f9e39', opacity: 0.327, blend: 'multiply', blur: 0.5, ratio: 1.78, scan: 0.358 },
+      { shape: 'heart', cx: 1961, cy: 977, size: 22, angle: -148, fill: '#e2c28a', opacity: 0.315, blend: 'screen', blur: 0.5, ratio: 1.58, scan: 0.341 },
     ],
   },
 ];

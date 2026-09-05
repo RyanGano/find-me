@@ -140,7 +140,7 @@ meets the sand, and played easy.
 Within a week no shape, and no hiding place, is ever reused. Across weeks they are, and
 that is fine.
 
-Nine paintings therefore give nine weeks -- sixty-three days -- and `week.test.ts`
+Ten paintings therefore give ten weeks -- seventy days -- and `week.test.ts`
 asserts the rules rather than the numbers: seven days per painting, seven different
 shapes, every hiding place 400px from the others, and each day strictly smaller, fainter
 and further round than the one before it.
@@ -438,7 +438,7 @@ else.
 | `src/game/transform.ts` | Viewport transform, gesture composition, pan constraint |
 | `src/game/symmetry.test.ts` | Measures each shape's true rotational symmetry from pixels |
 | `src/game/match.ts` | Win condition and the tolerances |
-| `src/game/puzzles.ts` | Eight weeks of seven days — image, hiding place, size, angle |
+| `src/game/puzzles.ts` | Ten weeks of seven days — image, hiding place, size, angle |
 | `src/game/difficulty.ts` | The Monday-to-Sunday ramp, and what each rung means |
 | `scripts/plan-weeks.mjs` | Picks each week's hiding places, shapes, angles and colours |
 | `scripts/rate-painting.mjs` | Whether a painting can hold a week at all |
