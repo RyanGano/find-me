@@ -140,17 +140,46 @@ export interface Rung {
    * badge outlines itself the moment you frame the right one.
    */
   company: number;
+  /**
+   * The same day's target under the corrected fitted-view reading (`npm run camouflage
+   * -- --fov`), which unlike `scan` can see how big the shape is on screen.
+   *
+   * Not the ramp's authority, and deliberately not what a normal tune solves for. The
+   * rungs above and `expectedSearchMs` are both fitted against the default reading, and
+   * the two scales are not interchangeable -- this one runs about 0.10 to 1.38 where that
+   * one runs 0.34 to 0.50. Switching the set over wholesale means re-deriving every target
+   * and refitting the age scale against real play data that does not exist yet.
+   *
+   * What it is for is rescuing individual days. The corrected reading measured the shipped
+   * set at a rank correlation of only 0.588 with the old one, and named six days as far
+   * more conspicuous than their rung's median while they measured perfectly on target --
+   * jatte-mon at 3.4x. `--fov --solve` aims a day at this ladder instead: the measured
+   * medians of the shipped set, smoothed to descend.
+   *
+   * **Treat it with suspicion.** It has been tested against real play exactly once, on the
+   * pair of days the two instruments disagree about most, and it lost. starry-thu and
+   * boating-thu carry the same `scan` target and the same predicted 140 seconds; this
+   * reading calls boating-thu 4.1x harder to spot (0.094 against 0.383). Played back to
+   * back they were indistinguishable. jatte-sun points the same way: this reading calls it
+   * more conspicuous than a typical Sunday, and it took over a minute to find.
+   *
+   * The likeliest reading of that is the dull one -- for shapes this small, contrast
+   * against nearby paint is what decides findability and area is second-order, so the
+   * default measurement was already looking at the thing that matters. Do not re-derive
+   * the set against this ladder on the strength of the arithmetic alone.
+   */
+  fovScan: number;
 }
 
 /** Index 0 is Monday, index 6 is Sunday. */
 export const RAMP: Rung[] = [
-  { key: 'mon', label: 'Monday', size: 40, scan: 0.494, ratio: 3.2, texture: 9, angle: 12, scannable: 100, company: 1.6, opaque: true },
-  { key: 'tue', label: 'Tuesday', size: 37, scan: 0.458, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 0.8 },
-  { key: 'wed', label: 'Wednesday', size: 34, scan: 0.429, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 0.8 },
-  { key: 'thu', label: 'Thursday', size: 31, scan: 0.401, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 0.9 },
-  { key: 'fri', label: 'Friday', size: 28, scan: 0.38, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 1.0 },
-  { key: 'sat', label: 'Saturday', size: 25, scan: 0.36, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 1.2 },
-  { key: 'sun', label: 'Sunday', size: 22, scan: 0.341, ratio: 1.05, texture: 22, angle: 148, scannable: 36, company: 1.6 },
+  { key: 'mon', label: 'Monday', size: 40, scan: 0.494, ratio: 3.2, texture: 9, angle: 12, scannable: 100, company: 1.6, fovScan: 0.42, opaque: true },
+  { key: 'tue', label: 'Tuesday', size: 37, scan: 0.458, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 0.8, fovScan: 0.4 },
+  { key: 'wed', label: 'Wednesday', size: 34, scan: 0.429, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 0.8, fovScan: 0.34 },
+  { key: 'thu', label: 'Thursday', size: 31, scan: 0.401, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 0.9, fovScan: 0.3 },
+  { key: 'fri', label: 'Friday', size: 28, scan: 0.38, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 1.0, fovScan: 0.26 },
+  { key: 'sat', label: 'Saturday', size: 25, scan: 0.36, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 1.2, fovScan: 0.21 },
+  { key: 'sun', label: 'Sunday', size: 22, scan: 0.341, ratio: 1.05, texture: 22, angle: 148, scannable: 36, company: 1.6, fovScan: 0.18 },
 ];
 
 export const DAYS_PER_WEEK = RAMP.length;

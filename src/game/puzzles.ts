@@ -39,6 +39,26 @@ interface WeekSeed {
   genre: Genre;
   width: number;
   height: number;
+  /**
+   * Shrinks this painting's whole size ladder, Monday to Sunday, by this factor.
+   *
+   * Some paintings are simply more spottable than others, and no amount of tuning the
+   * paint fixes it: on Seurat's large calm areas anything faint enough to be inconspicuous
+   * at a glance is too faint to see once framed, so the tuner floors out and the day stays
+   * easy. Measured with the corrected fitted-view reading (`npm run camouflage -- --fov`),
+   * jatte's Monday came out 3.4x as conspicuous as a typical Monday while sitting exactly
+   * on its scan target.
+   *
+   * Size is the way out, because it is the one input that changes how big a speck the
+   * shape is while scanning without changing how it looks once framed -- at the match the
+   * shape is always drawn at `targetDisplaySize` whatever this says. So a spottable
+   * painting gets smaller shapes across the board.
+   *
+   * The floor is magnification, not taste: 0.73 puts Sunday at 16px, which is 5.5x native
+   * at the match against the usual 4.0x. Much below that and the painting behind the shape
+   * turns to mush.
+   */
+  sizeScale?: number;
   /** Exactly seven targets, Monday first. Written by `npm run plan`, solved by `npm run camouflage`. */
   days: Target[];
 }
@@ -90,14 +110,15 @@ const WEEKS: WeekSeed[] = [
     genre: 'seascape',
     width: 2600,
     height: 1748,
+    sizeScale: 0.73,
     days: [
-      { shape: 'star', cx: 449, cy: 209, size: 40, angle: -156, fill: '#f8f0e0', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 1.25, scan: 0.482 },
-      { shape: 'clover', cx: 1313, cy: 977, size: 37, angle: -155, fill: '#8f7336', opacity: 0.308, blend: 'multiply', blur: 0.5, ratio: 1.89, scan: 0.463 },
-      { shape: 'triangle', cx: 1865, cy: 1121, size: 34, angle: 86, fill: '#4b4730', opacity: 0.375, blend: 'multiply', blur: 0.5, ratio: 1.57, scan: 0.429 },
-      { shape: 'anchor', cx: 905, cy: 521, size: 31, angle: 46, fill: '#83afd7', opacity: 0.672, blend: 'screen', blur: 0.5, ratio: 1.29, scan: 0.401 },
-      { shape: 'fish', cx: 161, cy: 1409, size: 28, angle: -70, fill: '#436955', opacity: 0.528, blend: 'multiply', blur: 0.5, ratio: 1.32, scan: 0.382 },
-      { shape: 'bolt', cx: 2273, cy: 1457, size: 25, angle: 104, fill: '#778a43', opacity: 0.782, blend: 'multiply', blur: 0.5, ratio: 1.28, scan: 0.36 },
-      { shape: 'arrow', cx: 1745, cy: 1625, size: 22, angle: -148, fill: '#844f25', opacity: 0.54, blend: 'multiply', blur: 0.5, ratio: 0.98, scan: 0.344 },
+      { shape: 'star', cx: 449, cy: 209, size: 29, angle: -156, fill: '#f6edd9', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 1.4, scan: 0.481 },
+      { shape: 'clover', cx: 1313, cy: 977, size: 27, angle: -155, fill: '#8f7336', opacity: 0.327, blend: 'multiply', blur: 0.5, ratio: 2.58, scan: 0.457 },
+      { shape: 'triangle', cx: 1865, cy: 1121, size: 25, angle: 86, fill: '#4b4730', opacity: 0.433, blend: 'multiply', blur: 0.5, ratio: 2.21, scan: 0.426 },
+      { shape: 'anchor', cx: 905, cy: 521, size: 23, angle: 46, fill: '#83afd7', opacity: 0.543, blend: 'screen', blur: 0.5, ratio: 1.02, scan: 0.399 },
+      { shape: 'fish', cx: 161, cy: 1409, size: 20, angle: -70, fill: '#436955', opacity: 0.54, blend: 'multiply', blur: 0.5, ratio: 1.05, scan: 0.385 },
+      { shape: 'bolt', cx: 2273, cy: 1457, size: 18, angle: 104, fill: '#828f3d', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 2.07, scan: 0.363 },
+      { shape: 'arrow', cx: 1745, cy: 1625, size: 16, angle: -148, fill: '#844f25', opacity: 0.668, blend: 'multiply', blur: 0.5, ratio: 1.42, scan: 0.34 },
     ],
   },
   {
@@ -126,14 +147,15 @@ const WEEKS: WeekSeed[] = [
     genre: 'genre-scene',
     width: 2600,
     height: 1926,
+    sizeScale: 0.73,
     days: [
-      { shape: 'triangle', cx: 233, cy: 617, size: 40, angle: -132, fill: '#e2c3bf', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 1.96, scan: 0.498 },
-      { shape: 'snowflake', cx: 2249, cy: 1313, size: 37, angle: -155, fill: '#623f5d', opacity: 0.28, blend: 'multiply', blur: 0.5, ratio: 1.69, scan: 0.456 },
-      { shape: 'star', cx: 185, cy: 1625, size: 34, angle: -106, fill: '#8fa2ba', opacity: 0.226, blend: 'screen', blur: 0.5, ratio: 1.53, scan: 0.432 },
-      { shape: 'heart', cx: 593, cy: 1745, size: 31, angle: 46, fill: '#674972', opacity: 0.249, blend: 'multiply', blur: 0.5, ratio: 2.37, scan: 0.401 },
-      { shape: 'anchor', cx: 1913, cy: 473, size: 28, angle: -70, fill: '#c0a99c', opacity: 0.336, blend: 'screen', blur: 0.5, ratio: 1.43, scan: 0.382 },
-      { shape: 'fish', cx: 2177, cy: 137, size: 25, angle: 104, fill: '#90bcaf', opacity: 0.166, blend: 'screen', blur: 0.5, ratio: 1.5, scan: 0.354 },
-      { shape: 'bolt', cx: 1505, cy: 1145, size: 22, angle: -148, fill: '#be99a7', opacity: 0.567, blend: 'screen', blur: 0.5, ratio: 1.72, scan: 0.346 },
+      { shape: 'triangle', cx: 233, cy: 617, size: 29, angle: -132, fill: '#e3c2bd', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 2.73, scan: 0.492 },
+      { shape: 'snowflake', cx: 2249, cy: 1313, size: 27, angle: -155, fill: '#623f5d', opacity: 0.265, blend: 'multiply', blur: 0.5, ratio: 1.62, scan: 0.462 },
+      { shape: 'star', cx: 185, cy: 1625, size: 25, angle: -106, fill: '#8fa2ba', opacity: 0.183, blend: 'screen', blur: 0.5, ratio: 1.31, scan: 0.438 },
+      { shape: 'heart', cx: 593, cy: 1745, size: 23, angle: 46, fill: '#674972', opacity: 0.131, blend: 'multiply', blur: 0.5, ratio: 1.4, scan: 0.388 },
+      { shape: 'anchor', cx: 1913, cy: 473, size: 20, angle: -70, fill: '#c0a99c', opacity: 0.327, blend: 'screen', blur: 0.5, ratio: 1.45, scan: 0.375 },
+      { shape: 'fish', cx: 2177, cy: 137, size: 18, angle: 104, fill: '#90bcaf', opacity: 0.213, blend: 'screen', blur: 0.5, ratio: 1.59, scan: 0.353 },
+      { shape: 'bolt', cx: 1505, cy: 1145, size: 16, angle: -148, fill: '#be99a7', opacity: 0.711, blend: 'screen', blur: 0.5, ratio: 2.31, scan: 0.34 },
     ],
   },
   {
@@ -144,14 +166,15 @@ const WEEKS: WeekSeed[] = [
     genre: 'genre-scene',
     width: 2600,
     height: 1731,
+    sizeScale: 0.73,
     days: [
-      { shape: 'snowflake', cx: 2321, cy: 1409, size: 40, angle: -48, fill: '#1b1825', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.05, scan: 0.492 },
-      { shape: 'star', cx: 2225, cy: 929, size: 37, angle: 47, fill: '#a8b0c7', opacity: 0.269, blend: 'screen', blur: 0.5, ratio: 1.58, scan: 0.458 },
-      { shape: 'clover', cx: 257, cy: 1145, size: 34, angle: 34, fill: '#504d26', opacity: 0.276, blend: 'multiply', blur: 0.5, ratio: 1.6, scan: 0.422 },
-      { shape: 'bolt', cx: 1145, cy: 1289, size: 31, angle: -46, fill: '#8c86b2', opacity: 0.261, blend: 'screen', blur: 0.5, ratio: 1.38, scan: 0.401 },
-      { shape: 'arrow', cx: 1721, cy: 1577, size: 28, angle: 70, fill: '#95bba2', opacity: 0.201, blend: 'screen', blur: 0.5, ratio: 1.22, scan: 0.375 },
-      { shape: 'key', cx: 161, cy: 137, size: 25, angle: -104, fill: '#4c7651', opacity: 0.54, blend: 'multiply', blur: 0.5, ratio: 1.67, scan: 0.36 },
-      { shape: 'crescent', cx: 1337, cy: 857, size: 22, angle: 148, fill: '#5a3a3b', opacity: 0.348, blend: 'multiply', blur: 0.5, ratio: 1.05, scan: 0.342 },
+      { shape: 'snowflake', cx: 2273, cy: 1073, size: 29, angle: -48, fill: '#2a2c42', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.47, scan: 0.494 },
+      { shape: 'star', cx: 1745, cy: 1577, size: 27, angle: 47, fill: '#98bdaa', opacity: 0.288, blend: 'screen', blur: 0.5, ratio: 1.71, scan: 0.452 },
+      { shape: 'clover', cx: 281, cy: 1145, size: 25, angle: 34, fill: '#4f4c25', opacity: 0.304, blend: 'multiply', blur: 0.5, ratio: 1.84, scan: 0.434 },
+      { shape: 'bolt', cx: 161, cy: 137, size: 23, angle: -46, fill: '#4c7651', opacity: 0.65, blend: 'multiply', blur: 0.5, ratio: 2.07, scan: 0.403 },
+      { shape: 'arrow', cx: 737, cy: 137, size: 20, angle: 70, fill: '#394320', opacity: 0.269, blend: 'multiply', blur: 0.5, ratio: 1.33, scan: 0.383 },
+      { shape: 'key', cx: 1121, cy: 1313, size: 18, angle: -104, fill: '#8986b1', opacity: 0.222, blend: 'screen', blur: 0.5, ratio: 1.02, scan: 0.362 },
+      { shape: 'crescent', cx: 1841, cy: 449, size: 16, angle: 148, fill: '#494c30', opacity: 0.456, blend: 'multiply', blur: 0.5, ratio: 1.04, scan: 0.473 },
     ],
   },
   {
@@ -162,14 +185,15 @@ const WEEKS: WeekSeed[] = [
     genre: 'landscape',
     width: 2600,
     height: 1850,
+    sizeScale: 0.73,
     days: [
-      { shape: 'star', cx: 1649, cy: 305, size: 40, angle: -156, fill: '#161f14', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.5, scan: 0.505 },
-      { shape: 'clover', cx: 2201, cy: 209, size: 37, angle: -155, fill: '#b4c6a6', opacity: 0.174, blend: 'screen', blur: 0.5, ratio: 2.44, scan: 0.457 },
-      { shape: 'triangle', cx: 425, cy: 593, size: 34, angle: -34, fill: '#b3b389', opacity: 0.362, blend: 'screen', blur: 0.5, ratio: 1.42, scan: 0.426 },
-      { shape: 'crescent', cx: 1457, cy: 1649, size: 31, angle: 46, fill: '#715b30', opacity: 0.75, blend: 'multiply', blur: 0.5, ratio: 2.03, scan: 0.399 },
-      { shape: 'heart', cx: 2081, cy: 1097, size: 28, angle: -70, fill: '#b8c19d', opacity: 0.28, blend: 'screen', blur: 0.5, ratio: 1, scan: 0.377 },
-      { shape: 'anchor', cx: 449, cy: 1457, size: 25, angle: 104, fill: '#ac897e', opacity: 0.598, blend: 'screen', blur: 0.5, ratio: 1.12, scan: 0.358 },
-      { shape: 'fish', cx: 137, cy: 1001, size: 22, angle: -148, fill: '#cda174', opacity: 0.405, blend: 'screen', blur: 0.5, ratio: 1.27, scan: 0.341 },
+      { shape: 'star', cx: 1649, cy: 305, size: 29, angle: -156, fill: '#151c12', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.63, scan: 0.493 },
+      { shape: 'clover', cx: 2201, cy: 209, size: 27, angle: -155, fill: '#b4c6a6', opacity: 0.198, blend: 'screen', blur: 0.5, ratio: 2.73, scan: 0.458 },
+      { shape: 'triangle', cx: 425, cy: 593, size: 25, angle: -34, fill: '#b3b389', opacity: 0.437, blend: 'screen', blur: 0.5, ratio: 1.95, scan: 0.427 },
+      { shape: 'crescent', cx: 1457, cy: 1649, size: 23, angle: 46, fill: '#69562d', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 2.65, scan: 0.401 },
+      { shape: 'heart', cx: 2081, cy: 1097, size: 20, angle: -70, fill: '#b8c19d', opacity: 0.348, blend: 'screen', blur: 0.5, ratio: 2.02, scan: 0.383 },
+      { shape: 'anchor', cx: 449, cy: 1457, size: 18, angle: 104, fill: '#ac897e', opacity: 0.664, blend: 'screen', blur: 0.5, ratio: 0.98, scan: 0.423 },
+      { shape: 'fish', cx: 137, cy: 1001, size: 16, angle: -148, fill: '#cda174', opacity: 0.457, blend: 'screen', blur: 0.5, ratio: 1.41, scan: 0.344 },
     ],
   },
   {
@@ -216,14 +240,15 @@ const WEEKS: WeekSeed[] = [
     genre: 'still-life',
     width: 2600,
     height: 2107,
+    sizeScale: 0.73,
     days: [
-      { shape: 'snowflake', cx: 1961, cy: 1265, size: 40, angle: 72, fill: '#36201b', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.84, scan: 0.493 },
-      { shape: 'star', cx: 1289, cy: 593, size: 37, angle: 47, fill: '#dd6684', opacity: 0.201, blend: 'screen', blur: 0.5, ratio: 1.33, scan: 0.447 },
-      { shape: 'clover', cx: 1529, cy: 1001, size: 34, angle: 34, fill: '#d16f85', opacity: 0.226, blend: 'screen', blur: 0.5, ratio: 1.81, scan: 0.431 },
-      { shape: 'anchor', cx: 809, cy: 1793, size: 31, angle: -46, fill: '#d46584', opacity: 0.414, blend: 'screen', blur: 0.5, ratio: 1.43, scan: 0.404 },
-      { shape: 'fish', cx: 233, cy: 761, size: 28, angle: 70, fill: '#cb896f', opacity: 0.127, blend: 'screen', blur: 0.5, ratio: 1.02, scan: 0.374 },
-      { shape: 'bolt', cx: 2417, cy: 641, size: 25, angle: -104, fill: '#ccc1af', opacity: 0.489, blend: 'screen', blur: 0.5, ratio: 1.72, scan: 0.361 },
-      { shape: 'arrow', cx: 449, cy: 1409, size: 22, angle: 148, fill: '#c49588', opacity: 0.297, blend: 'screen', blur: 0.5, ratio: 1.24, scan: 0.345 },
+      { shape: 'snowflake', cx: 1961, cy: 1265, size: 29, angle: 72, fill: '#331e19', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.66, scan: 0.495 },
+      { shape: 'star', cx: 1289, cy: 593, size: 27, angle: 47, fill: '#dd6684', opacity: 0.237, blend: 'screen', blur: 0.5, ratio: 1.47, scan: 0.457 },
+      { shape: 'clover', cx: 1529, cy: 1001, size: 25, angle: 34, fill: '#d16f85', opacity: 0.226, blend: 'screen', blur: 0.5, ratio: 1.79, scan: 0.429 },
+      { shape: 'anchor', cx: 809, cy: 1793, size: 23, angle: -46, fill: '#d46584', opacity: 0.422, blend: 'screen', blur: 0.5, ratio: 1.61, scan: 0.401 },
+      { shape: 'fish', cx: 233, cy: 761, size: 20, angle: 70, fill: '#cb896f', opacity: 0.148, blend: 'screen', blur: 0.5, ratio: 1.09, scan: 0.383 },
+      { shape: 'bolt', cx: 2417, cy: 641, size: 18, angle: -104, fill: '#ccc1af', opacity: 0.507, blend: 'screen', blur: 0.5, ratio: 1.66, scan: 0.358 },
+      { shape: 'arrow', cx: 449, cy: 1409, size: 16, angle: 148, fill: '#c49588', opacity: 0.35, blend: 'screen', blur: 0.5, ratio: 1.32, scan: 0.339 },
     ],
   },
 ];

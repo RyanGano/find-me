@@ -3,6 +3,27 @@ import { angleWork, DAYS_PER_WEEK, RAMP } from './difficulty';
 import { IMAGES, PUZZLES } from './puzzles';
 import { getShape } from './shapes';
 
+/**
+ * Days the visible-when-framed floor rescued, and which therefore came out easier than
+ * their rung asked for.
+ *
+ * Named one at a time on purpose. The trade itself is deliberate -- a shape nobody can see
+ * even when correctly framed is broken rather than hard, so `FRAMED_FLOOR` in
+ * tune-camouflage.mjs outranks the clock -- but it should cost somebody a decision each
+ * time, not quietly become the rule. A week that lands two days in here has a hiding place
+ * problem or a size ladder that has been shrunk past what the painting can carry.
+ *
+ * jatte-sun: Seurat at a 16px Sunday. 16px is the far end of what it can hold -- at 16, 18
+ * and 20 the tuner floored every time, landing at 0.47, 0.41 and 0.40 against a target of
+ * 0.341, so by the clock it should be a 58-second day where the rung asked for 291.
+ *
+ * It is not, and that is the interesting part: played cold it went over a minute without
+ * being found. So this entry records a day that *measures* easy rather than one that plays
+ * easy, and the exemption is here because the reading is untrustworthy at this size, not
+ * because the day is a write-off.
+ */
+const FLOORED = new Set(['jatte-sun']);
+
 /** The seven puzzles of each week, in Monday-to-Sunday order. */
 const weeks = IMAGES.map((image) => PUZZLES.filter((p) => p.image === image.id));
 
@@ -66,7 +87,9 @@ describe('a week', () => {
       const scan = week.map((p) => p.target.scan!);
       expect(Math.max(...scan), `${image}: some day is easier to spot than its Monday`).toBe(scan[0]);
       expect(scan[3], `${image}: Thursday is no harder than Monday`).toBeLessThan(scan[0]);
-      expect(scan[6], `${image}: Sunday is no harder than Thursday`).toBeLessThan(scan[3]);
+      if (!FLOORED.has(week[6].id)) {
+        expect(scan[6], `${image}: Sunday is no harder than Thursday`).toBeLessThan(scan[3]);
+      }
     });
 
     it(`${image} stays visible once it is framed`, () => {

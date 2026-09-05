@@ -469,13 +469,13 @@ function candidatesFor(grey, info, rgb, spots, image, rung, fitScale, median) {
  * because `tune-camouflage.mjs` solves its opacity against the day's scan target after
  * this runs. A week where every badge is the same colour cannot be fixed later at all.
  */
-function spotsForWeek(grey, info, rgb, spots, image) {
+function spotsForWeek(grey, info, rgb, spots, image, ramp) {
   const fitScale = Math.min(900 / info.width, 700 / info.height) * 0.92;
   const sorted = spots.map((s) => s.std).sort((a, b) => a - b);
   const median = sorted[sorted.length >> 1];
 
   const perDay = [];
-  for (const rung of RAMP) {
+  for (const rung of ramp) {
     const found = candidatesFor(grey, info, rgb, spots, image, rung, fitScale, median);
     if (!found.list.length) {
       throw new Error(
@@ -549,10 +549,20 @@ function spotsForWeek(grey, info, rgb, spots, image) {
 /** Every week seed in puzzles.ts, with the extent of its days block. */
 function weeks(source) {
   const out = [];
-  const re = /\{\s*image: '(\w+)',[\s\S]*?width: (\d+),\s*height: (\d+),\s*days: \[[\s\S]*?\],\s*\},/g;
+  const re =
+    /\{\s*image: '(\w+)',[\s\S]*?width: (\d+),\s*height: (\d+),\s*(?:sizeScale: ([\d.]+),\s*)?days: \[[\s\S]*?\],\s*\},/g;
   let m;
   while ((m = re.exec(source))) {
-    out.push({ image: m[1], width: +m[2], height: +m[3], start: m.index, end: re.lastIndex });
+    out.push({
+      image: m[1],
+      width: +m[2],
+      height: +m[3],
+      // A painting that is more spottable than most carries a smaller size ladder; see
+      // `sizeScale` in puzzles.ts. Absent means the ramp's own sizes.
+      sizeScale: m[4] ? +m[4] : 1,
+      start: m.index,
+      end: re.lastIndex,
+    });
   }
   return out;
 }
@@ -575,10 +585,22 @@ for (const [w, week] of [...found.entries()].reverse()) {
 
   const shapes = shapesForWeek(w);
   const surveyed = survey(grey.data, grey.info);
-  const spots = spotsForWeek(grey.data, grey.info, rgb, surveyed, week.image);
+  // A spottable painting carries a smaller ladder -- see `sizeScale` in puzzles.ts. Every
+  // window the planner measures with is derived from the day's size, so the scale has to
+  // be applied here, before anything is measured, rather than to the written number alone.
+  const ramp = RAMP.map((r) => ({ ...r, size: Math.max(8, Math.round(r.size * week.sizeScale)) }));
+  for (let d = 1; d < ramp.length; d += 1) {
+    if (ramp[d].size >= ramp[d - 1].size) {
+      throw new Error(
+        `${week.image}: sizeScale ${week.sizeScale} collapses ${ramp[d - 1].key} and ${ramp[d].key} ` +
+          `to ${ramp[d - 1].size} and ${ramp[d].size} -- the ladder must keep falling`,
+      );
+    }
+  }
+  const spots = spotsForWeek(grey.data, grey.info, rgb, surveyed, week.image, ramp);
   const lines = [];
   const report = [];
-  for (const [d, rung] of RAMP.entries()) {
+  for (const [d, rung] of ramp.entries()) {
     const shape = shapes[d];
     const spot = spots[d];
     const { blend, fill } = paintFor(rgb.data, rgb.info, spot.cx, spot.cy, rung.size);
