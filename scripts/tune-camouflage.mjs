@@ -16,6 +16,7 @@
  *   npm run camouflage                  # report every day against its rung
  *   npm run camouflage -- --solve       # solve each day and write puzzles.ts
  *   npm run camouflage -- --solve mona  # just one week
+ *   npm run camouflage -- mona-thu      # just one day
  *
  * Needs the site running: npx vite preview --port 4173
  */
@@ -29,6 +30,15 @@ const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/';
 const FILE = 'src/game/puzzles.ts';
 const args = process.argv.slice(2);
 const solve = args.includes('--solve');
+/**
+ * Measure the fitted view the way an eye scans it, rather than per-pixel.
+ *
+ * Diagnostic, and deliberately opt-in: the rung targets and `expectedSearchMs` are both
+ * fitted against the default measurement, so switching this on changes what every number
+ * means. It exists to answer one question -- how far would each day move if the fitted
+ * reading could see size at all -- before anything is re-derived.
+ */
+const fov = args.includes('--fov');
 const only = args.filter((a) => !a.startsWith('-'));
 
 /** One line per day in puzzles.ts, read from the source of truth rather than duplicated. */
@@ -217,13 +227,38 @@ async function sample(page, paint, targetPx, maskArea, onShape = false) {
       if (d > peak) peak = d;
     }
   }
-  const signal = sum / (maskArea || changed || 1);
+  // Signal, two ways.
+  //
+  // The default is the mean shift per pixel, which is a contrast reading: a 20px shape and
+  // a 44px shape at the same opacity score identically, because size divides straight back
+  // out. That is why nothing upstream of the paint has ever moved a day -- the instrument
+  // cannot see it.
+  //
+  // Under --fov the signal is the *total* shift instead, over a fixed reference area. That
+  // is Ricco's law, which is the right shape for these targets: below a critical size the
+  // eye integrates contrast over area, so detectability goes as contrast times area rather
+  // than contrast alone. At the fitted view a day's shape is a handful of pixels across --
+  // a size-31 shape on mona is about 5.5 -- which is well inside that regime.
+  // Only the fitted reading changes. The matched view answers a different question --
+  // can you see it once you are on it -- and is a contrast reading on purpose.
+  const signal = fov && onShape ? sum / FOV_REFERENCE_AREA : sum / (maskArea || changed || 1);
 
-  // Texture it competes with: the painting in a window several shape-widths across.
+  // Texture it competes with.
+  //
+  // The default window is several shape-widths across, which sounds right and is not: at
+  // the fitted view 2.5x a five-pixel shape is under the 20px floor, so it sits pinned at
+  // that floor for nearly every day, and for the few larger ones it grows -- which makes a
+  // bigger shape read as *less* conspicuous. Measured at fixed opacity, size 44 scored
+  // 0.377 against size 20's 0.526: backwards.
+  //
+  // Under --fov it is a fixed slice of the view instead, the same for every day, so what
+  // the shape competes against is the painting rather than its own dimensions.
   const cxp = onShape ? Math.min(width - 1, Math.max(0, Math.round(box.x + box.w / 2))) : Math.floor(width / 2);
   const cyp = onShape ? Math.min(height - 1, Math.max(0, Math.round(box.y + box.h / 2))) : Math.floor(height / 2);
   const half = onShape
-    ? Math.max(20, Math.min(Math.round(Math.max(box.w, box.h) * 2.5), Math.floor(Math.min(width, height) / 2)))
+    ? (fov
+        ? Math.round(Math.min(width, height) * 0.15)
+        : Math.max(20, Math.min(Math.round(Math.max(box.w, box.h) * 2.5), Math.floor(Math.min(width, height) / 2))))
     : Math.min(Math.round(targetPx * 2), Math.floor(Math.min(width, height) / 2));
   let t = 0;
   let t2 = 0;
@@ -257,6 +292,9 @@ async function sample(page, paint, targetPx, maskArea, onShape = false) {
  * its rung within that, the week is compressed to fit rather than the shape being shoved
  * until it does.
  */
+/** Reference footprint for the --fov signal, in screen pixels squared. Roughly a 6px shape. */
+const FOV_REFERENCE_AREA = 40;
+
 const MAX_STRENGTH = 2;
 const MAX_OPAQUE_STRENGTH = 1;
 
@@ -297,7 +335,10 @@ function paintAt(p, strength, image) {
 }
 
 const source = readFileSync(FILE, 'utf8');
-const list = puzzles(source).filter((p) => !only.length || only.includes(p.image));
+/** A bare argument names either a whole week (`mona`) or a single day (`mona-thu`). */
+const list = puzzles(source).filter(
+  (p) => !only.length || only.includes(p.image) || only.includes(p.id),
+);
 if (!list.length) throw new Error('no puzzles matched');
 
 /**
