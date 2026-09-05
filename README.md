@@ -514,14 +514,22 @@ looks bigger than the badge" report was traced to gesture gain rather than geome
    `scripts/resize-images.mjs`, then run `npm run images`. Assets are generated at
    2600px wide into `public/puzzles/`.
 
-   `.source-images/` holds **one file per shipped painting and nothing else** — the
-   highest-resolution scan, named `<image>.jpg` for the id used in `puzzles.ts`. It is
-   gitignored, so it is the only copy of those scans there is; everything else that a
-   browser tool produces is throwaway and belongs in `.scratch/`, which the tools now
-   default to. It grew to 1.4GB of week sheets, diag renders, badge screenshots and
-   scans of paintings that had already been rejected before that rule was written down;
-   nothing in that pile was worth keeping, and the pile made the scans that were
-   irreplaceable hard to see.
+   `.source-images/` is **staging, not a library**: it holds the scan of the painting
+   being added, and nothing else. Once step 1 has produced the asset the scan has no
+   further reader in this repo, so it is deleted; the seed's `source` field records the
+   Commons file page it came from, and everything a browser tool renders goes to
+   `.scratch/`, which the tools default to. The folder had reached 1.4GB — week sheets,
+   diag frames, badge screenshots, scans of paintings already rejected — for files used
+   exactly once each.
+
+   **Record the scan, don't keep it.** `source` names the file page and `SOURCE_SCANS` in
+   `assets.test.ts` names its pixel size; the test derives the asset's height from that
+   size and fails if they disagree. That pairing is what makes deleting the scan safe,
+   because the address alone does not identify a scan — most of these paintings have
+   several on Commons at different crops. `mona` had a 6441px Louvre scan sitting in
+   `.source-images/` as an upgrade over the 2835px one it actually shipped from, a
+   visibly different crop; running `npm run images -- mona` on it would have moved all
+   seven of that week's hiding places, and nothing in the repo would have said so.
 2. Add an entry to `SEEDS` in `src/game/puzzles.ts` with the image's dimensions and
    where the shape hides — `cx`, `cy`, `size` and `angle` are all in the **generated
    asset's** pixel space.

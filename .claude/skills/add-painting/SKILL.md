@@ -166,10 +166,19 @@ Filter the results yourself for width >= 3000 and landscape orientation, and rea
 - Searching for the celebrated version of a title can return only a 768px file while a
   different, equally good work by the same painter is on Commons at 4570px.
 
+**Write down the exact file you downloaded before you download it.** It goes in the seed's
+`source` field in step 4, and its dimensions go in `SOURCE_SCANS` in `assets.test.ts`.
+Most of these paintings have half a dozen scans on Commons at different crops, so "the
+Mona Lisa on Commons" does not identify anything; the file page URL and the pixel size do.
+If you take Commons' rendered thumbnail rather than the original — `?width=N` on
+`Special:FilePath` — record that `N` as `sourceWidth`, or the record will not reproduce.
+
 `.source-images/` is gitignored: the source scan is never committed, only the generated
-asset in `public/puzzles/`. It holds one file per shipped painting and nothing else, so
-put the scan there under the painting's id and leave nothing else behind — a candidate
-that ends up rejected gets its scan deleted, not kept.
+asset in `public/puzzles/`. **It is a staging area, not a library.** Once step 3 has
+produced the asset, the scan has no further reader in this repo — delete it at step 9, and
+delete a rejected candidate's scan immediately. What makes that safe is the `source`
+record, not a copy of the file: the scans run to hundreds of megabytes each and used to
+sit there indefinitely until the folder reached 1.4GB.
 
 ### 2. Rate it before investing in it
 
@@ -217,6 +226,7 @@ block but does not create it.
     artist: 'Painter Name',
     year: 'c. 1665',
     genre: 'cityscape',
+    source: 'https://commons.wikimedia.org/wiki/File:Exact_File_You_Downloaded.jpg',
     width: 2600,
     height: 1841,
     days: [
@@ -227,6 +237,12 @@ block but does not create it.
 ```
 
 Keep each day on one line — those lines are machine-rewritten in place by both tools.
+
+`source` is the Commons **file page** URL of the scan from step 1, plus `sourceWidth` if
+you took a thumbnail. Add the scan's own dimensions to `SOURCE_SCANS` in
+`src/game/assets.test.ts` at the same time; the test derives the asset's height from them
+and fails if the two disagree, which is how a week gets protected from being regenerated
+off a different crop later.
 
 `genre` must be one of the `GENRES` in the same file. If the painting genuinely is not one
 of them, widen that list — but widen it because the painting does not fit, never to dodge
@@ -368,9 +384,11 @@ through `?puzzle=NAME-sun`. They aren't recorded and don't affect a streak.
 
 Commit `src/game/puzzles.ts`, `public/puzzles/NAME.jpg`, `scripts/resize-images.mjs`, any
 `scripts/avoid.json` change, and the README/comment count updates. The source scan under
-`.source-images/` stays out, and so does anything from `local/`. Delete the week sheets,
-diag frames and any rejected candidate's scan before you finish — the only thing that
-earns a place in `.source-images/` is the new painting's own scan.
+`.source-images/` stays out, and so does anything from `local/`. Then **delete the scan**,
+along with the week sheets and diag frames: the asset is committed, the `source` field
+says where the scan came from, and `assets.test.ts` will catch a regeneration off the
+wrong one. Nothing in the repo reads `.source-images/` again after step 3, so a scan left
+behind is dead weight that only makes the next painting's staging harder to see.
 
 Commit any `rejected.json` additions too — including when the whole session ended in a
 rejection and no painting was added. That is the one case where it is tempting to walk

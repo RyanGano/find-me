@@ -37,6 +37,27 @@ interface WeekSeed {
   year: string;
   /** What kind of painting it is. `curation.test.ts` holds the rotation to a spread of these. */
   genre: Genre;
+  /**
+   * The Wikimedia Commons file page for the scan `public/puzzles/<image>.jpg` was built
+   * from. Every painting here is in the public domain; this says which scan of it.
+   *
+   * It is here because the scan itself is not kept. `.source-images/` is gitignored and
+   * held the only copy, and the originals run to hundreds of megabytes -- Seurat's is
+   * 310MB, Van Gogh's 664MB -- for a file used exactly once, by `resize-images.mjs`, to
+   * make the 2600px asset that is committed and that everything downstream measures.
+   * Deleting them costs nothing as long as the address survives, and *which* scan is the
+   * whole question: a different scan of the same painting is a different crop, so
+   * regenerating from the wrong one silently moves every hiding place in the week.
+   * `SOURCE_SCANS` in `assets.test.ts` pins each entry to the dimensions it must have.
+   */
+  source: string;
+  /**
+   * Set when the shipped asset came from Commons' rendered thumbnail at this width
+   * rather than the full-size original, so a re-download reproduces the same pixels:
+   * `Special:FilePath/<file>?width=<sourceWidth>`. Both were already well above the
+   * 2600px the asset is generated at.
+   */
+  sourceWidth?: number;
   width: number;
   height: number;
   /**
@@ -90,6 +111,7 @@ const WEEKS: WeekSeed[] = [
     artist: 'Leonardo da Vinci',
     year: 'c. 1503',
     genre: 'portrait',
+    source: 'https://commons.wikimedia.org/wiki/File:Mona_Lisa.jpg',
     width: 2600,
     height: 3933,
     days: [
@@ -108,6 +130,8 @@ const WEEKS: WeekSeed[] = [
     artist: 'Katsushika Hokusai',
     year: 'c. 1831',
     genre: 'seascape',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Tsunami_by_hokusai_19th_century.jpg',
     width: 2600,
     height: 1748,
     sizeScale: 0.73,
@@ -127,6 +151,8 @@ const WEEKS: WeekSeed[] = [
     artist: 'Vincent van Gogh',
     year: '1889',
     genre: 'landscape',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
     width: 2600,
     height: 2059,
     days: [
@@ -145,6 +171,9 @@ const WEEKS: WeekSeed[] = [
     artist: 'Pierre-Auguste Renoir',
     year: '1881',
     genre: 'genre-scene',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Pierre-Auguste_Renoir_-_Luncheon_of_the_Boating_Party_-_Google_Art_Project.jpg',
+    sourceWidth: 3840,
     width: 2600,
     height: 1926,
     sizeScale: 0.73,
@@ -164,6 +193,8 @@ const WEEKS: WeekSeed[] = [
     artist: 'Georges Seurat',
     year: '1884',
     genre: 'genre-scene',
+    source:
+      'https://commons.wikimedia.org/wiki/File:A_Sunday_on_La_Grande_Jatte,_Georges_Seurat,_1884.jpg',
     width: 2600,
     height: 1731,
     sizeScale: 0.73,
@@ -183,6 +214,8 @@ const WEEKS: WeekSeed[] = [
     artist: 'Pieter Bruegel the Elder',
     year: '1565',
     genre: 'landscape',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Pieter_Bruegel_the_Elder_-_Hunters_in_the_Snow_(Winter)_-_Google_Art_Project.jpg',
     width: 2600,
     height: 1850,
     sizeScale: 0.73,
@@ -202,6 +235,9 @@ const WEEKS: WeekSeed[] = [
     artist: 'Albrecht Altdorfer',
     year: '1529',
     genre: 'history',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Albrecht_Altdorfer_-_Schlacht_bei_Issus_(Alte_Pinakothek,_München)_-_Google_Art_Project.jpg',
+    sourceWidth: 3840,
     width: 2600,
     height: 3397,
     days: [
@@ -220,6 +256,8 @@ const WEEKS: WeekSeed[] = [
     artist: 'Pieter Bruegel the Elder',
     year: '1563',
     genre: 'architecture',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Pieter_Bruegel_the_Elder_-_The_Tower_of_Babel_(Rotterdam)_-_Google_Art_Project_-_edited.jpg',
     width: 2600,
     height: 2082,
     days: [
@@ -238,6 +276,8 @@ const WEEKS: WeekSeed[] = [
     artist: 'Jan Davidsz. de Heem',
     year: '1628',
     genre: 'still-life',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Jan_Davidsz._de_Heem_-_Still_life_with_fruit_and_a_self-portrait.jpg',
     width: 2600,
     height: 2107,
     sizeScale: 0.73,
@@ -257,6 +297,8 @@ const WEEKS: WeekSeed[] = [
     artist: 'Canaletto',
     year: 'c. 1730',
     genre: 'cityscape',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Canaletto_-_The_Entrance_to_the_Grand_Canal,_Venice_-_Google_Art_Project.jpg',
     width: 2600,
     height: 1773,
     days: [
@@ -314,7 +356,13 @@ export const PUZZLES: Puzzle[] = WEEKS.flatMap((week) =>
 );
 
 /** The distinct paintings, for tooling that works per asset rather than per day. */
-export const IMAGES = WEEKS.map((w) => ({ id: w.image, width: w.width, height: w.height }));
+export const IMAGES = WEEKS.map((w) => ({
+  id: w.image,
+  width: w.width,
+  height: w.height,
+  source: w.source,
+  sourceWidth: w.sourceWidth,
+}));
 
 /**
  * Every painting in the rotation, for the credits panel. All of them are in the public
