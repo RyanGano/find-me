@@ -100,28 +100,11 @@ export interface Rung {
    * dozen specks look equally plausible and the only way to tell is to try them.
    *
    * Every day gets some, which was not the original design and should have been. Monday
-   * and Sunday were once the two that leaned on it hardest -- Monday because it is the one
-   * day with no transparency to hide behind, and a lone opaque shape on empty sky is
-   * picked out instantly however carefully its colour is matched to the paint; Sunday for
-   * the opposite reason, because by then it is the whole puzzle. The midweek days now
-   * outweigh both, because midweek was where the game read as solvable at a glance: those
-   * days had contrast and rotation doing all the work and nothing making the player ask
-   * *which one is it*.
-   *
-   * This number is a **weight, not a target**: `plan-weeks.mjs` subtracts
-   * `company * repeat` from a spot's cost, so it is the price in texture the planner will
-   * pay for repetition, and the achieved figure it reports is a different scale entirely.
-   * The response to it is sharply non-linear. Below about 2.0 the texture term swamps it
-   * and nothing moves -- raising Tuesday from 0.8 to 1.6 bought two hundredths of company
-   * on van Gogh and changed nothing a player would feel. Above it the planner starts
-   * trading real texture away, which is the trade this lever exists to make, but it has a
-   * far end: the first pass at Saturday bought company by putting the crescent in paint of
-   * texture 35 against a rung of 19, and the tuner then had to raise the opacity so far to
-   * keep the shape visible once framed that the day overshot its scan target and came out
-   * *easier* than before. Company bought past the ratio floor is company that costs a day
-   * its difficulty. When one day lands like that, the fix is that spot in `avoid.json`,
-   * not a lower weight for the whole rung -- a weight low enough to save that Saturday
-   * gave back the gains on every other day of the week.
+   * gets the most of anyone. It is the one day with no transparency to hide behind, and a
+   * lone opaque shape on empty sky is picked out instantly however carefully its colour
+   * is matched to the paint -- no amount of contrast tuning touches that, because being
+   * the only object of its kind in a clear sky is the thing that gives it away. Sunday
+   * gets as much, for the opposite reason: by then it is the whole puzzle.
    *
    * Measured as similarity to the *surroundings* at two to five shape-widths out, never
    * as an overlap. A shape sitting on top of the thing it imitates is not hard, it is
@@ -134,11 +117,11 @@ export interface Rung {
 /** Index 0 is Monday, index 6 is Sunday. */
 export const RAMP: Rung[] = [
   { key: 'mon', label: 'Monday', size: 40, scan: 0.52, ratio: 3.2, texture: 9, angle: 12, scannable: 100, company: 1.6, opaque: true },
-  { key: 'tue', label: 'Tuesday', size: 37, scan: 0.43, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 2.0 },
-  { key: 'wed', label: 'Wednesday', size: 34, scan: 0.385, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 2.0 },
-  { key: 'thu', label: 'Thursday', size: 31, scan: 0.36, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 2.2 },
-  { key: 'fri', label: 'Friday', size: 28, scan: 0.345, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 2.4 },
-  { key: 'sat', label: 'Saturday', size: 25, scan: 0.33, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 2.6 },
+  { key: 'tue', label: 'Tuesday', size: 37, scan: 0.43, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 0.8 },
+  { key: 'wed', label: 'Wednesday', size: 34, scan: 0.385, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 0.8 },
+  { key: 'thu', label: 'Thursday', size: 31, scan: 0.36, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 0.9 },
+  { key: 'fri', label: 'Friday', size: 28, scan: 0.345, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 1.0 },
+  { key: 'sat', label: 'Saturday', size: 25, scan: 0.33, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 1.2 },
   { key: 'sun', label: 'Sunday', size: 22, scan: 0.31, ratio: 1.05, texture: 22, angle: 148, scannable: 36, company: 1.6 },
 ];
 
