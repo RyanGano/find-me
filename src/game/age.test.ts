@@ -114,9 +114,33 @@ const OBSERVED = [
 
 type Observed = (typeof OBSERVED)[number];
 
+/**
+ * The `scan` each of those days carried *when these runs were played*.
+ *
+ * These are real people, and their runs are the only real data the age scale has. Pricing
+ * them against a later, harder version of the same day misreads every one of them. When
+ * the ramp stopped scaling its targets by search cost, wave-mon went from a twelve-second
+ * day to a fifty-second one, and the 8.6s run below went from 1.4x par to 6x par -- the
+ * whole set read 6.8 years young, and the bias guard caught it.
+ *
+ * That is a fixture bug, not a change in what a player is told: on a harder day a real
+ * player also takes longer, the ratio barely moves, and so does the age. But the fixture
+ * has to hold the puzzle as it actually was, or every future change to the ramp silently
+ * invalidates the calibration set. Pin it here, and add a line whenever new runs are
+ * recorded.
+ */
+const PLAYED_AT: Record<string, number> = {
+  'mona-sun': 0.465,
+  'wave-mon': 0.801,
+};
+
+function asPlayed(id: string, puzzle: Puzzle): Puzzle {
+  return { ...puzzle, target: { ...puzzle.target, scan: PLAYED_AT[id] } };
+}
+
 const DAYS: Record<string, Puzzle> = {
-  'mona-sun': puzzleForDay(dayIndex(new Date(2026, 7, 30))),
-  'wave-mon': puzzleForDay(dayIndex(new Date(2026, 7, 31))),
+  'mona-sun': asPlayed('mona-sun', puzzleForDay(dayIndex(new Date(2026, 7, 30)))),
+  'wave-mon': asPlayed('wave-mon', puzzleForDay(dayIndex(new Date(2026, 7, 31)))),
 };
 
 /** What the scale as it stands now tells that player: replayed where it can be. */

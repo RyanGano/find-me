@@ -368,9 +368,22 @@ for (const p of list) {
     week = p.image;
     console.log('  ' + week);
   }
-  // What this day is being solved for: a time-to-find, expressed as a scan reading and
-  // scaled by how much work this particular canvas is to search.
-  const want = rung.scan * costs.get(p.image);
+  // What this day is being solved for: a time-to-find, expressed directly as a scan
+  // reading.
+  //
+  // This used to be `rung.scan * costs.get(p.image)`, scaling the target by how much work
+  // the canvas is to search. That was wrong, and measurably so. `expectedSearchMs` in
+  // age.ts maps a *raw* scan reading to a time with no cost term in it, so multiplying the
+  // target by a per-painting cost of 0.97 to 1.9 guaranteed that equal rungs came out at
+  // wildly unequal times. The shipped set proved it: every Monday and most Tuesdays sat on
+  // the model's 12-second floor, the Mona Lisa's whole week ran 12s to 64s, and jatte's ran
+  // 14s to 277s. One ramp, two different games.
+  //
+  // The rung now carries the target scan itself, derived from the time that day is meant
+  // to take (see difficulty.ts), and it is the same number on every canvas. The search
+  // cost is still measured and reported, because it says something real about a painting,
+  // but it no longer moves the target.
+  const want = rung.scan;
 
   let paint = { opacity: p.opacity, fill: p.fill };
 
@@ -445,6 +458,7 @@ for (const p of list) {
       ' opacity ' + String(paint.opacity).padEnd(6) + paint.fill +
       '  scan ' + scanned.ratio.toFixed(3).padStart(6) + ' (want ' + want.toFixed(3).padEnd(6) + ')' +
       '  found ' + got.ratio.toFixed(2).padStart(5) +
+      '  cost ' + costs.get(p.image).toFixed(2) +
       (raised ? '   raised to stay visible once framed' : '') +
       (dimmed ? '   dimmed: it was a beacon once framed' : '') +
       (got.ratio < FRAMED_FLOOR ? '   TOO FAINT once framed even at full strength' : ''),

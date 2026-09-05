@@ -17,29 +17,57 @@
  *            harder to *scan for* and harder to *land*, without making it any harder to
  *            *see*.
  *
- *            This is the lever that decides whether a puzzle is actually hard, and an
- *            earlier version of this ramp had it backwards. It opened Monday at 64px --
+ *            It is *not*, despite what this comment said for a long time, the lever that
+ *            decides whether a puzzle is hard. Shrinking a shape makes it a smaller speck
+ *            to scan for, but the tuner then solves opacity against the day's `scan`
+ *            target and brightens it until the day takes exactly as long as it always
+ *            did. This was tested rather than argued: raising the asset width from 2600 to
+ *            3400, which shrinks every shape to 77% of its old share of the canvas at
+ *            identical magnification, produced no measured difficulty gain at all. What it
+ *            produced was eight days the solver could not place, because reaching the
+ *            required loudness at that size tripped the beacon ceiling once framed and the
+ *            dimming loop dragged them back under. Set the time on `scan`; leave this
+ *            alone.
+ *
+ *            An earlier version of this ramp had it backwards. It opened Monday at 64px --
  *            half again the size of anything the game had used before -- reasoning that a
  *            big shape makes a gentle day. It makes an instant one: at the fitted view a
  *            64px shape is a 20px object on screen and the eye lands on it unprompted,
  *            whatever its colour is doing. Contrast cannot rescue a shape that big.
- * `scan`     **the one that decides how long a day takes**, and what opacity is now
- *            solved for. The shape's luminance shift with the whole painting on screen,
- *            divided by the texture of the paint immediately around it, and then by the
- *            canvas's own `search` cost -- how much ground there is to cover and how much
- *            of it looks like something (see rate-painting.mjs).
+ * `scan`     **the one that decides how long a day takes, and the only lever that does.**
+ *            The shape's luminance shift with the whole painting on screen, divided by
+ *            the texture of the paint immediately around it. It is what opacity is solved
+ *            for, and the rung now carries the number the tuner aims at directly.
  *
- *            All three parts are needed, and each was learned by being wrong. Raw peak
- *            brightness said Rousseau's smooth sky and Bruegel's crowd were comparable
- *            when one was a beacon. Dividing by local texture fixed that within a
- *            painting but not across them: Rousseau at 0.45 cost 16 seconds while the
- *            Mona Lisa at 0.53 cost nearly four minutes, because a small plain canvas has
- *            far fewer places to look. Dividing by search cost lines them up -- Bruegel's
- *            Monday at 0.56 and Rousseau's Sunday at 0.52 both took about twenty seconds.
+ *            Both parts of the measure were learned by being wrong. Raw peak brightness
+ *            said Rousseau's smooth sky and Bruegel's crowd were comparable when one was
+ *            a beacon; dividing by local texture fixed that.
+ *
+ *            A third part used to sit on the *target* rather than the measure: the rung's
+ *            scan was multiplied by the canvas's own search cost, on the reasoning that a
+ *            painting with more ground to cover should be allowed a louder shape. That
+ *            was wrong, and the shipped set proved it. `expectedSearchMs` in age.ts maps a
+ *            *raw* scan reading to a time with no cost term in it, so scaling the target
+ *            by a per-painting cost of 0.97 to 1.9 guaranteed equal rungs came out at
+ *            wildly unequal times. Every Monday and most Tuesdays sat on that model's
+ *            12-second floor; the Mona Lisa's entire week ran 12s to 64s while jatte's ran
+ *            14s to 277s. One ramp, two different games, and a Monday nobody had to
+ *            search for. The rungs below are now the raw target itself, derived from the
+ *            time the day is meant to take, and identical on every canvas. Search cost is
+ *            still measured and reported -- it says something true about a painting -- but
+ *            it no longer moves the target.
  *
  *            The scale is steep and the numbers are close together: 0.56 is twenty
  *            seconds and 0.36 is nearly four minutes. Small changes here are large
- *            changes in play.
+ *            changes in play. `expectedSearchMs` clamps to [0.3, 0.6], and age.test.ts
+ *            holds every shipped day between ten seconds and six minutes, so the usable
+ *            band is roughly 0.324 to 0.617 -- set a rung outside it and the suite fails.
+ *
+ *            The current rungs target 45s, 70s, 100s, 140s, 180s, 230s and 290s. Nothing
+ *            else in this file moves difficulty. `size`, `company` and the asset
+ *            resolution were each tried as levers and each was compensated straight back
+ *            out by the solver, which brightens the shape until the day takes the time the
+ *            rung asked for -- see `size` and `company` below.
  * `ratio`    signal over local texture at the winning framing -- "can you see it while
  *            looking straight at it". No longer solved for, because a day cannot be
  *            pinned to a time and a contrast at once; it is measured, recorded, and held
@@ -116,13 +144,13 @@ export interface Rung {
 
 /** Index 0 is Monday, index 6 is Sunday. */
 export const RAMP: Rung[] = [
-  { key: 'mon', label: 'Monday', size: 40, scan: 0.52, ratio: 3.2, texture: 9, angle: 12, scannable: 100, company: 1.6, opaque: true },
-  { key: 'tue', label: 'Tuesday', size: 37, scan: 0.43, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 0.8 },
-  { key: 'wed', label: 'Wednesday', size: 34, scan: 0.385, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 0.8 },
-  { key: 'thu', label: 'Thursday', size: 31, scan: 0.36, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 0.9 },
-  { key: 'fri', label: 'Friday', size: 28, scan: 0.345, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 1.0 },
-  { key: 'sat', label: 'Saturday', size: 25, scan: 0.33, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 1.2 },
-  { key: 'sun', label: 'Sunday', size: 22, scan: 0.31, ratio: 1.05, texture: 22, angle: 148, scannable: 36, company: 1.6 },
+  { key: 'mon', label: 'Monday', size: 40, scan: 0.494, ratio: 3.2, texture: 9, angle: 12, scannable: 100, company: 1.6, opaque: true },
+  { key: 'tue', label: 'Tuesday', size: 37, scan: 0.458, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 0.8 },
+  { key: 'wed', label: 'Wednesday', size: 34, scan: 0.429, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 0.8 },
+  { key: 'thu', label: 'Thursday', size: 31, scan: 0.401, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 0.9 },
+  { key: 'fri', label: 'Friday', size: 28, scan: 0.38, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 1.0 },
+  { key: 'sat', label: 'Saturday', size: 25, scan: 0.36, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 1.2 },
+  { key: 'sun', label: 'Sunday', size: 22, scan: 0.341, ratio: 1.05, texture: 22, angle: 148, scannable: 36, company: 1.6 },
 ];
 
 export const DAYS_PER_WEEK = RAMP.length;

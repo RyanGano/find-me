@@ -62,20 +62,42 @@ player actually experiences. Targets, and the levers that reach them
 | texture of the hiding place | flattest | → | → | → | → | → | busiest |
 | degrees to turn | 12 | 25 | 34 | 46 | 70 | 104 | 148 |
 
-- **`scan`** is what opacity is solved for, and the reading that corresponds to time to
-  find: the shape's luminance shift with the whole painting on screen, divided by the
-  texture of the paint immediately around it, and then by that canvas's own **search
-  cost** — how much ground there is to cover and how much of it looks like something.
+- **`scan`** is what opacity is solved for, the reading that corresponds to time to find,
+  and **the only lever in the ramp that changes difficulty**: the shape's luminance shift
+  with the whole painting on screen, divided by the texture of the paint immediately
+  around it.
 
-  All three parts had to be there, and each was learned by being wrong. The calibration
-  numbers below are from a Rousseau week that is no longer in the rotation; they are kept
-  because they are what the formula was fitted against. Raw peak
-  brightness said Rousseau's smooth sky and Bruegel's crowd were comparable when one was
-  a beacon. Dividing by local texture fixed that within a painting but not across them:
-  Rousseau at 0.45 cost 16 seconds while the Mona Lisa at 0.53 cost nearly four minutes,
-  because a small plain canvas has far fewer places to look. Dividing by search cost lines
-  them up — Bruegel's Monday at 0.56 and Rousseau's Sunday at 0.52 both took about twenty
-  seconds. The scale is steep: 0.56 is twenty seconds and 0.36 is nearly four minutes.
+  Both parts of the measure were learned by being wrong. The calibration numbers here are
+  from a Rousseau week that is no longer in the rotation; they are kept because they are
+  what the formula was fitted against. Raw peak brightness said Rousseau's smooth sky and
+  Bruegel's crowd were comparable when one was a beacon. Dividing by local texture fixed
+  that. The scale is steep: 0.56 is twenty seconds and 0.36 is nearly four minutes.
+
+  A third term used to sit on the *target*: the rung's scan was multiplied by that
+  canvas's **search cost** — how much ground there is to cover and how much of it looks
+  like something — on the reasoning that a busier painting has earned a louder shape. It
+  had to go. `expectedSearchMs` in `age.ts` turns a *raw* scan reading into a time with no
+  cost term in it, so scaling the target by a per-painting cost of 0.97 to 1.9 guaranteed
+  that one rung produced wildly different days. Measured across the whole shipped set,
+  every Monday and most Tuesdays sat on that model's twelve-second floor, the Mona Lisa's
+  week ran 12s to 64s, and jatte's ran 14s to 277s — one ramp, two different games, and a
+  Monday nobody had to search for. The rungs are now the raw target itself, derived from
+  the time each day is meant to take and identical on every canvas: **45s, 70s, 100s,
+  140s, 180s, 230s, 290s**. Search cost is still measured and printed by
+  `npm run camouflage`, because it says something true about a painting, but it no longer
+  moves the target.
+
+  The usable band is narrow. `expectedSearchMs` clamps to [0.3, 0.6] and
+  `age.test.ts` holds every shipped day between ten seconds and six minutes, so a rung
+  outside roughly 0.324–0.617 fails the suite.
+
+  **Nothing else moves difficulty.** Size, `company` and the asset resolution were each
+  tried as levers, and the solver compensated every one of them straight back out — it
+  brightens the shape until the day takes the time the rung asked for. Raising the assets
+  from 2600px to 3400px, which shrinks every shape to 77% of its old share of the canvas
+  at identical magnification, produced no measured gain at all; what it produced was eight
+  days the solver could not place, because reaching the required loudness at that size
+  tripped the beacon ceiling once framed. If a day should be harder, change its time.
 
 - **Size** runs from 1.5% of the image width down to 0.85%. At the match the shape is
   always exactly `targetPx` across on screen, so size does not change how visible it is
