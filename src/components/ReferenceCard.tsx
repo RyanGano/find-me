@@ -1,4 +1,5 @@
 import { Shape } from './Shape';
+import { wellFor } from '../game/badge';
 import { useApparentFill } from '../hooks/useApparentFill';
 import { formatTime } from '../game/format';
 import type { MatchState } from '../game/match';
@@ -21,8 +22,11 @@ interface Props {
  *
  * The colour matters as much as the size. This badge is the only description of what
  * is hidden, so drawing it in a house colour rather than the target's own fill sends
- * people hunting for the wrong thing. It sits on a neutral well because the fills range
- * from pale ice blue to dark slate and both have to read.
+ * people hunting for the wrong thing. It sits on a neutral well, and the well picks
+ * itself: the fills range from pale ice blue to dark slate, and a fixed background is
+ * eventually the same colour as one of them -- the Mona Lisa's Thursday was a grey key on
+ * grey, legible as a blob and not as a key. `game/badge.ts` chooses the tone that stays
+ * furthest from whatever the shape came out.
  *
  * The colour shown is the one the shape ends up, not the one it is declared as. Nearly
  * every day carries an opacity and a blend mode, so the declared fill is only an
@@ -59,7 +63,17 @@ export function ReferenceCard({ puzzle, targetSize, match, solvedMs, onReopen }:
 
   const inner = (
     <>
-      <div className="reference-well" style={{ width: targetSize, height: targetSize }}>
+      <div
+        className="reference-well"
+        style={{
+          width: targetSize,
+          height: targetSize,
+          // The well moves to stay off the shape's colour -- see game/badge.ts. Until the
+          // apparent fill has been worked out there is nothing to contrast against, so
+          // the stylesheet's neutral stands.
+          ...(fill ? { background: wellFor(fill) } : {}),
+        }}
+      >
         <Shape
           shape={puzzle.target.shape}
           size={targetSize}
