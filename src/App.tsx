@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Credits } from './components/Credits';
 import { HowTo } from './components/HowTo';
 import { ReferenceCard } from './components/ReferenceCard';
@@ -10,8 +10,7 @@ import { count, newRunId } from './game/count';
 import { puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
-import { evaluate, targetDisplaySize } from './game/match';
-import { finish, newTracker, sample, type RunMetrics, type Tracker } from './game/metrics';
+import type { RunMetrics } from './game/metrics';
 import {
   clearProgress,
   getCurrentResult,
@@ -23,20 +22,12 @@ import {
   touch,
   type Stats,
 } from './game/storage';
-import { compose, constrainPan, fitTransform } from './game/transform';
-import type { Transform } from './game/types';
-import type { GestureDelta } from './game/transform';
-import { useGestures } from './hooks/useGestures';
+import { useHunt, type LeftRun } from './hooks/useHunt';
 import { useUpdateAvailable } from './hooks/useUpdateAvailable';
 
 const HOWTO_SEEN = 'find-me:howto-seen';
 const BETA_SEEN = 'find-me:beta-seen';
 const WARNING_SEEN = 'find-me:storage-warning-seen';
-
-interface Size {
-  w: number;
-  h: number;
-}
 
 /**
  * `localStorage` on its own, wrapped so a browser that refuses to hand it over cannot
@@ -64,11 +55,6 @@ export default function App() {
   const selection = useMemo(() => selectPuzzle(window.location.search), []);
   const { puzzle, index: day, isPractice } = selection;
 
-  const stageRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState<Size | null>(null);
-  const [transform, setTransform] = useState<Transform | null>(null);
-  const [ready, setReady] = useState(false);
-
   // A solve already recorded for today opens as a finished board, not a fresh timer.
   const prior = useMemo(
     () => (isPractice ? undefined : getCurrentResult(day, puzzle.version)),
@@ -83,25 +69,10 @@ export default function App() {
     [day, isPractice, prior, puzzle.version],
   );
 
-  // A resumed run opens held, so the clock does not run while the player re-orients.
-  const [startedAt, setStartedAt] = useState<number | null>(() =>
-    saved ? performance.now() - saved.ms : null,
-  );
-  const [elapsed, setElapsed] = useState(saved?.ms ?? 0);
-  // A pause blurs the painting and freezes the clock, so a player can look away
-  // mid-hunt without the run reading their kettle break as thinking time.
-  const [paused, setPaused] = useState(Boolean(saved));
-  // True until the player picks the resumed run back up: the board is theirs from a
-  // moment ago, and it should say so rather than looking like a fresh puzzle.
-  const [resuming, setResuming] = useState(Boolean(saved));
-  const [solvedMs, setSolvedMs] = useState<number | null>(prior?.ms ?? null);
-  // How the run is being played, for the Find Me Age. The collector rides along with the
-  // banked run, so a back-swipe costs nothing; the finished metrics go with the result.
-  const tracker = useRef<Tracker>(saved?.k ?? newTracker());
   // Identifies this run to the daily tally, and nothing beyond it. A resumed run carries
   // the id it was banked with, so a back-swipe is not counted as a second player.
-  const runId = useRef<string>(saved?.r ?? newRunId());
-  const [metrics, setMetrics] = useState<RunMetrics | null>(prior?.m ?? null);
+  const [runId] = useState<string>(() => saved?.r ?? newRunId());
+
   const [showResult, setShowResult] = useState(Boolean(prior));
   // The reveal ring is a spoiler once the hunt is over, so let the player hide it
   // while they look at the painting itself.
@@ -154,196 +125,68 @@ export default function App() {
     if (!isPractice) touch();
   }, [isPractice]);
 
-  // Track the stage box; it drives both the fitted view and the target size.
-  useEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      if (width > 0 && height > 0) setSize({ w: width, h: height });
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  const fit = useCallback(
-    (s: Size) => fitTransform(puzzle.width, puzzle.height, s.w, s.h),
-    [puzzle.width, puzzle.height],
-  );
-
-  // The saved view is only meaningful in the stage box it was framed in, so it is claimed
-  // by the first measure and only used if the board came back the same size.
-  const pending = useRef(saved ? { t: saved.t, w: saved.w, h: saved.h } : null);
-
-  useEffect(() => {
-    if (!size) return;
-    const resume = pending.current;
-    if (resume) {
-      pending.current = null;
-      if (Math.abs(resume.w - size.w) < 1 && Math.abs(resume.h - size.h) < 1) {
-        setTransform(resume.t);
-        return;
-      }
-    }
-    // Fit on first measure, and keep fitting while the board is still untouched.
-    setTransform((prev) => (prev && startedAt !== null ? prev : fit(size)));
-  }, [size, fit, startedAt]);
-
-  const targetSize = size ? targetDisplaySize(size.w, size.h) : 96;
-
-  const limits = useMemo(() => {
-    if (!size) return undefined;
-    const fitScale = fit(size).scale;
-    const needed = targetSize / puzzle.target.size;
-    return { min: fitScale * 0.6, max: Math.max(fitScale * 3, needed * 4) };
-  }, [size, fit, targetSize, puzzle.target.size]);
-
-  const match = useMemo(() => {
-    if (!size || !transform) return null;
-    return evaluate(puzzle.target, transform, size.w, size.h, targetSize);
-  }, [puzzle.target, transform, size, targetSize]);
-
-  const running = startedAt !== null && solvedMs === null && !paused;
-
-  // Resuming rebases the start so the frozen elapsed time carries over untouched.
-  const togglePause = useCallback(() => {
-    if (startedAt === null || solvedMs !== null) return;
-    setResuming(false);
-    setPaused((prev) => {
-      if (prev) setStartedAt(performance.now() - elapsed);
-      else setElapsed(performance.now() - startedAt);
-      return !prev;
-    });
-  }, [startedAt, solvedMs, elapsed]);
-
-  // The clock starting is what counts as a play. Reported once; a resumed run was
-  // already reported when it first began, under the same id.
-  const reportedStart = useRef(Boolean(saved) || isPractice);
-  useEffect(() => {
-    if (startedAt === null || reportedStart.current) return;
-    reportedStart.current = true;
-    count(runId.current, day, 'start');
-  }, [startedAt, day]);
-
-  const handleInteract = useCallback(() => {
-    if (solvedMs !== null) return;
-    setStartedAt((prev) => prev ?? performance.now());
-  }, [solvedMs]);
-
-  const handleGesture = useCallback(
-    (delta: GestureDelta) => {
-      setTransform((prev) => {
-        if (!prev) return prev;
-        const next = compose(prev, delta, limits);
-        return size ? constrainPan(next, puzzle.width, puzzle.height, size.w, size.h) : next;
-      });
+  // What the three moments of a run mean to the daily game: a play, a recorded time, and
+  // a run banked where the player left it. A practice run means none of them, which is
+  // the whole of what "not recorded" amounts to.
+  const onStart = useCallback(
+    (run: string) => {
+      if (!isPractice) count(run, day, 'start');
     },
-    [limits, size, puzzle.width, puzzle.height],
+    [isPractice, day],
   );
 
-  useGestures(stageRef, {
-    onGesture: handleGesture,
-    onInteract: handleInteract,
-    enabled: ready && !showHowTo && !showCredits && !paused,
-  });
-
-  // Tick the visible clock while the run is live.
-  useEffect(() => {
-    if (!running || startedAt === null) return;
-    const id = setInterval(() => setElapsed(performance.now() - startedAt), 90);
-    return () => clearInterval(id);
-  }, [running, startedAt]);
-
-  // Watch how the run is being played. Declared above the solve effect on purpose: both
-  // fire in the same commit as the winning move, and the solve must be closed out
-  // against a tracker that has already seen that move.
-  useEffect(() => {
-    if (!running || startedAt === null || !match || !transform || !size) return;
-    tracker.current = sample(
-      tracker.current,
-      performance.now() - startedAt,
-      match,
-      transform.scale,
-      size,
-      targetSize,
-    );
-  }, [match, transform, size, targetSize, running, startedAt]);
-
-  // Land the solve the moment size, angle and framing all line up.
-  useEffect(() => {
-    if (!running || startedAt === null || !match?.solved) return;
-    const ms = performance.now() - startedAt;
-    const run = finish(tracker.current, ms);
-    // The winning move is a gesture, but `match` is derived during render, so the solve
-    // can only be seen from here. This is the run state machine's one-way transition into
-    // "solved" -- it cannot cascade, because `match.solved` stays true and `running` is
-    // false on the next pass.
-    // oxlint-disable-next-line react/set-state-in-effect
-    setSolvedMs(ms);
-    setElapsed(ms);
-    setMetrics(run);
-    setShowResult(true);
-    if (!isPractice) {
-      saveResult(day, ms, puzzle.version, run);
-      clearProgress();
-      count(runId.current, day, 'solved', ms);
-    }
-    setStats(getStats(day));
-  }, [match?.solved, running, startedAt, day, isPractice, puzzle.version]);
-
-  // Latest state, read by the leave handlers below -- they are registered once, and a
-  // `pagehide` fires too late to wait on a re-render.
-  const live = useRef<{ startedAt: number; elapsed: number; paused: boolean; t: Transform } | null>(
-    null,
+  const onSolved = useCallback(
+    (ms: number, run: RunMetrics, id: string) => {
+      setShowResult(true);
+      if (!isPractice) {
+        saveResult(day, ms, puzzle.version, run);
+        clearProgress();
+        count(id, day, 'solved', ms);
+      }
+      setStats(getStats(day));
+    },
+    [isPractice, day, puzzle.version],
   );
-  const stage = useRef<Size | null>(null);
-  useEffect(() => {
-    live.current =
-      !isPractice && startedAt !== null && solvedMs === null && transform && size
-        ? { startedAt, elapsed, paused, t: transform }
-        : null;
-    stage.current = size;
-  });
 
-  // Leaving the page banks the run. `visibilitychange` is the one event a phone reliably
-  // fires when the tab is backgrounded or the browser is swiped away; `pagehide` covers a
-  // real navigation, including the accidental back-swipe this exists for.
-  useEffect(() => {
-    const bank = () => {
-      const run = live.current;
-      const box = stage.current;
-      if (!run || !box) return;
-      // Read the clock now, not at the last render: a run banked while it is still live
-      // is worth exactly what it reads at the moment the page goes away.
-      const ms = run.paused ? run.elapsed : performance.now() - run.startedAt;
-      saveProgress({
-        day,
-        v: puzzle.version,
-        ms,
-        t: run.t,
-        w: box.w,
-        h: box.h,
-        k: tracker.current,
-        r: runId.current,
-      });
+  const onLeave = useCallback(
+    (left: LeftRun, id: string) => {
+      if (isPractice) return;
+      saveProgress({ day, v: puzzle.version, ms: left.ms, t: left.t, w: left.w, h: left.h, k: left.k, r: id });
       // A run the player walked away from. If they come back and solve it, the solve
       // supersedes this; if they never do, this is how long they lasted.
-      count(runId.current, day, 'left', ms);
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') bank();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('pagehide', bank);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('pagehide', bank);
-    };
-  }, [day, puzzle.version]);
+      count(id, day, 'left', left.ms);
+    },
+    [isPractice, day, puzzle.version],
+  );
 
-  const reset = useCallback(() => {
-    if (size) setTransform(fit(size));
-  }, [size, fit]);
+  const {
+    stageRef,
+    transform,
+    ready,
+    onReady,
+    fitScale,
+    targetSize,
+    match,
+    startedAt,
+    elapsed,
+    clock,
+    running,
+    paused,
+    resuming,
+    solvedMs,
+    metrics,
+    togglePause,
+    reset,
+  } = useHunt({
+    puzzle,
+    resume: saved,
+    prior: prior ? { ms: prior.ms, metrics: prior.m } : undefined,
+    blocked: showHowTo || showCredits,
+    runId,
+    onStart,
+    onSolved,
+    onLeave,
+  });
 
   const toggleBetaNote = useCallback(() => {
     setFlag(BETA_SEEN);
@@ -362,7 +205,7 @@ export default function App() {
     setFlag(HOWTO_SEEN);
     setShowHowTo(false);
     stageRef.current?.focus();
-  }, []);
+  }, [stageRef]);
 
   // Putting the card away and going back to the painting are two different wishes, and
   // only the card's own button means both. Dismissing it any other way leaves the view
@@ -402,8 +245,6 @@ export default function App() {
     },
     [showResult, showCredits, showHowTo, dismissPanels],
   );
-
-  const clock = solvedMs ?? (startedAt === null ? 0 : elapsed);
 
   return (
     <div className="app">
@@ -555,12 +396,12 @@ export default function App() {
           stageRef={stageRef}
           puzzle={puzzle}
           transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
-          fitScale={size ? fit(size).scale : 1}
+          fitScale={fitScale}
           showRing={solvedMs !== null && showRing}
           blurred={paused || (startedAt === null && solvedMs === null)}
           paused={paused}
           resumed={resuming}
-          onReady={() => setReady(true)}
+          onReady={onReady}
         />
 
         {/* Sits inside the board rather than above it: a banner in the column would
