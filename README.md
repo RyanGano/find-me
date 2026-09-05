@@ -718,7 +718,7 @@ different game is an opinion about that game.
 npm run plan -- --testbed cafe                    # re-plan a bench week
 npm run camouflage -- --testbed --solve cafe      # re-tune it against the browser
 node scripts/smoke-testbed.mjs                    # walk a round at phone size
-node scripts/fingerprint.mjs > before.json        # ...and prove no shipped day moved
+npm run fingerprint --silent > before.json        # ...and prove no shipped day moved
 ```
 
 Add the round to `ROUNDS`, deploy, and hand out `/?testbed`. `?testbed=<id>&again=1`

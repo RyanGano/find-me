@@ -39,7 +39,8 @@ npm run preview:week -- mona               # seven rows of three, to look at the
 node scripts/diag-camouflage.mjs mona '[{}]' out.jpg   # one hiding place at match zoom
 node scripts/diag-size.mjs                 # badge vs shape geometry check
 node scripts/diag-badge.mjs               # badge colour vs the shape as painted
-node scripts/fingerprint.mjs              # every shipped puzzle as JSON, to diff across a change
+npm run fingerprint --silent              # every shipped puzzle as JSON, to diff across a change
+npm run rungs                             # the ramp, with the time each rung aims at
 ```
 
 The play-test bench (`src/game/testbed.ts`) is driven by the same tools behind a flag:
@@ -143,13 +144,15 @@ card and the panels.
 - Practice runs, for testing: `?puzzle=starry-wed` or `?day=3`. They are not recorded and
   do not affect a streak. `?puzzle=` also serves a bench day (`?puzzle=cafe-fri`), which is
   how the browser tools drive the bench through the real page.
-- Changing anything a player already has: `node scripts/fingerprint.mjs > before.json`
+- Changing anything a player already has: `npm run fingerprint --silent > before.json`
   before the change and `diff` after. An empty diff means no recorded time was invalidated
   and no finished board was handed back as playable. Every change that is not meant to move
   the shipped puzzles should produce one.
-- Trying out a change on real people: add a round to `src/game/rounds.ts` and hand out
-  `/?testbed`. Never re-plan or re-tune a shipped week to test an idea -- that takes the day
-  back off everyone who has already played it. The bench exists so that is never necessary.
+- Trying out a change on real people: the `start-testbed-round` skill takes it from a
+  worry to a live link, and `read-testbed-results` reads what came back against the ramp
+  the round was testing. Never re-plan or re-tune a shipped week to try an idea -- that
+  takes the day back off everyone who has already played it. The bench exists so that is
+  never necessary.
 - `.source-images/` is staging for the painting currently being added, not a library. Only
   `resize-images.mjs` ever reads it; once the 2600px asset is committed the scan is dead
   weight, so delete it. What replaces it is the record: `source` on each week seed names

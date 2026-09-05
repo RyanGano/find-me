@@ -6,9 +6,12 @@
  * `storage.ts` records a result against -- so an empty diff across a change means no
  * recorded time was invalidated and no finished board was handed back as playable.
  *
- *   node scripts/fingerprint.mjs > before.json
+ *   npm run fingerprint --silent > before.json
  *   ...make the change...
- *   node scripts/fingerprint.mjs | diff before.json -
+ *   npm run fingerprint --silent | diff before.json -
+ *
+ * Via `vite-node`, because it imports the game's own TypeScript rather than keeping a
+ * second description of what a puzzle is -- which is the entire point of it.
  *
  * Deliberately reads `PUZZLES` and nothing else. The play-test bench is not in it,
  * because the whole point of the bench is that it is free to move.
