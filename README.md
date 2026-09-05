@@ -34,7 +34,11 @@ by inspection, so `symmetry.test.ts` measures it rather than trusting the number
 rasterises each shape, rotates the raster about the same point the app rotates it
 about, and derives the true rotational order. That test caught a triangle whose
 symmetry was real about its centroid but not about the box centre the app spins it
-around.
+around. It did not catch the lightning bolt, because the bolt was two-fold symmetric to
+the eye and a couple of pixels out of true in the path, so the measurement agreed with
+the wrong declared number: it now reads a half turn onto itself exactly, and matches
+upside down. That costs it the back half of the week — a shape that matches every 180°
+can never ask for more than 90° of work — which `shapesForWeek` enforces on its own.
 
 ### Controls
 

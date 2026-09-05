@@ -24,6 +24,20 @@ import { getShape } from './shapes';
  */
 const FLOORED = new Set(['jatte-sun']);
 
+/**
+ * Days that ask for less turning than their rung, because the shape on them turned out
+ * to be kinder than it was planned as.
+ *
+ * wave-sat: the lightning bolt was planned as a one-way shape and is not -- upside down
+ * it looks exactly like itself, so the day was rejecting a rotation players could see
+ * was right. Giving the bolt its true two-fold symmetry costs this Saturday 28 degrees
+ * of its 104, and the alternative was re-hiding a day that was already being played.
+ * Nothing else has to live here: `shapesForWeek` in plan-weeks.mjs only offers a shape
+ * to a day it can actually turn far enough for, so with the symmetry corrected the bolt
+ * can no longer be planned onto a Saturday or a Sunday at all.
+ */
+const SHORT_TURN = new Set(['wave-sat']);
+
 /** The seven puzzles of each week, in Monday-to-Sunday order. */
 const weeks = IMAGES.map((image) => PUZZLES.filter((p) => p.image === image.id));
 
@@ -112,6 +126,7 @@ describe('a week', () => {
       const shape = getShape(p.target.shape);
       const work = angleWork(p.target.angle, shape.symmetry);
       expect(work, `${p.id}`).toBeLessThanOrEqual(180 / shape.symmetry);
+      if (SHORT_TURN.has(p.id)) continue;
       // The rung is the contract: the stored angle may be anything congruent to it.
       expect(Math.abs(work - RAMP[p.dayOfWeek].angle), `${p.id} is ${work} degrees, not ${RAMP[p.dayOfWeek].angle}`).toBeLessThan(1);
     }

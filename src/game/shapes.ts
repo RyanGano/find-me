@@ -88,8 +88,11 @@ export const SHAPES: Record<string, ShapeDef> = {
     emoji: '🔑',
   },
   bolt: {
-    path: 'M62 2 L22 56 H46 L38 98 L80 42 H54 Z',
-    symmetry: 1,
+    // Drawn so that a half turn about (50, 50) maps the outline exactly onto itself:
+    // every vertex has its opposite number in the list. The old outline was a couple of
+    // pixels out of true, which read as identical upside down but did not measure so.
+    path: 'M62 2 L22 56 L46 56 L38 98 L78 44 L54 44 Z',
+    symmetry: 2,
     label: 'lightning bolt',
     emoji: '⚡',
   },
