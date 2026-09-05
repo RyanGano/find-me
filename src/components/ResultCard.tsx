@@ -56,21 +56,23 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
     return (
       <div className="howto" role="dialog" aria-label="About your Find Me Age">
         <h2>About your Find Me Age</h2>
+        <p>Five things are measured while you play:</p>
+        <ul>
+          <li>How long you took to find the {puzzle.thing}</li>
+          <li>How long you took to line it up after finding it</li>
+          <li>How many times you found it and then lost it again</li>
+          <li>How much you moved the view while lining it up</li>
+          <li>How long you spent not moving at all</li>
+        </ul>
         <p>
-          It comes from five things about how you played this run: how long you took to
-          spot the {puzzle.thing}, how long to frame it, how often it slipped back out of
-          frame, how steady you held the view, and how long you spent stopped.
-        </p>
-        <p>
-          Those are weighed against what that day is <em>worth</em> rather than against
-          the clock alone &mdash; Sunday hides its shape far better than Monday does, so a
-          plain stopwatch would only ever tell you what day it was.
+          Each one is compared against what today&rsquo;s puzzle should take, not against a
+          fixed number. Later days in the week are harder, so they are given more time.
         </p>
         <p className="howto-note">
-          It is a bit of fun, not a measurement. Even across players who told us their
-          real ages, how fast somebody finds a shape says very little about how old they
-          are. Nothing personal goes into it: the whole thing is worked out on your own
-          device, from this run.
+          This is for fun. It is not a real measure of your age, and it is not very
+          accurate &mdash; some fast players are older than some slow ones. Nothing about
+          you is stored or sent. The number is worked out on your device, from this run
+          only.
         </p>
         <div className="howto-foot">
           <button
