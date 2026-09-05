@@ -66,6 +66,14 @@ const storage = () =>
  * shape somewhere the tester can actually look at it. Returns the frozen clock.
  */
 async function quit(expectReveal = true) {
+  // The way out stays shut until the hunt has begun, so begin it. A tester who has not
+  // moved the board has not tried; the button being disabled there is the point, and is
+  // checked separately below.
+  if ((await page.textContent('.clock')).trim() === 'ready') {
+    await page.mouse.move(195, 480);
+    await page.mouse.wheel(0, -120);
+    await page.waitForTimeout(200);
+  }
   const before = await page.evaluate(() => {
     const m = new DOMMatrix(getComputedStyle(document.querySelector('.stage-canvas')).transform);
     return Math.hypot(m.a, m.b);
@@ -97,10 +105,18 @@ async function quit(expectReveal = true) {
     });
     check('giving up zooms in towards the shape', after.scale > before, `${before.toFixed(4)} -> ${after.scale.toFixed(4)}`);
     check('and centres it on the stage', after.off < 30, `${after.off.toFixed(0)}px off centre`);
+    // On the zoomed-out side of the match, and clearly so. Past it, zooming out -- the
+    // natural move when you want to see where in the painting you are -- would sweep back
+    // through the match on the way.
     check(
-      'at close to the size it needs to be, but not on it',
-      after.onScreenSize > after.wantSize * 0.5 && after.onScreenSize < after.wantSize * 0.95,
+      'shown smaller than a match needs, so zooming out leads away from it',
+      after.onScreenSize < after.wantSize * 0.75,
       `${after.onScreenSize.toFixed(0)}px vs ${after.wantSize}px wanted`,
+    );
+    check(
+      'but still big enough to look at',
+      after.onScreenSize > after.wantSize * 0.4,
+      `${after.onScreenSize.toFixed(0)}px`,
     );
     check('the puzzle is not solved out from under them', (await page.$('.reference.is-solved')) === null);
 
@@ -196,19 +212,17 @@ check('and does not ask them to start over', (await page.$('.testbed-card')) ===
 
 // ------------------------------------------------------------------- finishing a round
 
-// Step 2 has not been touched, so its clock still reads `ready`. Somebody who looks at a
-// painting, decides straight away they will never find it and presses the button is the
-// person most likely to press it at all -- and it used to do nothing whatsoever.
+// Step 2 has not been touched, so its clock still reads `ready`. There is no giving up
+// from there: a tester who has not moved the board has not tried, and "I could never
+// have found that" from them is an answer about not having looked.
 check('the hunt is untouched before this one', (await page.textContent('.clock')).trim() === 'ready');
-await page.locator('.testbed-giveup').click();
-await page.waitForSelector('.reveal-note');
-check('giving up without ever moving still reveals and moves on', true);
-check('and unblurs the painting so they can look', (await page.$('.stage-viewport.is-blurred')) === null);
-await page.locator('.testbed-rate').click();
-await review(3, 1);
-await page.waitForSelector('.stage-image');
+check('there is no giving up before the hunt has started', await page.locator('.testbed-giveup').isDisabled());
+await page.mouse.move(195, 480);
+await page.mouse.wheel(0, -240);
+await page.waitForTimeout(250);
+check('and the way out opens once they have begun', await page.locator('.testbed-giveup').isEnabled());
 
-for (let i = 3; i <= 6; i++) {
+for (let i = 2; i <= 6; i++) {
   await quit(false);
   await review(3, 1);
   if (i < 6) await page.waitForSelector('.stage-image');

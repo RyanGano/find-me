@@ -357,7 +357,16 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
             ⟲
           </button>
           {gaveUpMs === null ? (
-            <button type="button" className="btn testbed-giveup" onClick={onGiveUp}>
+            // Shut until the clock is running. Somebody who has not moved the board has
+            // not tried, and "I could never have found that" from them is not an answer
+            // about the puzzle -- it is an answer about not having looked.
+            <button
+              type="button"
+              className="btn testbed-giveup"
+              onClick={onGiveUp}
+              disabled={startedAt === null}
+              title={startedAt === null ? 'Have a look first' : 'Stop the clock and show me'}
+            >
               give up
             </button>
           ) : (

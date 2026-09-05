@@ -1128,3 +1128,9 @@ button.reference:focus-visible {
   padding: 6px 14px;
   font-size: 0.82rem;
 }
+
+/* Closed until the hunt has actually begun; see the button in Testbed.tsx. */
+.testbed-giveup:disabled {
+  opacity: 0.35;
+  cursor: default;
+}

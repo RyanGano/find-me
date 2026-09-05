@@ -12,6 +12,12 @@ export interface Size {
 }
 
 /**
+ * How big the shape is shown after a give-up, as a fraction of the size a match needs.
+ * Below 1 on purpose, and by enough to be unmistakable -- see `reveal`.
+ */
+const REVEAL_SCALE = 0.6;
+
+/**
  * A run banked mid-hunt, in the only terms the hunt itself cares about: how far the
  * clock had got, and the view it was left at. The daily game's `Progress` carries more
  * than this -- which day, which version of it, which tally run -- and satisfies it; the
@@ -298,14 +304,17 @@ export function useHunt(session: HuntSession) {
    * cannot be answered by a person who never saw the shape at all. So this hands them the
    * framing and lets them look.
    *
-   * Deliberately short of the winning scale, and deliberately leaving the angle alone.
-   * Landing exactly on the match would solve the puzzle out from under them the moment
-   * the view moved, which is neither satisfying nor informative; this leaves the last bit
-   * of sizing and the whole of the twist still to do, so the board stays a board.
+   * Deliberately short of the winning scale, and deliberately on the *zoomed-out* side of
+   * it. Landing on the match would solve the puzzle out from under them the moment the
+   * view moved; landing past it would be worse, because then zooming out -- the natural
+   * thing to do when you want to see where in the painting you actually are -- would
+   * sweep back through the match and trip it on the way. From here every zoom-out leads
+   * away from the match and towards the whole canvas, which is where they were trying to
+   * get to. Zooming in is the only way back onto it, and that takes deciding to.
    */
   const reveal = useCallback(() => {
     if (!size) return;
-    const scale = (targetSize / puzzle.target.size) * 0.7;
+    const scale = (targetSize / puzzle.target.size) * REVEAL_SCALE;
     setTransform((prev) => {
       const rot = prev?.rot ?? 0;
       const cos = Math.cos(rot);
@@ -329,12 +338,12 @@ export function useHunt(session: HuntSession) {
    * hopeless says more about that day than any rating from the people who finished.
    */
   const giveUp = useCallback(() => {
-    if (solvedMs !== null || gaveUpMs !== null) return 0;
-    // Before the clock has even started: somebody who looks at the painting, decides
-    // straight away that they will never find it and presses the button. That is a real
-    // answer -- arguably the strongest one a day can get -- and it used to do nothing at
-    // all, because the guard here required a run to be under way.
-    const ms = startedAt === null ? 0 : paused ? elapsed : performance.now() - startedAt;
+    // A run that has not started cannot be given up on. A tester who has not moved the
+    // board yet has not tried, and an answer from them is not about the puzzle. The
+    // caller is expected to keep the way out closed until the clock is running; this is
+    // the backstop, not the rule.
+    if (startedAt === null || solvedMs !== null || gaveUpMs !== null) return 0;
+    const ms = paused ? elapsed : performance.now() - startedAt;
     setGaveUpMs(ms);
     setElapsed(ms);
     setPaused(false);
