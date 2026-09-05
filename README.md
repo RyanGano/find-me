@@ -99,10 +99,22 @@ player actually experiences. Targets, and the levers that reach them
 
 Every day also prefers paint that **repeats itself** — foliage, waves, roof tiles, a
 crowd, a scatter of small stars — so that several specks look equally plausible and the
-only way to tell is to try them. Monday leans on this hardest of anyone: it is the one day
-with no transparency to hide behind, and a lone opaque shape in a clear sky is picked out
-instantly however carefully its colour is matched. Sunday leans on it just as hard for the
-opposite reason, because by then it is the whole puzzle.
+only way to tell is to try them. Monday and Sunday were long the two that leaned on this
+hardest: Monday is the one day with no transparency to hide behind, and a lone opaque shape
+in a clear sky is picked out instantly however carefully its colour is matched, while Sunday
+leans on it for the opposite reason, because by then it is the whole puzzle. The midweek
+days now outweigh both. Midweek was where the game read as solvable at a glance -- contrast
+and rotation were doing all the work, and nothing was making the player ask which one it is.
+
+The rung number is a weight, not a target: the planner subtracts `company * repeat` from a
+spot's cost, so it buys repetition by paying in texture. The response is sharply
+non-linear -- below about 2.0 the texture term swamps it and the week does not move at all.
+Above it the trade is real, and it has a far end: bought too hard, a day lands in paint so
+busy that the tuner must raise its opacity to keep the shape visible once framed, and the
+day overshoots its scan target and comes out *easier*. That is Saturday's crescent on van
+Gogh, in `scripts/avoid.json` for exactly that reason. One bad spot is an avoid entry, not a
+lower weight for the rung -- a weight low enough to rescue that Saturday gave back the gains
+on all six other days.
 
 It is measured against the surroundings two to five shape-widths out and never as an
 overlap: a shape sitting on top of the thing it imitates is not hard, it is unfindable.
