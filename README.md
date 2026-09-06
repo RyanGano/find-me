@@ -813,6 +813,96 @@ Proposed, not yet done, because the round is still open and more testers are exp
 Not proposed: any change to `difficulty.ts`. Adjacent rungs are not separable in this data,
 and a within-rung spread this large is a placement finding, not a ramp finding.
 
+### What to ask next
+
+A round costs a fortnight and half a dozen people's goodwill, so the question is chosen
+before the slice, never the other way round. Three things make a question worth a round:
+the game cannot answer it by measuring, the answer would change something specific, and a
+handful of people can move it — a question needing thirty testers to settle is not a
+question this bench can ask.
+
+The standing list, roughly in the order they are worth asking.
+
+#### Does one `scan` number produce one difficulty?
+
+The most valuable thing to ask next, because most of the ramp rests on the assumption that
+it does. `r1-weekend` found two days tuned to the same opacity coming out 40× apart and a
+35× spread inside a single rung, which says the tuner hits its target and the target does
+not predict the hunt. That was a side finding from a round asking something else. This
+would ask it directly.
+
+**The slice:** one painting, one rung, four hiding places, each tuned to the same `scan`.
+Four hunts is a short round, which is what allows the same painting four times over.
+
+**What it reads is the spread, not the median.** The whole outcome is whether four days
+the tuner calls identical produce four similar hunts or a 30× fan. That is a different
+statistic from every other round, and it needs enough testers that a fan is distinguishable
+from noise — six or more, so each day has six answers rather than three. Under about five
+testers this round cannot answer its own question and should not be run.
+
+**Pick the rung for headroom, not for interest.** Thursday or Friday: far enough up the
+ramp that a day can come out much easier and still be measured, and not so far that a
+tester quits before the round finishes. A Monday round cannot show a day that is too easy,
+because there is no room underneath it.
+
+Two design problems have to be solved first, and neither is optional:
+
+- **Shape and location are confounded.** Varying both at once, four days give four
+  answers to two questions and cannot separate them. If the fan turns out to be real, the
+  follow-up splits it: four locations with one shape, then four shapes in one location.
+  Doing the combined version first is still right — it is the cheapest way to find out
+  whether there is a fan at all — but it must be written down as a first pass, or its
+  result gets quoted later as evidence about shapes.
+- **The same painting four times teaches the painting.** By the fourth hunt a tester knows
+  its rhythm, and a fixed serving order bakes that straight into the comparison: the day
+  served last would look easiest whatever it is. `rounds.ts` serves `days` in a fixed order
+  to everybody, so this round needs a per-tester permutation first. It cannot be random —
+  `determinism.test.ts` allows `Math.random` in `count.ts` and nowhere else — but it does
+  not need to be: the tester id is already a random value minted once, so indexing it into
+  a table of permutations gives a different order per tester with no new randomness. Rows
+  carry their own timestamps, so the order a tester actually saw is recoverable afterwards
+  either way, and the learning effect can be measured rather than only feared.
+
+#### Does the ramp have any resolution at all?
+
+`r1-weekend` showed adjacent rungs are not separable — Friday and Saturday differ by a
+step roughly a thirtieth of the noise around it. That is not the same as the ramp doing
+nothing. Serve one painting's Monday against its Sunday, skipping everything between: the
+widest step the ramp can make. If those separate cleanly the ramp works and is simply
+finer-grained than it can measure, which argues for fewer, wider rungs. If they do not
+separate, the ramp is not what is making days hard and something else is, which is a much
+larger finding and worth knowing before another lever is added to `difficulty.ts`.
+
+#### What does "unfair" actually mean to a tester?
+
+The fair question is the one distinction this game's past mistakes turn on, and it has so
+far collected two flags total. Both landed on textured canvases and both on very long
+hunts, which is consistent with "unfair" meaning nothing more than "too long". If that is
+all it means, the second question is redundant and the round is buying one number for the
+price of two. A round of deliberately broken days — one tuned to near-invisible, one
+placed in genuinely flat paint, both slow for different reasons — would say whether
+testers separate them the way the game assumes they do.
+
+#### Does a day off its texture rung play differently?
+
+Texture is currently outranked by the colour-variety caps: a day off its texture rung is
+still solved onto its `scan` target and shipped. That is a deliberate trade recorded in
+"Variety inside a week", and it has never been checked against a player. A round pairing
+days on their texture rung against days well off it, all at the same `scan`, would say
+whether the trade costs anything or is free.
+
+#### Is difficulty the same on a phone?
+
+Nothing in a review row says what it was played on, so this cannot be read out of the
+answers already collected — it needs a field before it needs a round. Worth adding to the
+row now so that the question is answerable later, since the cost is one field and the
+alternative is discovering the confound after a round that was about something else.
+
+Not worth asking, and here so they are not re-proposed: anything about `size`, `company`
+or asset resolution as difficulty levers. All three measured well, were compensated
+straight back out by the tuner, and are recorded above as mistakes. A round cannot rescue
+a lever the tuner erases.
+
 ## Credits
 
 All paintings are in the public domain, sourced from Wikimedia Commons. The `i` button in
