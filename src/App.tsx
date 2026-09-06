@@ -11,6 +11,7 @@ import { puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
 import type { RunMetrics } from './game/metrics';
+import { openRound } from './game/rounds';
 import {
   clearProgress,
   getCurrentResult,
@@ -22,6 +23,7 @@ import {
   touch,
   type Stats,
 } from './game/storage';
+import { isDone } from './game/testbedStore';
 import { useHunt, type LeftRun } from './hooks/useHunt';
 import { useUpdateAvailable } from './hooks/useUpdateAvailable';
 
@@ -94,6 +96,22 @@ export default function App() {
   // folds back into the pill -- which stays for good, because the warning outlasts the
   // one moment it was read.
   const [showBetaNote, setShowBetaNote] = useState(() => !flag(BETA_SEEN));
+
+  /**
+   * The play-testing invitation that sits under the beta note.
+   *
+   * Read once, at mount, and read only -- the bench is offered from here, never touched
+   * from here, so the daily game still cannot write a tester's row and a tester id is
+   * still minted only by someone who actually opens `/?beta`. There are three things it
+   * can say and all three are worth saying: a round is open and this device has not been
+   * through it, a round is open and it has (thank them, do not ask twice), or nothing is
+   * running and the honest answer is "not right now".
+   */
+  const invite = useMemo(() => {
+    const round = openRound();
+    if (!round) return undefined;
+    return { hunts: round.days.length, done: isDone(round.id) };
+  }, []);
 
   /**
    * Whether this browser will still have the player's streak tomorrow, and why not.
@@ -348,6 +366,25 @@ export default function App() {
           <span>
             <strong>Find Me is in beta.</strong> The puzzles are still being tuned, so
             times, ages and streaks may change or reset at any point.
+            {/* The link opens a new tab on purpose: the player is very likely mid-hunt
+                with a clock running, and taking the page away from them to ask a favour
+                is a good way to lose both the run and the favour. */}
+            <span className="beta-note-invite">
+              {!invite ? (
+                'No play-testing round is open just now — there will be another.'
+              ) : invite.done ? (
+                'Thank you for the play-testing round — your answers are in.'
+              ) : (
+                <>
+                  A play-testing round is open: {invite.hunts} short hunts on paintings
+                  that are not in the game.{' '}
+                  <a href="/?beta" target="_blank" rel="noopener noreferrer">
+                    Try them in a new tab
+                  </a>
+                  .
+                </>
+              )}
+            </span>
           </span>
           <button
             type="button"
