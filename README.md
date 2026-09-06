@@ -736,6 +736,83 @@ Add the round to `ROUNDS`, deploy, and hand out `/?beta`. `?beta=<id>&again=1`
 re-runs a round on your own device for checking; those rows are marked `dry` and are meant
 to be excluded when the answers are read.
 
+### What rounds have found
+
+The record of what has been asked and what came back, including the rounds that changed
+nothing. A round that produced no change is worth as much here as one that did: it is the
+evidence not to re-litigate the idea, and most of the levers in this README were re-tried
+at least once before they were written down.
+
+#### r1-weekend — "Is the end of the week too hard?"
+
+Six hunts: each bench painting's Friday and then its Saturday, so the pair is its own
+control. 21 answers from 4 testers, over two deploys — the second changed only the
+rotation and left `testbed.ts` and `rounds.ts` untouched, so the bench days were identical
+across both and the answers pool. Three of the four finished all six; the fourth gave up
+on the first hunt, played two more and stopped there, which is the shape a round is
+kept short to avoid.
+
+Median search against what the rung intended (Friday 181s, Saturday 231s):
+
+| puzzle | n | gave up | median search | intended |
+|---|---|---|---|---|
+| proverbs-fri | 4 | 2 | 6:23 | 181s |
+| cafe-fri | 4 | 0 | 27.3s | 181s |
+| ambassadors-fri | 3 | 0 | 1:00.5 | 181s |
+| proverbs-sat | 4 | 0 | 21.4s | 231s |
+| cafe-sat | 3 | 0 | 5:28.9 | 231s |
+| ambassadors-sat | 3 | 0 | 9.3s | 231s |
+
+`proverbs-fri` has four answers but two of them are give-ups, so its figure is the
+midpoint of two finishers and is an anecdote, not a median.
+
+**The answer to the question asked is no** — and the answer to the question that should
+have been asked is more useful. The end of the week is not too hard; it is not reliably
+harder *at all*. On two of the three paintings Saturday came out easier than that same
+painting's Friday, and `ambassadors-sat` was solved in 9, 11 and 6 seconds against a
+target of nearly four minutes.
+
+**No `scan` change is justified by this.** The three paintings do not agree at either
+rung, which is the standing test for a ramp problem against a canvas problem. Friday's
+answers span 27s to 6:23 and Saturday's span 9s to 5:29 — a 35× spread inside one rung,
+against a rung step of 1.3×. The ramp is trying to make a step roughly a thirtieth the
+size of the noise it is being made in, so which of two adjacent days comes out harder is
+close to a coin flip. Moving Saturday's `scan` would hand back every shipped Saturday and
+fix none of it.
+
+Two things fell out of it that the round was not asking about:
+
+**The paint is not the variable; the region is.** `proverbs-fri` and `ambassadors-sat`
+were tuned to the same opacity, 0.441. One drew two give-ups and a ten-minute finish, the
+other was solved three times in under twelve seconds. Same paint, 40× apart. The tuner
+solves every day onto its `scan` target and hits it, and the resulting hunts are 35×
+apart, so `scan` is not on its own a prediction of search time.
+
+**Busy paintings do not make hard days; they raise the ceiling on how wrong a day can go.**
+Worst hunt on each canvas: proverbs 10:16 with two give-ups, cafe 10:19, ambassadors 2:02.
+Every catastrophic outcome in the round — both give-ups, both ten-minute hunts, both
+"unfair" flags — landed on the two textured canvases. The smooth one never got past two
+minutes whatever the tuner did to it, because there is nowhere on it for a shape to be
+genuinely lost. Dense paint can hide a shape completely, and `scan` does not distinguish
+"well camouflaged" from "gone"; it also lets a clean geometric shape sit on chaos and pop
+instantly, which is how the densest canvas in the set produced both the hardest day and
+one of the easiest. So a busy painting is where a hiding place needs the most caution, in
+both directions — not where the hardest days should be put.
+
+Proposed, not yet done, because the round is still open and more testers are expected:
+
+- Re-plan and re-tune all three bench weeks (`npm run plan -- --testbed <image>`, then
+  `npm run camouflage -- --testbed --solve <image>`). Four of the six days sit nowhere
+  near their rung and the errors point both ways, so there is no single correction to
+  apply. This costs the rotation nothing; no shipped fingerprint moves.
+- Re-run the same question afterwards. This round answered a different one than it asked.
+- The bench is currently planned by older tooling than the rotation it stands in for: the
+  shipped weeks were re-planned onto the new shapes and the bench was not. Re-planning it
+  closes that gap as a side effect.
+
+Not proposed: any change to `difficulty.ts`. Adjacent rungs are not separable in this data,
+and a within-rung spread this large is a placement finding, not a ramp finding.
+
 ## Credits
 
 All paintings are in the public domain, sourced from Wikimedia Commons. The `i` button in
