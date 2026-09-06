@@ -64,6 +64,24 @@ function snowflakePath(): string {
   return parts.join(' ');
 }
 
+/** A circle, as a path, so petals can be unioned under 'nonzero'. */
+function circle(cx: number, cy: number, r: number): string {
+  return `M${cx - r} ${cy} a${r} ${r} 0 1 0 ${r * 2} 0 a${r} ${r} 0 1 0 ${-r * 2} 0 Z`;
+}
+
+/**
+ * Round petals on a ring, plus a middle to close the gaps. Built about the box centre,
+ * so the symmetry is exactly the petal count and not an accident of the drawing.
+ */
+function blossomPath(petals: number): string {
+  const parts = [circle(50, 50, 17)];
+  for (let i = 0; i < petals; i++) {
+    const a = (i * 2 * Math.PI) / petals - Math.PI / 2;
+    parts.push(circle(50 + 29 * Math.cos(a), 50 + 29 * Math.sin(a), 21));
+  }
+  return parts.join(' ');
+}
+
 export const SHAPES: Record<string, ShapeDef> = {
   snowflake: {
     path: snowflakePath(),
@@ -157,6 +175,82 @@ export const SHAPES: Record<string, ShapeDef> = {
     symmetry: 3,
     label: 'triangle',
     emoji: '🔺',
+  },
+  blossom: {
+    path: blossomPath(5),
+    symmetry: 5,
+    label: 'blossom',
+    emoji: '🌸',
+    fillRule: 'nonzero',
+  },
+  cross: {
+    path: 'M38 8 H62 V38 H92 V62 H62 V92 H38 V62 H8 V38 H38 Z',
+    symmetry: 4,
+    label: 'cross',
+    emoji: '➕',
+  },
+  diamond: {
+    // Taller than it is wide on purpose: a square standing on its point would be
+    // four-fold, and there is already a shape for every quarter turn in the set.
+    path: polygon([
+      [50, 3],
+      [82, 50],
+      [50, 97],
+      [18, 50],
+    ]),
+    symmetry: 2,
+    label: 'diamond',
+    emoji: '🔷',
+  },
+  droplet: {
+    path: 'M50 3 C78 24 88 52 88 66 C88 84 72 97 50 97 C28 97 12 84 12 66 C12 52 22 24 50 3 Z',
+    symmetry: 1,
+    label: 'droplet',
+    emoji: '💧',
+  },
+  leaf: {
+    // A cusp at the tip and a round shoulder opposite it. Both ends pointed would read
+    // as a lens, which turns onto itself every half turn and would be a two-fold shape.
+    path: 'M92 8 C46 8 10 40 10 70 C10 84 20 94 34 94 C70 94 96 56 92 8 Z',
+    symmetry: 1,
+    label: 'leaf',
+    emoji: '🍃',
+  },
+  house: {
+    path: 'M50 6 L96 44 H84 V94 H16 V44 H4 Z',
+    symmetry: 1,
+    label: 'house',
+    emoji: '🏠',
+  },
+  crown: {
+    path: 'M6 30 L28 54 L50 16 L72 54 L94 30 L86 88 H14 Z',
+    symmetry: 1,
+    label: 'crown',
+    emoji: '👑',
+  },
+  spade: {
+    path:
+      'M50 4 C50 4 12 36 12 58 C12 72 22 81 33 81 C40 81 46 78 49 73 ' +
+      'C48 83 43 91 34 96 H66 C57 91 52 83 51 73 C54 78 60 81 67 81 ' +
+      'C78 81 88 72 88 58 C88 36 50 4 50 4 Z',
+    symmetry: 1,
+    label: 'spade',
+    emoji: '♠️',
+  },
+  tree: {
+    path: 'M50 3 L72 35 H62 L80 61 H68 L88 89 H58 V98 H42 V89 H12 L32 61 H20 L38 35 H28 Z',
+    symmetry: 1,
+    label: 'pine tree',
+    emoji: '🌲',
+  },
+  note: {
+    path:
+      'M62 6 C80 16 90 26 90 41 C90 50 85 57 78 61 C83 51 80 43 62 33 ' +
+      'V72 C62 85 50 96 36 96 C26 96 19 90 19 82 C19 71 30 63 42 63 ' +
+      'C47 63 52 64 55 67 V6 Z',
+    symmetry: 1,
+    label: 'music note',
+    emoji: '🎵',
   },
 };
 

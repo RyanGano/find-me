@@ -37,14 +37,22 @@ const only = args.filter((a) => !a.startsWith('-'));
  * which days they can hold, and it is why the back half of the week is always drawn
  * from the one-way shapes.
  */
-const SYMMETRIC = ['snowflake', 'star', 'clover', 'triangle'];
-const ONE_WAY = ['key', 'crescent', 'heart', 'anchor', 'fish', 'bolt', 'arrow'];
+const SYMMETRIC = ['snowflake', 'star', 'clover', 'triangle', 'blossom', 'cross'];
+// Not all of these are strictly one-way -- the bolt and the diamond both come back at a
+// half turn -- but 90 degrees of work is enough for every rung up to Friday, and the
+// filter below is what actually decides which day a shape can hold.
+const ONE_WAY = [
+  'key', 'crescent', 'heart', 'anchor', 'fish', 'bolt', 'arrow',
+  'droplet', 'leaf', 'house', 'crown', 'spade', 'tree', 'note', 'diamond',
+];
 
 /** The shape for each day of week `w`, all seven different, symmetry falling as the week goes on. */
 function shapesForWeek(w) {
   const chosen = [];
   for (const [d, rung] of RAMP.entries()) {
-    const oneWay = ONE_WAY.map((_, i) => ONE_WAY[(i + w * 3) % ONE_WAY.length]);
+    // The step has to be coprime with the pool size or most orderings are unreachable:
+    // at 15 shapes a step of 3 would only ever produce five of them.
+    const oneWay = ONE_WAY.map((_, i) => ONE_WAY[(i + w * 4) % ONE_WAY.length]);
     // The early days prefer a symmetric shape, but a symmetric shape that cannot turn
     // far enough is no use at all -- some weeks the rotation simply runs out of them.
     const pool = d < 3 ? [...SYMMETRIC.map((_, i) => SYMMETRIC[(i + w) % SYMMETRIC.length]), ...oneWay] : oneWay;

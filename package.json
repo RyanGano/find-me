@@ -16,7 +16,8 @@
     "camouflage": "vite-node scripts/tune-camouflage.mjs",
     "preview:week": "vite-node scripts/preview-week.mjs",
     "rungs": "vite-node scripts/rungs.mjs",
-    "fingerprint": "vite-node scripts/fingerprint.mjs"
+    "fingerprint": "vite-node scripts/fingerprint.mjs",
+    "preview:shapes": "vite-node scripts/preview-shapes.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

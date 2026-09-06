@@ -41,6 +41,7 @@ node scripts/diag-size.mjs                 # badge vs shape geometry check
 node scripts/diag-badge.mjs               # badge colour vs the shape as painted
 npm run fingerprint --silent              # every shipped puzzle as JSON, to diff across a change
 npm run rungs                             # the ramp, with the time each rung aims at
+npm run preview:shapes                    # every shape, at play sizes, with its share emoji
 ```
 
 The play-test bench (`src/game/testbed.ts`) is driven by the same tools behind a flag:

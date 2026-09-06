@@ -40,6 +40,17 @@ the wrong declared number: it now reads a half turn onto itself exactly, and mat
 upside down. That costs it the back half of the week — a shape that matches every 180°
 can never ask for more than 90° of work — which `shapesForWeek` enforces on its own.
 
+A shape earns its place in the registry on two things the path string cannot show: the
+silhouette has to be unmistakable as an 18px speck with a whole painting around it, and
+the emoji it carries into the share text has to name the same thing an unprompted player
+would call it. `npm run preview:shapes` writes a sheet of every shape at badge size,
+turned as far as a hard day would ask, as that speck, and laid over real paint, next to
+the share line it produces — which is the only way to judge either. Two of them were
+drawn twice on the strength of it: the leaf is pointed at one end and round at the other
+because a lens pointed at both turns onto itself every half turn and would have been a
+two-fold shape, and the diamond is taller than it is wide for the same reason a square
+standing on its point would not be.
+
 ### Controls
 
 | | Touch | Mouse / trackpad |
