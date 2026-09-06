@@ -441,8 +441,9 @@ function candidatesFor(grey, info, rgb, spots, image, rung, day, fitScale, media
     // is true of it -- so the rare paint is spent early and the crowded paint is saved for
     // the days that need somewhere to search. See `MIN_PROMINENCE` in palette.ts. A hard
     // gate rather than a term in the cost below, because that is what the failure was:
-    // Hokusai's Sunday was the cheapest spot on the canvas by every other measure, and any
-    // penalty small enough to leave the rest of the cost meaningful would have lost to it.
+    // the day that prompted it was the cheapest spot on its canvas by every other measure,
+    // and any penalty small enough to leave the rest of the cost meaningful would have lost
+    // to it.
     if (s.prominence < MIN_PROMINENCE[day]) {
       dim++;
       continue;

@@ -130,27 +130,28 @@ describe('a week of colours', () => {
 });
 
 /**
- * Weeks planned under the colour-prominence ladder, and therefore held to it.
+ * The weeks that were already behind the calendar when the prominence ladder arrived, and
+ * are therefore exempt from it.
  *
- * The rule arrived after the rotation did, and applying it retroactively is not worth what
- * it would cost. Re-planning a week moves every hiding place in it, which changes each
- * day's `version` and hands the day back to everyone who has already played it as an
- * unplayed board -- see "Results are versioned by puzzle definition" in CLAUDE.md. That is
- * a fair price for a week nobody has seen yet and a poor one for a week they have.
+ * The list is of exemptions rather than of weeks held to the rule, so that a painting added
+ * later is caught by default. Getting that the wrong way round would let a new week escape
+ * a rule nobody remembered to add it to, which is the failure mode every rule in this file
+ * exists to prevent.
  *
- * So the list grows rather than the rule bending: a week joins it when it is next
- * re-planned for some other reason, and the weeks not on it stay as they shipped. What
- * every week in the rotation measured when the rule was written is in README.md under
- * "Prominence across a week", so the ones still owing it are recorded rather than
- * forgotten.
+ * Applying it retroactively is not worth what it costs. Re-planning a week moves every
+ * hiding place in it, which changes each day's `version` and hands the day back to everyone
+ * who has already played it as an unplayed board -- see "Results are versioned by puzzle
+ * definition" in CLAUDE.md. That is a fair price for a week nobody has been served yet and
+ * a poor one for a week they have. A week leaves this list only if it is re-planned for
+ * some other reason, which will not happen while people are mid-rotation.
  */
-const PLANNED_WITH_PROMINENCE = ['starry', 'boating', 'jatte'];
+const BEFORE_PROMINENCE = ['mona', 'wave'];
 
 describe('prominence across a week', () => {
   for (const image of IMAGES) {
     const week = PUZZLES.filter((p) => p.image === image.id);
 
-    it.skipIf(!PLANNED_WITH_PROMINENCE.includes(image.id))(
+    it.skipIf(BEFORE_PROMINENCE.includes(image.id))(
       `${image.id} saves its crowded colours for the back of the week`,
       async () => {
         const { data, info } = await pixels(image.id);

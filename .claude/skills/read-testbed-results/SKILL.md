@@ -131,6 +131,18 @@ which **hands that day back as playable to every player who already solved it**.
 recorded time still counts towards played, best and streak — but the board they finished
 opens again as a fresh puzzle.
 
+**Default to future weeks only.** A change to how hiding places are chosen — and usually a
+ramp change too — should land on the weeks a player will meet *after* the current calendar
+week ends, and leave the current week and everything already served alone. That costs
+nothing and hands nobody's board back. The boundary is the week containing today, not today
+itself; work out which index that is rather than assuming — the current week is
+`Math.floor((dayIndex(now) + weekday(EPOCH)) / 7)` in `daily.ts` terms, and everything after
+it is fair game. See "Which weeks may be changed" in CLAUDE.md.
+
+Re-planning the whole rotation is a different proposition and needs the paragraph below.
+Where a change cannot be expressed as future-weeks-only — a `scan` rung applies to every
+week by definition — say so explicitly, because that is the case where the cost is real.
+
 So:
 
 1. Take a baseline first: `npm run fingerprint --silent > before.json`.
@@ -141,7 +153,9 @@ So:
    exists so that a ramp change reaches the rotation once, already tested.
 4. If the change does go to the rotation, `diff` the fingerprint afterwards and report
    exactly which days moved. A non-empty diff here is expected and deliberate — it is the
-   one time it is — so it has to be stated rather than noticed later.
+   one time it is — so it has to be stated rather than noticed later. Check the list of
+   moved days against the weeks you meant to move: if the current week or an already-served
+   one is in it, that is a mistake, not a side effect.
 
 ## 7. Write down what was learned
 

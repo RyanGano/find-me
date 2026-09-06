@@ -143,9 +143,9 @@ export interface Rung {
    * blind to a second kind of company: how much of the *whole canvas* is the colour the
    * shape is hiding in. That one is `MIN_PROMINENCE` in `palette.ts`, and it is a ladder
    * rather than a rung field because it constrains which day may take which hiding place
-   * rather than what a day is worth. Hokusai's Sunday scored respectably here and terribly
-   * there -- a well-camouflaged speck in the one patch of brown on a blue painting, which
-   * a player finds by looking for the brown.
+   * rather than what a day is worth. The day that prompted it scored respectably here and
+   * terribly there -- well camouflaged against everything within a few shape-widths, and
+   * the only thing of its colour on the canvas.
    */
   company: number;
   /**

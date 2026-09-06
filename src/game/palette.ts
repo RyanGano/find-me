@@ -149,11 +149,11 @@ export const MIN_COLOURS_PER_WEEK = 4;
  *
  * The rule above spreads a week across the canvas. It does not say which day gets which
  * of those places, and a week that satisfies it can still hand out its scarcest colour on
- * its hardest day. Hokusai's Sunday hid in the warm brown of a boat hull on a canvas of
- * blue, grey, cream and white. Every rung was met -- small, low contrast, the right
- * texture, well camouflaged against the paint immediately around it -- and it was still
- * the easiest day of the week, because once a player has clocked what colour they are
- * hunting the search collapses to "find the brown bit", and there was one.
+ * its hardest day. One shipped Sunday came back from play as the easiest day of its week:
+ * every rung met -- small, low contrast, the right texture, well camouflaged against the
+ * paint immediately around it -- and hiding in a colour that barely occurs on that canvas.
+ * Once a player has clocked what colour they are hunting, a rare colour collapses the
+ * search to a glance.
  *
  * That is a kind of company (see `company` in `difficulty.ts`) nothing could see. Company
  * measures grey-level lookalikes two to five shape-widths out: it asks whether the shape
@@ -165,10 +165,10 @@ export const MIN_COLOURS_PER_WEEK = 4;
  *
  * So it belongs to the ramp: Monday and Tuesday may hide anywhere, and every day after
  * them has a floor that rises. It is the one difficulty lever that is a property of the
- * *week* rather than of the day -- the same brown hull is a fair Monday and a wasted
- * Sunday -- which is why it is enforced where the week is chosen rather than where a day
- * is tuned. `tune-camouflage.mjs` cannot fix it afterwards: solving a lone brown speck
- * down to its scan target only makes a faint lone brown speck.
+ * *week* rather than of the day -- the same odd patch of paint is a fair Monday and a
+ * wasted Sunday -- which is why it is enforced where the week is chosen rather than where
+ * a day is tuned. `tune-camouflage.mjs` cannot fix it afterwards: solving a lone speck of a
+ * rare colour down to its scan target only makes a fainter lone speck of a rare colour.
  */
 
 /**
@@ -176,11 +176,11 @@ export const MIN_COLOURS_PER_WEEK = 4;
  *
  * `generalColour` is deliberately coarse, and for the spread rule that is right -- if
  * someone would call two patches "sort of sandy" they are one colour and the week should
- * not get credit for using both. For this rule the same coarseness is fatal, and Hokusai's
- * Sunday is the proof: `sand` spans the cream sky and the brown hull, so the day that
- * prompted all of this measures as one of the most abundant colours on the canvas. What
- * matters here is not which word the paint gets but how much other paint a player could
- * confuse it with, so this measures distance in the paint itself.
+ * not get credit for using both. For this rule the same coarseness is fatal: `sand` covers
+ * pale cream and dark brown alike, so the day that prompted all of this measures as one of
+ * the most abundant colours on its canvas while a player could not confuse it with any of
+ * that paint. What matters here is not which word the paint gets but how much other paint a
+ * player could mistake for it, so this measures distance in the paint itself.
  *
  * Lightness, saturation and hue, with hue weighted by how much colour is actually there --
  * two greys a hundred degrees apart are the same grey, and treating their hues as a
@@ -203,7 +203,7 @@ export function colourDistance(a: Hsl, b: Hsl): number {
  * hold 37% to 77% of their canvas, which is the right shape of answer -- a dominant colour
  * should be most of a painting without being all of it. Widen it to 0.3 and every
  * painting's best is over 90%, so the measure stops distinguishing anything; narrow it to
- * 0.1 and Hokusai's cream sky lands in a different bucket from his own cream sky.
+ * 0.1 and one end of a single stretch of paint lands in a different bucket from the other.
  */
 export const COLOUR_RADIUS = 0.18;
 

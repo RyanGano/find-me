@@ -277,10 +277,21 @@ some rung. That's the same verdict as a bad `rate`: replace the painting.
 Read the printed report. Each day's measured `texture` should be near the `want` for its
 rung, and `company` should be non-zero on Monday and Sunday especially.
 
+The report also prints each day's `prominence` against its floor — how much of the canvas
+shares the colour the shape is hiding in, from 0 to 1. The planner will not place a day
+below its floor, so this is a read-out rather than something to check, but it is worth
+looking at: a back-half day sitting exactly on its floor means the painting is short of
+crowded colours in usable paint, which usually shows up later as a week that plays flat.
+A new week is held to this rule automatically -- `BEFORE_PROMINENCE` in `variety.test.ts`
+lists the weeks *exempt* from it, and nothing new goes on that list.
+
 Re-planning re-plans the **whole week**, not the one day you were unhappy with — the
 planner places the seven days together. So after any `avoid.json` change, re-tune and
 re-judge all seven, and never assume a day you already approved survived unchanged. This
-is only safe before the week ships; a week players have been served is frozen.
+is only safe before the week ships. A week that has been served, and the week being played
+right now, are both frozen -- see "Which weeks may be changed" in CLAUDE.md. Appending a
+painting is exempt from all of that by construction, which is why new weeks are appended
+and never inserted: nothing already on the calendar moves.
 
 ### 6. Tune the camouflage in a real browser
 

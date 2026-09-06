@@ -12,6 +12,43 @@ commit message, PR body, code comment or test fixture. The tally endpoint reache
 build only through the `VITE_COUNT_URL` env var, supplied by a repository variable in CI.
 `src/game/count.ts` reads it and does nothing when it is empty.
 
+## Never write down where a shape hides
+
+The game is the fun of finding it, and this repository is public. No tracked file — this
+one, README.md, a skill, a code comment, a commit message, a PR body, a test fixture —
+may ever say **where** a shipped day hides, or give anything a player could narrow the
+search with: the object a shape sits on, the region of the canvas, "the only red thing in
+the picture", or a table of per-day measurements that is the same hint in numbers.
+
+Describe a failure by what went wrong, not by where. Where a concrete example genuinely
+cannot be dropped, use a painting that was rejected and never shipped (see
+`.claude/skills/add-painting/rejected.json`) or a bench painting from `testbed.ts`, which
+will never be in the rotation. Weeks already served are **not** an exception: the calendar
+indexes `PUZZLES` modulo its length, so every week comes round again.
+
+Specifics belong in the tools, which print and draw exactly where everything is and write
+to the gitignored `.scratch/`: `npm run plan`, `npm run camouflage`, `npm run preview:week`,
+`scripts/diag-camouflage.mjs`. The person who asks for a week should still be able to play
+it.
+
+## Which weeks may be changed
+
+A change to how hiding places are chosen applies to **future weeks only** — every week a
+player will meet *after* the current calendar week ends. The current week and every week
+already served are off limits, because re-planning a week moves every hiding place in it,
+changes each day's `version`, and hands a finished board back as playable to everyone who
+has already played it.
+
+The boundary is the week containing today, not today itself: finish out the current
+Monday-to-Sunday painting untouched and start from the next Monday's. `daily.ts` maps the
+calendar onto `PUZZLES` in blocks of seven, so the current week index is
+`Math.floor((dayIndex(now) + weekday(EPOCH)) / 7)` and everything after it is fair game.
+Work it out rather than assuming — do not guess from the array order.
+
+When a rule is added that older weeks cannot meet, exempt them by name in a list of
+*exemptions* (as `BEFORE_PROMINENCE` in `variety.test.ts` does) rather than listing the
+weeks held to it, so that a painting added later is caught by default.
+
 ## Commands
 
 ```bash
@@ -100,9 +137,10 @@ second rule: `MIN_PROMINENCE` in `palette.ts` is a floor per day on how much of 
 shares the hiding place's colour, rising from nothing on Monday to 0.6 on Sunday, so the
 rare paint is spent on the gentle days and the crowded paint is kept for the days that ask
 for a real hunt. It is measured on the paint itself and not on the nine colour names, which
-are too coarse for it -- `sand` covers both a cream sky and a lone brown hull. Weeks planned
-before the rule are exempt and listed in `PLANNED_WITH_PROMINENCE` in `variety.test.ts`; a
-week joins the list when it is next re-planned. See "Variety inside a week" and "Prominence
+are too coarse for it -- `sand` covers pale cream and dark brown alike. The two weeks that
+were already behind the calendar when the rule arrived are exempt and named in
+`BEFORE_PROMINENCE` in `variety.test.ts`; the list is of exemptions, not of weeks held to
+the rule, so a painting added later is caught by default. See "Variety inside a week" and "Prominence
 across a week" in README.md before touching any of it.
 
 **Determinism is a hard constraint.** Which painting, which day, where, how big, what
@@ -158,9 +196,10 @@ card and the panels.
   the shipped puzzles should produce one.
 - Trying out a change on real people: the `start-testbed-round` skill takes it from a
   worry to a live link, and `read-testbed-results` reads what came back against the ramp
-  the round was testing. Never re-plan or re-tune a shipped week to try an idea -- that
-  takes the day back off everyone who has already played it. The bench exists so that is
-  never necessary.
+  the round was testing. Never re-plan or re-tune the current week or a week already served
+  to try an idea -- that takes the day back off everyone who has already played it. The
+  bench exists so that is never necessary. Rolling a settled improvement forward into the
+  weeks after this one is a different thing and is fine; see "Which weeks may be changed".
 - `.source-images/` is staging for the painting currently being added, not a library. Only
   `resize-images.mjs` ever reads it; once the 2600px asset is committed the scan is dead
   weight, so delete it. What replaces it is the record: `source` on each week seed names
