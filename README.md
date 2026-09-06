@@ -312,6 +312,110 @@ Two other things had to move with it:
   re-planned Hokusai week came out with six of seven days off-rung and therefore earning no
   company at all. The guard now says what it always meant — the paint must not be flat.
 
+### Prominence across a week
+
+The rule above spreads a week across four colours. It says nothing about which day gets
+which of them, and that turned out to be half the problem.
+
+Hokusai's Sunday hid in the warm brown of a boat hull, on a canvas that is otherwise blue,
+grey, cream and white. Every rung was met — the smallest shape of the week, the lowest
+contrast, the right texture, solved in a browser onto its scan target like every other day
+— and it was still the easiest day of the week to find. The reason has nothing to do with
+how well the shape was camouflaged against the paint immediately around it. Once a player
+has clocked what colour they are hunting, the search collapses to "find the brown bit", and
+there was one.
+
+So a hiding place has a second property worth measuring: **how much of the painting shares
+its colour**. Call it prominence. A day in the dominant paint leaves a player the whole
+picture to search; a day in the one odd patch leaves them a glance. That is a difficulty
+lever, it runs the opposite way from where it had been landing, and nothing could see it.
+
+**It is a near miss for `company`, and the difference is what makes it a separate rule.**
+`company` already asks whether a shape has lookalikes — but it measures grey-level
+similarity on rings two to five shape-widths out. It is blind to colour, and blind to
+anything further away than a few shape-widths. It answers "does this speck blend into its
+neighbourhood"; prominence answers "how much of the canvas is still in play after the
+colour is known". Hokusai's Sunday scored respectably on the first and terribly on the
+second.
+
+The ramp is a floor per day, rising through the week, in `MIN_PROMINENCE`:
+
+| | mon | tue | wed | thu | fri | sat | sun |
+|---|---|---|---|---|---|---|---|
+| floor | — | — | 0.20 | 0.30 | 0.40 | 0.50 | 0.60 |
+
+Monday and Tuesday are deliberately unconstrained. The odd patch of paint nobody else can
+use makes a perfectly good gentle day, and penning it in with everything else would waste
+it — starry-tue now hides in the moon, which is 2% as crowded as Van Gogh's blue and is
+exactly right for a Tuesday.
+
+**It is measured on the paint, not on the nine colour names.** The names are the right
+instrument for the spread rule and the wrong one here, and Hokusai's Sunday is the proof:
+`sand` spans the cream sky and the brown hull, so the day that prompted all of this
+measures as one of the most abundant colours on the canvas. Prominence instead counts how
+much of the painting a player could *confuse* with this paint — the share of usable windows
+within 0.18 of it in lightness, saturation and chroma-weighted hue. Hue is weighted by how
+much colour is actually present, because two greys a hundred degrees apart are the same
+grey.
+
+**It is normalised per painting**, against the largest such share the canvas offers, so 1.0
+is the most crowded colour a painting has rather than a fixed amount of canvas. The Mona
+Lisa is 89% one colour and Renoir's boaters are four colours in earnest; an absolute floor
+would be trivial on Renoir and unreachable on Leonardo. The question the ramp is asking —
+is this one of the crowded colours *here* — is relative by nature.
+
+The measure is stable and cheap: sampled at a 32px window on a 48px grid, it agrees with a
+full 24px sweep to within 0.02 on every day of every week, so the sparse grid is what
+`prominenceOn` uses.
+
+Two practical notes:
+
+- **It is a hard gate in the planner, not a term in the cost.** That is what the failure
+  called for. Hokusai's Sunday was the cheapest spot on the canvas by every other measure,
+  and any penalty small enough to leave the rest of the cost meaningful would have lost to
+  it.
+- **The tuner cannot fix it afterwards.** Solving a lone brown speck down to its scan
+  target only produces a faint lone brown speck. Like the colour spread, it has to be
+  settled where the week is chosen.
+
+#### Which weeks are held to it
+
+The rule arrived after the rotation did, and applying it retroactively is not worth what it
+would cost: re-planning a week moves every hiding place in it, changing each day's
+`version` and handing the day back to everyone who has already played it as an unplayed
+board. That is a fair price for a week nobody has seen and a poor one for a week they have.
+So `PLANNED_WITH_PROMINENCE` in `variety.test.ts` lists the weeks planned under it, and a
+week joins that list when it is next re-planned for some other reason.
+
+Measured when the rule was written — starry, boating and jatte were re-planned under it,
+the rest are as they shipped, and `*` marks a day under its day's floor:
+
+```
+              mon (0)   tue (0) wed (0.2) thu (0.3) fri (0.4) sat (0.5) sun (0.6)
+mona             0.47      0.41      0.53      0.04 *    0.30 *    0.53      0.34 *
+wave             0.37      0.34      0.52      0.26 *    0.83      0.29 *    0.24 *
+starry           0.32      0.02      0.21      0.38      0.53      0.90      0.67
+boating          0.16      0.23      0.26      0.68      0.64      0.50      0.71
+jatte            0.45      0.24      0.67      0.71      0.47      0.83      0.62
+hunters          0.93      0.97      0.22      0.95      0.58      0.78      0.09 *
+issus            0.50      0.70      0.41      0.45      0.43      0.31 *    0.71
+babel            0.46      0.36      0.25      0.62      0.09 *    0.00 *    0.08 *
+deheem           0.71      0.65      0.32      0.45      0.52      0.69      0.11 *
+venice           0.48      0.75      0.77      0.54      0.46      0.00 *    0.04 *
+```
+
+Seven of the ten weeks put a colour the canvas barely uses on a day asking for a long hunt,
+and four of them did it on the Sunday. venice and babel are the worst — a Saturday and a
+Sunday each on paint with effectively no company on the canvas at all. That is the backlog,
+and it is written down here so it is known rather than forgotten.
+
+One thing the re-plan turned up that the numbers did not: forcing the back half of jatte
+into crowded paint pushed its Monday onto the dark bustle of the foreground dress, where
+the tuner ran the fill to its extreme and still only reached a contrast of 1.13 — a Monday
+you can barely see even when framed. The spot went into `scripts/avoid.json`, which is what
+that file is for, and Monday came back at 2.09. Expect a prominence re-plan to shake one or
+two spots loose like this; the week sheet is what catches it.
+
 ### Fairness
 
 Everything is fixed and identical for every player: which painting a week gets, which

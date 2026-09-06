@@ -95,8 +95,15 @@ not day-by-day greed) and refuses a painting that cannot offer four colours;
 on the badge the player sees, because the tuner rewrites every day's fill and opacity
 afterwards and a rule it can move is a rule the planner cannot plan against. Texture is
 outranked by this: a day off its texture rung is still solved onto its scan target, and a
-week of identical badges cannot be fixed later. See "Variety inside a week" in README.md
-before touching any of it.
+week of identical badges cannot be fixed later. Which day gets which of those colours is a
+second rule: `MIN_PROMINENCE` in `palette.ts` is a floor per day on how much of the canvas
+shares the hiding place's colour, rising from nothing on Monday to 0.6 on Sunday, so the
+rare paint is spent on the gentle days and the crowded paint is kept for the days that ask
+for a real hunt. It is measured on the paint itself and not on the nine colour names, which
+are too coarse for it -- `sand` covers both a cream sky and a lone brown hull. Weeks planned
+before the rule are exempt and listed in `PLANNED_WITH_PROMINENCE` in `variety.test.ts`; a
+week joins the list when it is next re-planned. See "Variety inside a week" and "Prominence
+across a week" in README.md before touching any of it.
 
 **Determinism is a hard constraint.** Which painting, which day, where, how big, what
 angle, what colour — all fixed and identical for every player, rolling over at the
@@ -175,7 +182,10 @@ card and the panels.
 - Changing where a day hides means re-planning and re-tuning that week, then re-running
   the suite: `npm run plan -- <image>`, `npm run build`, `npx vite preview --port 4173 &`,
   `npm run camouflage -- --solve <image>`. A spot that only reveals itself as unusable once
-  the browser has solved it goes in `scripts/avoid.json` — that is what it is for.
+  the browser has solved it goes in `scripts/avoid.json` — that is what it is for. Look at
+  `npm run preview:week` afterwards: re-planning moves the whole week, not only the day you
+  meant to move, and a day that lands where the tuner has to run its fill to the extreme
+  shows up there as a shape you cannot see even when framed.
 - Each week declares a `genre`, and [src/game/curation.test.ts](src/game/curation.test.ts)
   holds the running order to it: no painter twice running, no genre three times running,
   no painter over a third of the rotation. Fix a failure by choosing a different painting,

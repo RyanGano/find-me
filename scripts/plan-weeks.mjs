@@ -17,7 +17,14 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { RAMP } from '../src/game/difficulty.ts';
 import { SHAPES } from '../src/game/shapes.ts';
 import { colourAt, paintFor } from './lib/paint.mjs';
-import { MAX_DAYS_PER_COLOUR, MIN_COLOURS_PER_WEEK, generalColour } from '../src/game/palette.ts';
+import {
+  MAX_DAYS_PER_COLOUR,
+  MIN_COLOURS_PER_WEEK,
+  MIN_PROMINENCE,
+  PROMINENCE_WINDOW,
+  generalColour,
+  prominenceOn,
+} from '../src/game/palette.ts';
 import AVOID from './avoid.json' with { type: 'json' };
 
 
@@ -152,7 +159,7 @@ function edgeMargin(size) {
  * Monday's texture and Sunday's different numbers of different things, and the ramp
  * would be comparing them anyway.
  */
-function survey(grey, info) {
+function survey(grey, info, rgb, prominence) {
   // The loosest margin any day could accept, so the sweep covers everything that might
   // be usable. Each day then applies its own, which is much stricter for Monday.
   const margin = Math.min(...RAMP.map((r) => edgeMargin(r.size)));
@@ -180,7 +187,16 @@ function survey(grey, info) {
       // Dead-black and blown-white regions are refused outright: there is no colour
       // there to derive a shape from, and nothing for it to hide in.
       if (mean < 28 || mean > 228) continue;
-      spots.push({ cx: x, cy: y, mean, std: Math.sqrt(Math.max(0, sumSq / n - mean * mean)) });
+      // Measured here, once, rather than per day: prominence is a property of the paint
+      // and the canvas, and the window it is read through is fixed for the whole week --
+      // see `prominenceOn` in palette.ts for why the seven days share one reading.
+      spots.push({
+        cx: x,
+        cy: y,
+        mean,
+        std: Math.sqrt(Math.max(0, sumSq / n - mean * mean)),
+        prominence: prominence(colourAt(rgb.data, rgb.info, x, y, PROMINENCE_WINDOW)),
+      });
     }
   }
   return spots;
@@ -412,13 +428,25 @@ const NODE_BUDGET = 400000;
  * shipped; keeping the best few of each region hands it the choice it is supposed to be
  * making.
  */
-function candidatesFor(grey, info, rgb, spots, image, rung, fitScale, median) {
+function candidatesFor(grey, info, rgb, spots, image, rung, day, fitScale, median) {
   const margin = edgeMargin(rung.size);
   const byRegion = new Map();
   let refused = 0;
+  let dim = 0;
   for (const s of spots) {
     if (avoided(image, s.cx, s.cy)) continue;
     if (s.cx < margin || s.cy < margin || s.cx > info.width - margin || s.cy > info.height - margin) continue;
+    // The one rule here that is about the week rather than the day: a colour the canvas
+    // barely uses is a hunt with one candidate in it, which is a gentle day whatever else
+    // is true of it -- so the rare paint is spent early and the crowded paint is saved for
+    // the days that need somewhere to search. See `MIN_PROMINENCE` in palette.ts. A hard
+    // gate rather than a term in the cost below, because that is what the failure was:
+    // Hokusai's Sunday was the cheapest spot on the canvas by every other measure, and any
+    // penalty small enough to leave the rest of the cost meaningful would have lost to it.
+    if (s.prominence < MIN_PROMINENCE[day]) {
+      dim++;
+      continue;
+    }
     const agreement = viewAgreement(grey, info, s.cx, s.cy, rung, fitScale);
     if (agreement < VIEWS_AGREE_FLOOR || agreement > VIEWS_AGREE_CEILING) {
       refused++;
@@ -461,7 +489,7 @@ function candidatesFor(grey, info, rgb, spots, image, rung, fitScale, median) {
     out.push(...bucket.slice(0, PER_REGION));
   }
   out.sort((a, b) => a.cost - b.cost || a.cx - b.cx || a.cy - b.cy);
-  return { list: out, refused, margin };
+  return { list: out, refused, dim, margin };
 }
 
 /**
@@ -483,6 +511,15 @@ function candidatesFor(grey, info, rgb, spots, image, rung, fitScale, median) {
  * to sit in busier paint than its rung asked for is still on its rung where it counts,
  * because `tune-camouflage.mjs` solves its opacity against the day's scan target after
  * this runs. A week where every badge is the same colour cannot be fixed later at all.
+ *
+ * Colour prominence is the second thing the tuner cannot fix, and it is why the days are
+ * no longer interchangeable once the seven places are chosen. Each day carries a floor on
+ * how much of the canvas shares its hiding place's colour, rising from nothing on Monday
+ * to more than half the best the painting offers on Sunday -- so the rare paint goes to
+ * the gentle days and the crowded paint is kept for the days that ask for a real hunt.
+ * `MIN_PROMINENCE` in palette.ts is the ladder and the argument for it. It is applied as
+ * each day's shortlist is built rather than here, because it is a property of one spot on
+ * one day; what makes it a rule about the week is only that the days disagree about it.
  */
 function spotsForWeek(grey, info, rgb, spots, image, ramp) {
   const fitScale = Math.min(900 / info.width, 700 / info.height) * 0.92;
@@ -490,13 +527,15 @@ function spotsForWeek(grey, info, rgb, spots, image, ramp) {
   const median = sorted[sorted.length >> 1];
 
   const perDay = [];
-  for (const rung of ramp) {
-    const found = candidatesFor(grey, info, rgb, spots, image, rung, fitScale, median);
+  for (const [d, rung] of ramp.entries()) {
+    const found = candidatesFor(grey, info, rgb, spots, image, rung, d, fitScale, median);
     if (!found.list.length) {
       throw new Error(
-        `${rung.label}: nothing clears the edge by ${found.margin}px and sits in the band where a ` +
+        `${rung.label}: nothing clears the edge by ${found.margin}px, sits in the band where a ` +
           `shape can be subtle at a distance and visible but not blazing close up ` +
-          `(${found.refused} spots refused on that last count) -- this painting cannot hold a week`,
+          `(${found.refused} spots refused on that count), and hides in paint the canvas uses ` +
+          `enough of for the day to be worth searching (${found.dim} refused on prominence, ` +
+          `floor ${MIN_PROMINENCE[d]}) -- this painting cannot hold a week`,
       );
     }
     perDay.push(found.list);
@@ -554,9 +593,9 @@ function spotsForWeek(grey, info, rgb, spots, image, ramp) {
 
   if (!best) {
     throw new Error(
-      `${image}: no seven hiding places can be ${MAX_DAYS_PER_COLOUR}-per-colour, one-per-region and ` +
-        `420px apart all at once -- the colours are there (${[...offered].sort().join(', ')}) but not ` +
-        `in places this week can legally use them`,
+      `${image}: no seven hiding places can be ${MAX_DAYS_PER_COLOUR}-per-colour, one-per-region, ` +
+        `420px apart and each on its day's prominence floor all at once -- the colours are there ` +
+        `(${[...offered].sort().join(', ')}) but not in places this week can legally use them`,
     );
   }
   return best;
@@ -599,7 +638,7 @@ for (const [w, week] of [...found.entries()].reverse()) {
   }
 
   const shapes = shapesForWeek(w);
-  const surveyed = survey(grey.data, grey.info);
+  const surveyed = survey(grey.data, grey.info, rgb, prominenceOn(rgb));
   // A spottable painting carries a smaller ladder -- see `sizeScale` in puzzles.ts. Every
   // window the planner measures with is derived from the day's size, so the scale has to
   // be applied here, before anything is measured, rather than to the written number alone.
@@ -628,7 +667,8 @@ for (const [w, week] of [...found.entries()].reverse()) {
     report.push(
       `  ${rung.key}  ${shape.padEnd(10)} at ${String(spot.cx).padStart(4)},${String(spot.cy).padStart(4)}` +
         `  texture ${spot.std.toFixed(1).padStart(5)} (want ${rung.texture})  ${blend} ${fill}  angle ${String(angle).padStart(4)}` +
-        `  company ${spot.repeat.toFixed(2)}  reads ${spot.colour}`,
+        `  company ${spot.repeat.toFixed(2)}  reads ${spot.colour}` +
+        `  prominence ${spot.prominence.toFixed(2)} (floor ${MIN_PROMINENCE[d]})`,
     );
   }
   console.log(week.image + '\n' + report.join('\n'));

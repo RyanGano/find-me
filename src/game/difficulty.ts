@@ -138,6 +138,14 @@ export interface Rung {
    * as an overlap. A shape sitting on top of the thing it imitates is not hard, it is
    * unfindable; a shape sitting next to six of them is hard and still fair, because the
    * badge outlines itself the moment you frame the right one.
+   *
+   * It is grey-level similarity, and only within those few shape-widths, which leaves it
+   * blind to a second kind of company: how much of the *whole canvas* is the colour the
+   * shape is hiding in. That one is `MIN_PROMINENCE` in `palette.ts`, and it is a ladder
+   * rather than a rung field because it constrains which day may take which hiding place
+   * rather than what a day is worth. Hokusai's Sunday scored respectably here and terribly
+   * there -- a well-camouflaged speck in the one patch of brown on a blue painting, which
+   * a player finds by looking for the brown.
    */
   company: number;
   /**

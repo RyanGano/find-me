@@ -142,3 +142,156 @@ export function hueGap(a: number, b: number): number {
  */
 export const MAX_DAYS_PER_COLOUR = 2;
 export const MIN_COLOURS_PER_WEEK = 4;
+
+/**
+ * How much of the painting a hiding place's colour has to itself -- and why the back half
+ * of the week is owed the crowded colours rather than the rare ones.
+ *
+ * The rule above spreads a week across the canvas. It does not say which day gets which
+ * of those places, and a week that satisfies it can still hand out its scarcest colour on
+ * its hardest day. Hokusai's Sunday hid in the warm brown of a boat hull on a canvas of
+ * blue, grey, cream and white. Every rung was met -- small, low contrast, the right
+ * texture, well camouflaged against the paint immediately around it -- and it was still
+ * the easiest day of the week, because once a player has clocked what colour they are
+ * hunting the search collapses to "find the brown bit", and there was one.
+ *
+ * That is a kind of company (see `company` in `difficulty.ts`) nothing could see. Company
+ * measures grey-level lookalikes two to five shape-widths out: it asks whether the shape
+ * has neighbours that resemble it, and it is blind to colour and blind to anything beyond
+ * a few shape-widths. Prominence is the same question asked of the whole canvas at once --
+ * after the player knows the colour, how much of the painting is still in play? A day in
+ * the dominant paint leaves them the whole picture to search; a day in the one odd patch
+ * leaves them a glance.
+ *
+ * So it belongs to the ramp: Monday and Tuesday may hide anywhere, and every day after
+ * them has a floor that rises. It is the one difficulty lever that is a property of the
+ * *week* rather than of the day -- the same brown hull is a fair Monday and a wasted
+ * Sunday -- which is why it is enforced where the week is chosen rather than where a day
+ * is tuned. `tune-camouflage.mjs` cannot fix it afterwards: solving a lone brown speck
+ * down to its scan target only makes a faint lone brown speck.
+ */
+
+/**
+ * Measured on the paint, not on the nine names above.
+ *
+ * `generalColour` is deliberately coarse, and for the spread rule that is right -- if
+ * someone would call two patches "sort of sandy" they are one colour and the week should
+ * not get credit for using both. For this rule the same coarseness is fatal, and Hokusai's
+ * Sunday is the proof: `sand` spans the cream sky and the brown hull, so the day that
+ * prompted all of this measures as one of the most abundant colours on the canvas. What
+ * matters here is not which word the paint gets but how much other paint a player could
+ * confuse it with, so this measures distance in the paint itself.
+ *
+ * Lightness, saturation and hue, with hue weighted by how much colour is actually there --
+ * two greys a hundred degrees apart are the same grey, and treating their hues as a
+ * difference would credit a neutral painting with variety it does not have. At full
+ * saturation the weighting makes ninety degrees of hue count for as much as the whole
+ * lightness range, which is about right: cream and brown are near in hue and far apart in
+ * lightness, and it is the lightness that tells them apart.
+ */
+export type Hsl = readonly [number, number, number];
+
+export function colourDistance(a: Hsl, b: Hsl): number {
+  const chroma = (hueGap(a[0], b[0]) / 180) * Math.min(a[1], b[1]) * 2;
+  return Math.hypot(a[2] - b[2], a[1] - b[1], chroma);
+}
+
+/**
+ * How near two patches of paint have to be to count as the same hunt.
+ *
+ * Set off the shipped set rather than picked: at this radius the paintings' best colours
+ * hold 37% to 77% of their canvas, which is the right shape of answer -- a dominant colour
+ * should be most of a painting without being all of it. Widen it to 0.3 and every
+ * painting's best is over 90%, so the measure stops distinguishing anything; narrow it to
+ * 0.1 and Hokusai's cream sky lands in a different bucket from his own cream sky.
+ */
+export const COLOUR_RADIUS = 0.18;
+
+/**
+ * The sweep the population is measured on: one window in the middle of the ramp's size
+ * ladder, on a regular grid, for the whole week at once.
+ *
+ * One reading for all seven days for the same reason `survey()` in `plan-weeks.mjs`
+ * measures texture once: a day's own size would move these numbers barely at all and
+ * would make Monday's prominence and Sunday's two different quantities, which the ramp
+ * would then compare anyway.
+ */
+export const PROMINENCE_WINDOW = 32;
+export const PROMINENCE_STEP = 48;
+
+export interface Pixels {
+  data: Uint8Array | Uint8ClampedArray | Buffer | number[];
+  info: { width: number; height: number; channels: number };
+}
+
+/** Mean colour of a square of the painting, in image pixels. */
+export function meanColour({ data, info }: Pixels, cx: number, cy: number, side: number): Rgb {
+  const half = side / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let n = 0;
+  for (let y = Math.max(0, Math.round(cy - half)); y < Math.min(info.height, cy + half); y++) {
+    for (let x = Math.max(0, Math.round(cx - half)); x < Math.min(info.width, cx + half); x++) {
+      const i = (y * info.width + x) * info.channels;
+      r += data[i];
+      g += data[i + 1];
+      b += data[i + 2];
+      n++;
+    }
+  }
+  return [r / n, g / n, b / n];
+}
+
+/**
+ * A painting's prominence scale, and the one reading a day is held to.
+ *
+ * `prominence(paint)` runs 0 to 1: the share of the painting's usable paint a player could
+ * mistake for this paint, divided by the largest such share the canvas offers. It is
+ * normalised per painting on purpose. The Mona Lisa is nearly all one colour and Renoir's
+ * boaters are four colours in earnest; an absolute floor would be trivial on Renoir and
+ * unreachable on Leonardo, and the question the ramp is actually asking -- is this one of
+ * the crowded colours *here* -- is relative by nature.
+ *
+ * Windows that are nearly dead black or blown white are left out of the population,
+ * mirroring the same refusal in `survey()`. No shape can hide in them, so counting them
+ * would credit a painting with hiding places it does not have: a canvas that is half black
+ * shadow does not get to call its shadow a crowded colour.
+ */
+export function prominenceOn(pixels: Pixels): (paint: Rgb) => number {
+  const { info } = pixels;
+  const half = PROMINENCE_WINDOW / 2;
+  const population: Hsl[] = [];
+  for (let y = half; y < info.height - half; y += PROMINENCE_STEP) {
+    for (let x = half; x < info.width - half; x += PROMINENCE_STEP) {
+      const paint = meanColour(pixels, x, y, PROMINENCE_WINDOW);
+      // Luma, the reading `survey()` refuses dead-black and blown-white paint on.
+      const luma = 0.299 * paint[0] + 0.587 * paint[1] + 0.114 * paint[2];
+      if (luma < 28 || luma > 228) continue;
+      population.push(toHsl(paint));
+    }
+  }
+  const share = (hsl: Hsl) => {
+    let n = 0;
+    for (const other of population) if (colourDistance(hsl, other) <= COLOUR_RADIUS) n++;
+    return n / population.length;
+  };
+  const best = Math.max(...population.map(share));
+  return (paint: Rgb) => share(toHsl(paint)) / best;
+}
+
+/**
+ * The floor each day's hiding place must clear, Monday first.
+ *
+ * Monday and Tuesday are unconstrained, and that is the point rather than a gap: the odd
+ * patch of paint nobody else can use makes a perfectly good gentle day, and penning it in
+ * with everything else would waste it. From Wednesday on the floor rises, so that the days
+ * asking for a long hunt are the days with somewhere to hunt.
+ *
+ * The numbers are what the shipped set says is reachable, not an ambition. The ceiling is
+ * 1 by construction, and Sunday is asked for rather more than half of it. Pushing the tail
+ * higher starts refusing paintings instead of improving weeks, and this rule should never
+ * be the reason a painting is turned down -- the spread rule above already is that, and
+ * this one only decides which of the places a week already has goes on which day.
+ */
+export const MIN_PROMINENCE = [0, 0, 0.2, 0.3, 0.4, 0.5, 0.6];

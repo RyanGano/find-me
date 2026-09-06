@@ -3,10 +3,14 @@ import { describe, expect, it } from 'vitest';
 import {
   MAX_DAYS_PER_COLOUR,
   MIN_COLOURS_PER_WEEK,
+  MIN_PROMINENCE,
+  PROMINENCE_WINDOW,
   blendOver,
   generalColour,
   hueGap,
+  meanColour,
   parseHex,
+  prominenceOn,
   toHsl,
   type GeneralColour,
   type Rgb,
@@ -123,4 +127,53 @@ describe('a week of colours', () => {
     }
     expect(drift, `the badge no longer shows the hue of its paint:\n  ${drift.join('\n  ')}`).toEqual([]);
   });
+});
+
+/**
+ * Weeks planned under the colour-prominence ladder, and therefore held to it.
+ *
+ * The rule arrived after the rotation did, and applying it retroactively is not worth what
+ * it would cost. Re-planning a week moves every hiding place in it, which changes each
+ * day's `version` and hands the day back to everyone who has already played it as an
+ * unplayed board -- see "Results are versioned by puzzle definition" in CLAUDE.md. That is
+ * a fair price for a week nobody has seen yet and a poor one for a week they have.
+ *
+ * So the list grows rather than the rule bending: a week joins it when it is next
+ * re-planned for some other reason, and the weeks not on it stay as they shipped. What
+ * every week in the rotation measured when the rule was written is in README.md under
+ * "Prominence across a week", so the ones still owing it are recorded rather than
+ * forgotten.
+ */
+const PLANNED_WITH_PROMINENCE = ['starry', 'boating', 'jatte'];
+
+describe('prominence across a week', () => {
+  for (const image of IMAGES) {
+    const week = PUZZLES.filter((p) => p.image === image.id);
+
+    it.skipIf(!PLANNED_WITH_PROMINENCE.includes(image.id))(
+      `${image.id} saves its crowded colours for the back of the week`,
+      async () => {
+        const { data, info } = await pixels(image.id);
+        const prominence = prominenceOn({ data, info });
+
+        const measured = week.map((puzzle, day) => ({
+          id: puzzle.id,
+          floor: MIN_PROMINENCE[day],
+          got: prominence(
+            meanColour({ data, info }, puzzle.target.cx, puzzle.target.cy, PROMINENCE_WINDOW),
+          ),
+        }));
+        const sheet = measured.map((m) => `${m.id}: ${m.got.toFixed(2)} (floor ${m.floor})`).join('\n  ');
+
+        for (const m of measured) {
+          expect(
+            m.got,
+            `${m.id} hides in paint only ${(m.got * 100).toFixed(0)}% as common as the commonest ` +
+              `colour ${image.id} offers, on a day asking for ${(m.floor * 100).toFixed(0)}% -- a ` +
+              `player who has clocked the colour has almost nowhere to look but the answer\n  ${sheet}`,
+          ).toBeGreaterThanOrEqual(m.floor);
+        }
+      },
+    );
+  }
 });
