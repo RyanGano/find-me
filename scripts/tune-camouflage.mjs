@@ -51,15 +51,18 @@ const DAY_LINE =
 
 function puzzles(source) {
   const out = [];
-  const weeks = /image: '(\w+)',[\s\S]*?days: \[([\s\S]*?)\n    \],/g;
+  const weeks = /image: '(\w+)',([\s\S]*?)days: \[([\s\S]*?)\n    \],/g;
   let w;
   while ((w = weeks.exec(source))) {
     const image = w[1];
-    const body = w[2];
+    // A bench week may render a painting it is not named after; see `asset` in testbed.ts.
+    const asset = w[2].match(/asset: '(\w+)',/)?.[1] ?? image;
+    const body = w[3];
     let d = 0;
     for (const m of body.matchAll(DAY_LINE)) {
       out.push({
         image,
+        asset,
         day: d,
         id: `${image}-${RAMP[d].key}`,
         line: m[0],
@@ -245,7 +248,7 @@ async function imageFor(id) {
 }
 
 const clutters = new Map();
-for (const id of new Set(list.map((p) => p.image))) clutters.set(id, await clutterOf(id));
+for (const id of new Set(list.map((p) => p.asset))) clutters.set(id, await clutterOf(id));
 
 /**
  * Dimness of the paint at each hiding place, measured on the painting alone.
@@ -254,7 +257,7 @@ for (const id of new Set(list.map((p) => p.image))) clutters.set(id, await clutt
  * last `npm run busyness` is still solved against the ground it is actually on.
  */
 const dims = new Map();
-for (const p of list) dims.set(p.id, await dimnessOf(p.image, p.cx, p.cy, p.size));
+for (const p of list) dims.set(p.id, await dimnessOf(p.asset, p.cx, p.cy, p.size));
 
 const browser = await chromium.launch({ channel: 'chrome', args: ['--force-device-scale-factor=1'] });
 const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
@@ -269,7 +272,7 @@ let out = source;
 let week = '';
 for (const p of list) {
   const rung = RAMP[p.day];
-  const image = await imageFor(p.image);
+  const image = await imageFor(p.asset);
   const ceilingFor = rung.opaque ? MAX_OPAQUE_STRENGTH : MAX_STRENGTH;
   const geo = await prepare(page, p.id);
   // The shape's footprint, measured once with it turned fully up.
@@ -297,7 +300,7 @@ for (const p of list) {
   //
   // Under --fov the day is solved against the corrected reading's ladder instead. The two
   // scales are not interchangeable, so this is for rescuing named days, never the set.
-  const clutter = clutters.get(p.image);
+  const clutter = clutters.get(p.asset);
   const dim = dims.get(p.id);
   const want = fov ? rung.fovScan : scanTarget(rung, clutter, dim);
 

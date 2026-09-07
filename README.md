@@ -912,12 +912,47 @@ The hunt itself is deliberately *not* separate. Both the game and the bench run 
 `useHunt`, down to the gestures and the solve, because an opinion collected on a slightly
 different game is an opinion about that game.
 
+**A bench week may borrow a painting the rotation has finished with.** Most bench weeks are
+paintings the game will never serve. A few are not: they render an asset a shipped week
+also uses, under a bench id of their own (`asset` in `testbed.ts`). This is how a candidate
+re-plan of a week people complained about gets in front of testers, which is otherwise
+impossible — the only weeks worth re-planning are exactly the ones already served.
+
+It rests on one fact and is protected by two mechanisms.
+
+The fact: **the calendar only ever grows.** New weeks are appended and never inserted, and
+in practice the list is extended faster than it is consumed, so a played week does not come
+round again and is spent. (`daily.ts` does still index modulo the list length, so this is a
+statement about how the game is run, not a guarantee the code makes. Do not lean on it for
+anything but this.)
+
+The mechanisms:
+
+- **The id, not the asset, is what everything keys on.** `version`, storage, the calendar
+  and every recorded result hang off the bench week's own id, so nothing about the shipped
+  week can move. The fingerprint diff is the check: 70 shipped days, zero changed.
+- **The candidate is kept off every shipped hiding place on that canvas.**
+  `plan-weeks.mjs` reads `PUZZLES` at plan time and excludes them at a 320px radius
+  (`shippedSpotsOn`). Without it the planner is deterministic on identical pixels and picks
+  the same spots — six of seven landed within 70px of a shipped day, two of them exactly
+  on one, and one beside a day of the current week that nobody had reached yet. That is two
+  failures: a tester re-finding a shape they already know is measuring their memory, and a
+  tester shown a day they have not played is simply spoiled. The exclusion is derived at
+  plan time rather than listed in `avoid.json` on purpose — this repository is public, and
+  a checked-in list of the coordinates being avoided is a checked-in list of where the
+  shipped shapes are.
+
+A borrowed week is also exempt from the rejected-list rule, which exists to stop a future
+week picking up a painting testers have been walked through. A painting already in
+`PUZZLES` cannot be picked up again — `add-painting` screens the rotation itself — and
+listing a shipped painting as "rejected" would be a false record.
+
 ### Running a round
 
 ```bash
 npm run plan -- --testbed cafe                    # re-plan a bench week
 npm run camouflage -- --testbed --solve cafe      # re-tune it against the browser
-node scripts/smoke-testbed.mjs                    # walk a round at phone size
+npx vite-node scripts/smoke-testbed.mjs                    # walk a round at phone size
 npm run fingerprint --silent > before.json        # ...and prove no shipped day moved
 ```
 
@@ -1011,8 +1046,10 @@ Done in response, all on the bench, no shipped fingerprint moved:
   moved every hiding place and thrown away the only before-and-after this round bought:
   four of these six days are the same spot and the same shape, repainted against the new
   target. The paint is the change being tested, so the paint is the only thing that moved.
-- Round `r2-busyness` opened on those four days plus the Mondays of the busiest and the
-  calmest bench painting, which is the question this round raised and could not answer.
+- Round `r2-busyness` opened instead on **two hunts**: the Monday of the busiest painting
+  the rotation has served and the Monday of a calm one, both re-planned from scratch under
+  the new term. One rung, two canvases nine times apart, and nothing else varying — the
+  narrowest form of the question this round raised and could not answer.
 
 Still open, and named rather than fixed:
 

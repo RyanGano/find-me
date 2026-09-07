@@ -26,20 +26,28 @@ const DAY_LINE =
   /\{ shape: '([\w-]+)', cx: (\d+), cy: (\d+), size: (\d+), angle: (-?\d+), fill: '(#[0-9a-f]+)', opacity: ([\d.]+), blend: '(\w+)', blur: ([\d.]+), ratio: ([\d.]+), scan: ([\d.]+)(?:, dim: ([\d.]+))? \},/g;
 
 let source = readFileSync(FILE, 'utf8');
-const weeks = /image: '(\w+)',[\s\S]*?days: \[([\s\S]*?)\n    \],/g;
+const weeks = /image: '(\w+)',([\s\S]*?)days: \[([\s\S]*?)\n    \],/g;
 let match;
 const found = [];
-while ((match = weeks.exec(source))) found.push({ image: match[1], body: match[2], whole: match[0] });
+while ((match = weeks.exec(source))) {
+  found.push({
+    image: match[1],
+    // A bench week may render a painting it is not named after; see `asset` in testbed.ts.
+    asset: match[2].match(/asset: '(\w+)',/)?.[1] ?? match[1],
+    body: match[3],
+    whole: match[0],
+  });
+}
 
 console.log('painting      clutter   dim by day');
 for (const week of found) {
   if (only.length && !only.includes(week.image)) continue;
-  const clutter = await clutterOf(week.image);
+  const clutter = await clutterOf(week.asset);
   const dims = [];
   let out = week.body;
   let day = 0;
   for (const m of week.body.matchAll(DAY_LINE)) {
-    const dim = await dimnessOf(week.image, +m[2], +m[3], +m[4]);
+    const dim = await dimnessOf(week.asset, +m[2], +m[3], +m[4]);
     dims.push(dim);
     const rounded = Math.round(dim * 1000) / 1000;
     // Group 12 is the optional `dim` this may be re-measuring. Groups 1-11 are the

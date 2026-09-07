@@ -37,7 +37,7 @@ export const ROUNDS: Round[] = [
   {
     id: 'r1-weekend',
     opens: '2026-09-05',
-    closes: '2026-09-07',
+    closes: '2026-09-06',
     asks: 'Is the end of the week too hard?',
     note:
       'Six hunts on three paintings you have not seen in the game. Each painting gives ' +
@@ -54,24 +54,18 @@ export const ROUNDS: Round[] = [
   },
   {
     id: 'r2-busyness',
-    opens: '2026-09-08',
+    opens: '2026-09-07',
     closes: '2026-09-28',
     asks: 'Does a Monday feel like a Monday whatever the painting?',
     note:
-      'Six hunts on the same three paintings as last time, but every shape has been ' +
-      'repainted. The ramp now measures how busy a canvas is and how dark the paint is ' +
-      'where the shape sits, and asks for a bolder shape on a crowded painting and a ' +
-      'fainter one on a calm one -- so a Monday should be a Monday on all three. Two of ' +
-      'these are Mondays, and four are days you played last time, so the pair of rounds ' +
-      'is the comparison. Tell us how hard each one felt, not how long it took.',
-    days: [
-      'proverbs-mon',
-      'ambassadors-mon',
-      'proverbs-fri',
-      'cafe-fri',
-      'ambassadors-fri',
-      'ambassadors-sat',
-    ],
+      'Two hunts, and they are deliberately the same rung twice: the Monday of a very ' +
+      'busy painting and the Monday of a calm one. Both are paintings the game has ' +
+      'already been through, re-planned from scratch -- the shape is somewhere new, so ' +
+      'knowing the old one does not help. The ramp now measures how crowded a canvas is ' +
+      'and how dark the paint is where the shape sits, and asks for a bolder shape on a ' +
+      'busy painting, because the painting is already doing the hiding. A Monday is ' +
+      'meant to take under a minute on both. Tell us how hard each felt.',
+    days: ['starryreplan-mon', 'wavereplan-mon'],
   },
 ];
 

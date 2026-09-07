@@ -22,8 +22,8 @@ import type { Puzzle, Target } from './types';
  * cannot pull one into the rotation by accident. A painting people have been asked to
  * play half a dozen times, at difficulties that were deliberately wrong, is spent.
  *
- * The three are chosen to fail in different directions, because a change that helps one
- * kind of painting routinely hurts another:
+ * The first three are chosen to fail in different directions, because a change that helps
+ * one kind of painting routinely hurts another:
  *
  *   proverbs     dense crowd, median texture 42.9 -- maximum cover, where a shape can be
  *                lost entirely and the search is the whole of the difficulty.
@@ -33,10 +33,40 @@ import type { Puzzle, Target } from './types';
  *   ambassadors  glazed northern portrait with a large flat curtain: smooth paint that
  *                still has somewhere to hide, which is the narrow band the Mona Lisa
  *                sits in and the Temeraire fell out of.
+ *
+ * The last two are a different kind of bench week, and the rule they bend is written down
+ * rather than assumed. They render paintings the *rotation has already served*, under ids
+ * of their own (see `asset`), because the calendar only ever grows -- new weeks are
+ * appended and it never wraps back round -- so a week that has been played is finished
+ * with, and is the one thing on the bench that can answer a question about a week people
+ * actually complained about:
+ *
+ *   starryreplan  the busiest canvas in the set, re-planned under the measured busyness
+ *                 term. Its Monday was solved in a median of 3m21 against a rung asking
+ *                 for 45s, on the same reading its predecessor took 22s to find.
+ *   wavereplan    the calm control beside it, a third of the shape-scale clutter, so the
+ *                 question "does a Monday feel like a Monday whatever the painting" has
+ *                 both of its halves.
+ *
+ * These two are re-*planned*, not re-tuned, and that is deliberate: every tester has
+ * already played the shipped Monday, so asking them to find the same shape in the same
+ * place measures their memory rather than the ramp.
  */
 interface TestbedWeek {
-  /** Asset id in `public/puzzles`. Never an id used by a shipped week. */
+  /** Id of the bench week. Never an id used by a shipped week. */
   image: string;
+  /**
+   * The painting to render, when it is not the one this week is named after.
+   *
+   * The bench normally holds paintings the rotation will never serve. The exception is a
+   * painting the rotation has already *finished* with -- one whose week has been played
+   * and, because the calendar only ever grows rather than wrapping, will not come round
+   * again. Standing a candidate re-plan of such a week in front of testers is the only
+   * way to ask whether a change to the ramp fixes the thing people actually complained
+   * about, so the bench borrows the asset under an id of its own. The id is what
+   * everything keys on, so nothing about the shipped week can move.
+   */
+  asset?: string;
   title: string;
   artist: string;
   year: string;
@@ -129,6 +159,54 @@ const WEEKS: TestbedWeek[] = [
       { shape: 'heart', cx: 1769, cy: 1505, size: 22, angle: 148, fill: '#62502f', opacity: 0.383, blend: 'multiply', blur: 0.5, ratio: 1.6, scan: 0.3, dim: 0.415 },
     ],
   },
+  {
+    image: 'starryreplan',
+    asset: 'starry',
+    title: 'The Starry Night',
+    artist: 'Vincent van Gogh',
+    year: '1889',
+    stresses:
+      'the busiest canvas the rotation has served, re-planned under the measured ' +
+      'busyness term -- the week players said was too hard, asked again',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
+    width: 2600,
+    height: 2059,
+    clutter: 0.732,
+    days: [
+      { shape: 'triangle', cx: 857, cy: 1601, size: 40, angle: -132, fill: '#17241b', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.95, scan: 0.605, dim: 0.87 },
+      { shape: 'blossom', cx: 329, cy: 1649, size: 37, angle: 97, fill: '#8ba0b5', opacity: 0.201, blend: 'screen', blur: 0.5, ratio: 1.52, scan: 0.576, dim: 0.82 },
+      { shape: 'cross', cx: 2225, cy: 185, size: 34, angle: -34, fill: '#3f4e32', opacity: 0.524, blend: 'multiply', blur: 0.5, ratio: 2.11, scan: 0.507, dim: 0.363 },
+      { shape: 'tree', cx: 689, cy: 593, size: 31, angle: 46, fill: '#b6c6d1', opacity: 0.398, blend: 'screen', blur: 0.5, ratio: 1.96, scan: 0.49, dim: 0.503 },
+      { shape: 'note', cx: 2009, cy: 1337, size: 28, angle: -70, fill: '#8892b3', opacity: 0.485, blend: 'screen', blur: 0.5, ratio: 2.18, scan: 0.504, dim: 0.748 },
+      { shape: 'key', cx: 185, cy: 1241, size: 25, angle: 104, fill: '#2e4845', opacity: 0.453, blend: 'multiply', blur: 0.5, ratio: 1.75, scan: 0.451, dim: 0.455 },
+      { shape: 'crescent', cx: 1433, cy: 113, size: 22, angle: -148, fill: '#96a1d2', opacity: 0.586, blend: 'screen', blur: 0.5, ratio: 3.54, scan: 0.458, dim: 0.725 },
+    ],
+  },
+  {
+    image: 'wavereplan',
+    asset: 'wave',
+    title: 'The Great Wave off Kanagawa',
+    artist: 'Katsushika Hokusai',
+    year: 'c. 1831',
+    stresses:
+      'the calm control for starryreplan -- a third of the shape-scale clutter, so one ' +
+      'rung can be compared across two canvases that played nine times apart',
+    source: 'https://commons.wikimedia.org/wiki/File:Tsunami_by_hokusai_19th_century.jpg',
+    width: 2600,
+    height: 1748,
+    sizeScale: 0.73,
+    clutter: 0.581,
+    days: [
+      { shape: 'blossom', cx: 1361, cy: 329, size: 29, angle: -132, fill: '#f8e8c9', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 1.94, scan: 0.415, dim: 0.104 },
+      { shape: 'cross', cx: 473, cy: 641, size: 27, angle: 155, fill: '#79764a', opacity: 0.265, blend: 'multiply', blur: 0.5, ratio: 1.08, scan: 0.381, dim: 0.11 },
+      { shape: 'star', cx: 521, cy: 1337, size: 25, angle: -38, fill: '#436958', opacity: 0.375, blend: 'multiply', blur: 0.5, ratio: 1.39, scan: 0.355, dim: 0.146 },
+      { shape: 'crescent', cx: 137, cy: 1049, size: 23, angle: -46, fill: '#4d6b44', opacity: 0.571, blend: 'multiply', blur: 0.5, ratio: 1.67, scan: 0.336, dim: 0.229 },
+      { shape: 'heart', cx: 1409, cy: 1625, size: 20, angle: 70, fill: '#896d33', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 2.69, scan: 0.324, dim: 0.311 },
+      { shape: 'anchor', cx: 977, cy: 1385, size: 18, angle: -104, fill: '#55824b', opacity: 0.571, blend: 'multiply', blur: 0.5, ratio: 1.38, scan: 0.302, dim: 0.175 },
+      { shape: 'fish', cx: 2465, cy: 1001, size: 16, angle: 148, fill: '#446a58', opacity: 0.59, blend: 'multiply', blur: 0.5, ratio: 1.65, scan: 0.299, dim: 0.149 },
+    ],
+  },
 ];
 
 /** Every testbed day, laid out Monday-first in blocks of seven, as `PUZZLES` is. */
@@ -137,6 +215,7 @@ export const TESTBED_PUZZLES: Puzzle[] = WEEKS.flatMap(buildWeek);
 /** The distinct testbed paintings, for tooling that works per asset rather than per day. */
 export const TESTBED_IMAGES = WEEKS.map((w) => ({
   id: w.image,
+  asset: w.asset ?? w.image,
   title: w.title,
   artist: w.artist,
   year: w.year,

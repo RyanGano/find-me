@@ -98,7 +98,15 @@ describe('the play-test bench is not the rotation', () => {
       readFileSync('.claude/skills/add-painting/rejected.json', 'utf8'),
     ) as { rejected: { title: string; reason: string }[] };
     const titles = new Map(rejected.rejected.map((r) => [r.title.toLowerCase(), r.reason]));
+    const shippedAssets = new Set(IMAGES.map((i) => i.id));
     for (const image of TESTBED_IMAGES) {
+      // A bench week that borrows a painting the rotation has already served needs no
+      // rejected-list entry, and would be lying if it had one: the painting was not turned
+      // down, it was used. What the list exists to stop -- a future week picking up a
+      // painting testers have been walked through half a dozen times -- cannot happen to
+      // one that is already in `PUZZLES`, because `add-painting` screens the rotation
+      // itself and `curation.test.ts` holds the running order to it.
+      if (shippedAssets.has(image.asset)) continue;
       // Written without its accent, as the rest of the list is; compare on the letters.
       const key = image.title.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
       expect(titles.get(key), `${image.title} is not on the rejected list`).toBe('testbed');
@@ -116,12 +124,18 @@ const SOURCE_SCANS: Record<string, { width: number; height: number }> = {
   proverbs: { width: 5649, height: 4000 },
   cafe: { width: 6415, height: 8000 },
   ambassadors: { width: 30000, height: 29560 },
+  // Borrowed from the rotation; the same numbers `assets.test.ts` holds them to there, so
+  // a bench week and its shipped counterpart cannot drift onto different scans.
+  starry: { width: 44567, height: 35291 },
+  wave: { width: 3859, height: 2594 },
 };
 
 describe('bench assets', () => {
   for (const image of TESTBED_IMAGES) {
-    const file = `public/puzzles/${image.id}.jpg`;
-    const scan = SOURCE_SCANS[image.id];
+    // Keyed on the asset rather than the id: two bench weeks render paintings the
+    // rotation already owns, and the provenance of those files lives with the rotation.
+    const file = `public/puzzles/${image.asset}.jpg`;
+    const scan = SOURCE_SCANS[image.asset];
 
     it(`${image.id} exists and matches its declared dimensions`, async () => {
       expect(existsSync(file), `${file} is missing — run npm run images -- ${image.id}`).toBe(true);
@@ -198,7 +212,7 @@ describe('a bench week of colours', () => {
     const week = TESTBED_PUZZLES.filter((p) => p.image === image.id);
 
     it(`${image.id} hides its week in ${MIN_COLOURS_PER_WEEK} different colours`, async () => {
-      const { data, info } = await sharp(`public/puzzles/${image.id}.jpg`)
+      const { data, info } = await sharp(`public/puzzles/${image.asset}.jpg`)
         .raw()
         .toBuffer({ resolveWithObject: true });
 

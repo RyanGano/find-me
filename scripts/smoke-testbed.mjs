@@ -15,6 +15,21 @@
  */
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openRound } from '../src/game/rounds.ts';
+
+/**
+ * How many hunts the open round asks for.
+ *
+ * Read from `rounds.ts` rather than written here. A round is any slice of the bench that
+ * answers its question -- six days when the question is about a rung across three
+ * paintings, two when it is one rung on two canvases -- and a smoke test that assumed a
+ * length would start failing on the walk-through rather than on anything real, which is
+ * exactly what it did the first time a round was not six long.
+ */
+const round = openRound();
+if (!round) throw new Error('no round is open today; nothing to walk');
+const LENGTH = round.days.length;
+if (LENGTH < 2) throw new Error(`round ${round.id} has ${LENGTH} day(s); this walk needs at least two`);
 
 const URL = process.argv[2] ?? 'http://localhost:4173/';
 const OUT = process.argv[3] ?? '.scratch/shots-testbed';
@@ -224,7 +239,7 @@ await page.waitForFunction(() => {
 });
 await page.screenshot({ path: `${OUT}/2-board.png` });
 
-check('the board opens on the first hunt', (await page.textContent('.title-day')).trim() === '1/6');
+check('the board opens on the first hunt', (await page.textContent('.title-day')).trim() === `1/${LENGTH}`);
 check('the painting is blurred until the tester moves', (await page.$('.stage-viewport.is-blurred')) !== null);
 check('the clock is held before the first move', (await page.textContent('.clock')).trim() === 'ready');
 check('there is a way out of a hunt', (await page.$('.testbed-giveup')) !== null);
@@ -250,12 +265,12 @@ await page.locator('.testbed-rate').click();
 await page.waitForSelector('.review');
 await page.waitForTimeout(350);
 await page.screenshot({ path: `${OUT}/3-review.png` });
-check('giving up is an answer, not a dead end', (await page.textContent('.review-step')).trim() === '1 of 6');
+check('giving up is an answer, not a dead end', (await page.textContent('.review-step')).trim() === `1 of ${LENGTH}`);
 check('the review reports the time they gave up at', (await page.textContent('.review h2')).includes(frozen));
 
 await review(5, -1);
 await page.waitForSelector('.stage-image');
-check('answering moves on to the next hunt', (await page.textContent('.title-day')).trim() === '2/6');
+check('answering moves on to the next hunt', (await page.textContent('.title-day')).trim() === `2/${LENGTH}`);
 
 const afterOne = await storage();
 check('the answer is kept on the device', afterOne.bench !== null && afterOne.bench.includes('hard'));
@@ -268,7 +283,7 @@ await page.goto(`${URL}?beta`, { waitUntil: 'networkidle' });
 await page.waitForSelector('.stage-image');
 check(
   'closing the tab and coming back resumes where the tester left off',
-  (await page.textContent('.title-day')).trim() === '2/6',
+  (await page.textContent('.title-day')).trim() === `2/${LENGTH}`,
 );
 check('and does not ask them to start over', (await page.$('.testbed-card')) === null);
 
@@ -284,22 +299,22 @@ await page.mouse.wheel(0, -240);
 await page.waitForTimeout(250);
 check('and the way out opens once they have begun', await page.locator('.testbed-giveup').isEnabled());
 
-for (let i = 2; i <= 6; i++) {
+for (let i = 2; i <= LENGTH; i++) {
   await quit(false);
   await review(3, 1);
-  if (i < 6) await page.waitForSelector('.stage-image');
+  if (i < LENGTH) await page.waitForSelector('.stage-image');
 }
 
 await page.waitForSelector('.testbed-card');
 await page.screenshot({ path: `${OUT}/4-finished.png` });
 check('the round ends on a thank-you', (await page.textContent('.testbed-card h2')).includes('thank you'));
-check('every hunt is listed back', (await page.locator('.testbed-summary li').count()) === 6);
+check('every hunt is listed back', (await page.locator('.testbed-summary li').count()) === LENGTH);
 
 await page.goto(`${URL}?beta`, { waitUntil: 'networkidle' });
 await page.waitForSelector('.testbed-card');
 check(
   'the same device cannot answer the round a second time',
-  (await page.$('.stage-image')) === null && (await page.locator('.testbed-summary li').count()) === 6,
+  (await page.$('.stage-image')) === null && (await page.locator('.testbed-summary li').count()) === LENGTH,
 );
 
 const atEnd = await storage();

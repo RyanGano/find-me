@@ -39,6 +39,12 @@ already served are off limits, because re-planning a week moves every hiding pla
 changes each day's `version`, and hands a finished board back as playable to everyone who
 has already played it.
 
+Days of the current week that have **not yet been served** are the one exception, and only
+for re-*tuning* — solving the same hiding place to a new paint. Nobody has a result on a
+day that has not happened, so nothing is handed back. Re-planning is still out, because it
+moves the whole week including the days already played. Ask before doing even the narrow
+version: a week in flight is the one a player is living in.
+
 The boundary is the week containing today, not today itself: finish out the current
 Monday-to-Sunday painting untouched and start from the next Monday's. `daily.ts` maps the
 calendar onto `PUZZLES` in blocks of seven, so the current week index is
@@ -89,7 +95,7 @@ The play-test bench (`src/game/testbed.ts`) is driven by the same tools behind a
 npm run images -- proverbs                 # bench assets are generated the same way
 npm run plan -- --testbed cafe
 npm run camouflage -- --testbed --solve cafe
-node scripts/smoke-testbed.mjs             # walk a whole round at phone size
+npx vite-node scripts/smoke-testbed.mjs   # walk whatever round is open, at phone size
 ```
 
 Browser smoke test (Playwright against a real Chrome/Edge, no download):
@@ -187,10 +193,22 @@ calls back at three moments (the clock starting, the solve, the page going away 
 `src/Testbed.tsx` turns them into a play-test review. Anything that would change how a
 hunt plays belongs in the hook, so that the bench and the game cannot drift apart.
 
-**Nothing is tuned on a shipped week.** `src/game/testbed.ts` holds three paintings that
-will never be in the rotation, planned and tuned by the same tools; `src/game/rounds.ts`
-declares which bench days a round of testers is asked to play and when, and `/?beta`
-serves whichever round is open. The bench cannot reach the calendar, a player's storage or
+**Nothing is tuned on a shipped week.** `src/game/testbed.ts` holds the paintings a round
+is played on, planned and tuned by the same tools; `src/game/rounds.ts` declares which
+bench days a round of testers is asked to play and when, and `/?beta` serves whichever
+round is open.
+
+Three of those paintings will never be in the rotation. Two are a different thing: they
+render a painting the rotation has already *finished with*, under a bench id of their own
+(`asset` in `testbed.ts`), so a candidate re-plan of a week people actually complained
+about can be put in front of testers without the shipped week moving a pixel. That is
+allowed because the calendar only ever grows -- new weeks are appended and, in practice,
+it never wraps back round -- so a week that has been played is spent. Two rules keep it
+honest: the id is what everything keys on, so no shipped `version` can change; and
+`plan-weeks.mjs` reads `PUZZLES` at plan time and keeps such a week off every hiding place
+the rotation uses on that canvas (`shippedSpotsOn`), because otherwise the deterministic
+search picks the same spots -- six of seven landed within 70px of a shipped day the first
+time, one of them beside a day nobody had played yet. The bench cannot reach the calendar, a player's storage or
 the tally, and `testbed.test.ts`, `testbedStore.test.ts` and `scripts/smoke-testbed.mjs`
 each hold one of those. See "Play-testing" in README.md before changing any of it.
 

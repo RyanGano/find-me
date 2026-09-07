@@ -15,6 +15,7 @@
 import sharp from 'sharp';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { RAMP } from '../src/game/difficulty.ts';
+import { PUZZLES } from '../src/game/puzzles.ts';
 import { SHAPES } from '../src/game/shapes.ts';
 import { colourAt, paintFor } from './lib/paint.mjs';
 import { dimnessOf } from './lib/busy.mjs';
@@ -352,8 +353,35 @@ function stdOver(grey, info, cx, cy, side) {
  * best. `scripts/avoid.json` is part of the definition of the game and is committed with
  * it; without it a fresh checkout would plan different weeks.
  */
-function avoided(image, x, y) {
-  return (AVOID[image] ?? []).some((a) => Math.hypot(a.cx - x, a.cy - y) < (a.r ?? 260));
+function avoided(image, x, y, extra = []) {
+  const all = [...(AVOID[image] ?? []), ...extra];
+  return all.some((a) => Math.hypot(a.cx - x, a.cy - y) < (a.r ?? 260));
+}
+
+/**
+ * Where a bench week that borrows a shipped painting must not put anything.
+ *
+ * A bench week rendering an asset the rotation also uses (see `asset` in testbed.ts) is
+ * planned by this same deterministic search on the same pixels, so left alone it picks
+ * *the same spots* -- six of seven landed within 70 pixels of a shipped day the first time
+ * this was tried, two of them exactly on one. That is two failures at once: a tester who
+ * has played the shipped week is being asked to re-find a shape they already know, which
+ * measures their memory, and a tester who has not yet reached a day of the current week is
+ * being shown where it is.
+ *
+ * Derived here rather than written into `avoid.json`, and that is not a convenience. The
+ * repository is public and no tracked file may record where a shipped day hides, so a
+ * hand-copied list of the very coordinates being avoided is the one thing this must not
+ * be. Reading `PUZZLES` at plan time keeps the knowledge where it already lives.
+ */
+function shippedSpotsOn(asset) {
+  return PUZZLES.filter((p) => p.image === asset).map((p) => ({
+    cx: p.target.cx,
+    cy: p.target.cy,
+    // Wider than the standing radius. This is not "the paint here is bad", it is "seeing
+    // this while hunting for something else gives a day away", and that carries further.
+    r: 320,
+  }));
 }
 
 const VIEWS_AGREE_FLOOR = 1.5;
@@ -429,13 +457,13 @@ const NODE_BUDGET = 400000;
  * shipped; keeping the best few of each region hands it the choice it is supposed to be
  * making.
  */
-function candidatesFor(grey, info, rgb, spots, image, rung, day, fitScale, median) {
+function candidatesFor(grey, info, rgb, spots, image, rung, day, fitScale, median, keepOff) {
   const margin = edgeMargin(rung.size);
   const byRegion = new Map();
   let refused = 0;
   let dim = 0;
   for (const s of spots) {
-    if (avoided(image, s.cx, s.cy)) continue;
+    if (avoided(image, s.cx, s.cy, keepOff)) continue;
     if (s.cx < margin || s.cy < margin || s.cx > info.width - margin || s.cy > info.height - margin) continue;
     // The one rule here that is about the week rather than the day: a colour the canvas
     // barely uses is a hunt with one candidate in it, which is a gentle day whatever else
@@ -523,14 +551,14 @@ function candidatesFor(grey, info, rgb, spots, image, rung, day, fitScale, media
  * each day's shortlist is built rather than here, because it is a property of one spot on
  * one day; what makes it a rule about the week is only that the days disagree about it.
  */
-function spotsForWeek(grey, info, rgb, spots, image, ramp) {
+function spotsForWeek(grey, info, rgb, spots, image, ramp, keepOff) {
   const fitScale = Math.min(900 / info.width, 700 / info.height) * 0.92;
   const sorted = spots.map((s) => s.std).sort((a, b) => a - b);
   const median = sorted[sorted.length >> 1];
 
   const perDay = [];
   for (const [d, rung] of ramp.entries()) {
-    const found = candidatesFor(grey, info, rgb, spots, image, rung, d, fitScale, median);
+    const found = candidatesFor(grey, info, rgb, spots, image, rung, d, fitScale, median, keepOff);
     if (!found.list.length) {
       throw new Error(
         `${rung.label}: nothing clears the edge by ${found.margin}px, sits in the band where a ` +
@@ -605,17 +633,27 @@ function spotsForWeek(grey, info, rgb, spots, image, ramp) {
 /** Every week seed in puzzles.ts, with the extent of its days block. */
 function weeks(source) {
   const out = [];
-  const re =
-    /\{\s*image: '(\w+)',[\s\S]*?width: (\d+),\s*height: (\d+),\s*(?:sizeScale: ([\d.]+),\s*)?days: \[[\s\S]*?\],\s*\},/g;
+  // Find the block first and pull the fields out of it, rather than spelling the whole
+  // seed as one expression. The seed grows -- `clutter` was the third field added to it --
+  // and a single regex listing every field in order silently stops matching when one
+  // appears in the middle, which reads as "no week seeds found" rather than as a parser
+  // that needs updating.
+  const re = /\{\s*image: '(\w+)',([\s\S]*?)days: \[[\s\S]*?\],\s*\},/g;
   let m;
   while ((m = re.exec(source))) {
+    const head = m[2];
+    const field = (name) => head.match(new RegExp(name + ": '?([\\w.]+)'?,"))?.[1];
     out.push({
       image: m[1],
-      width: +m[2],
-      height: +m[3],
+      // A bench week may render a painting it is not named after; see `asset` in
+      // testbed.ts. Everything below measures the asset, and everything written back is
+      // keyed on the id.
+      asset: field('asset') ?? m[1],
+      width: +field('width'),
+      height: +field('height'),
       // A painting that is more spottable than most carries a smaller size ladder; see
       // `sizeScale` in puzzles.ts. Absent means the ramp's own sizes.
-      sizeScale: m[4] ? +m[4] : 1,
+      sizeScale: field('sizeScale') ? +field('sizeScale') : 1,
       start: m.index,
       end: re.lastIndex,
     });
@@ -630,12 +668,13 @@ if (!found.length) throw new Error(`no week seeds found in ${FILE}`);
 // Back to front, so rewriting one week cannot shift the offsets of the next.
 for (const [w, week] of [...found.entries()].reverse()) {
   if (only.length && !only.includes(week.image)) continue;
-  const file = `public/puzzles/${week.image}.jpg`;
+  // A bench week may borrow a painting under an id of its own; see `asset` in testbed.ts.
+  const file = `public/puzzles/${week.asset ?? week.image}.jpg`;
   const grey = await sharp(file).greyscale().raw().toBuffer({ resolveWithObject: true });
   const rgb = await sharp(file).raw().toBuffer({ resolveWithObject: true });
   if (grey.info.width !== week.width || grey.info.height !== week.height) {
     throw new Error(
-      `${week.image}: asset is ${grey.info.width}x${grey.info.height}, puzzles.ts says ${week.width}x${week.height}`,
+      `${week.image}: asset ${week.asset} is ${grey.info.width}x${grey.info.height}, the seed says ${week.width}x${week.height}`,
     );
   }
 
@@ -653,7 +692,10 @@ for (const [w, week] of [...found.entries()].reverse()) {
       );
     }
   }
-  const spots = spotsForWeek(grey.data, grey.info, rgb, surveyed, week.image, ramp);
+  // A bench week borrowing a shipped painting must not land on -- or beside -- anything
+  // the rotation hides on the same canvas; see `shippedSpotsOn`.
+  const keepOff = week.asset === week.image ? [] : shippedSpotsOn(week.asset);
+  const spots = spotsForWeek(grey.data, grey.info, rgb, surveyed, week.image, ramp, keepOff);
   const lines = [];
   const report = [];
   for (const [d, rung] of ramp.entries()) {
@@ -665,7 +707,7 @@ for (const [w, week] of [...found.entries()].reverse()) {
     // How dark the ground is here. Written now rather than left to `npm run busyness`,
     // because the tuner reads it to work out what scan target this spot is worth, and a
     // freshly planned week must be tunable without a second tool run in between.
-    const dim = Math.round((await dimnessOf(week.image, spot.cx, spot.cy, rung.size)) * 1000) / 1000;
+    const dim = Math.round((await dimnessOf(week.asset, spot.cx, spot.cy, rung.size)) * 1000) / 1000;
     lines.push(
       `      { shape: '${shape}', cx: ${spot.cx}, cy: ${spot.cy}, size: ${rung.size}, angle: ${angle}, ` +
         `fill: '${fill}', opacity: ${opacity}, blend: '${blend}', blur: 0.5, ratio: ${rung.ratio}, scan: ${rung.scan}, dim: ${dim} },`,

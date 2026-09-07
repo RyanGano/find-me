@@ -6,8 +6,17 @@ const base = import.meta.env.BASE_URL;
 
 /** The fields a week seed must carry for a week of puzzles to be built from it. */
 export interface BuildableWeek {
-  /** Asset id in `public/puzzles`. */
+  /** Id of the week. Also the asset id in `public/puzzles`, unless `asset` says otherwise. */
   image: string;
+  /**
+   * The file in `public/puzzles` to render, when it is not named after the week.
+   *
+   * Only the play-test bench uses this, and only to stand a candidate re-plan of a
+   * painting the rotation has already served in front of testers. Two weeks may share an
+   * asset; they may never share an id, because the id is what `daily.ts` and every
+   * recorded result key on.
+   */
+  asset?: string;
   title: string;
   artist: string;
   year: string;
@@ -54,7 +63,7 @@ export function buildWeek(week: BuildableWeek): Puzzle[] {
       year: week.year,
       width: week.width,
       height: week.height,
-      src: `${base}puzzles/${week.image}.jpg`,
+      src: `${base}puzzles/${week.asset ?? week.image}.jpg`,
       thing: shape.label,
       emoji: shape.emoji,
       version: fingerprint(week.image, rung.key, target),
