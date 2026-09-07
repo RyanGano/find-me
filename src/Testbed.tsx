@@ -160,43 +160,81 @@ function Session({ round, dry }: { round: Round; dry: boolean }) {
   );
 }
 
+/**
+ * Roughly how long the round will take, in minutes, rounded to something a person would
+ * say out loud. Derived from the number of hunts rather than written into each round,
+ * because it was written into the copy once and was still claiming fifteen minutes for a
+ * round of two.
+ */
+function minutesFor(count: number): string {
+  const mins = Math.max(5, Math.round((count * 2.5) / 5) * 5);
+  return `about ${mins} minutes`;
+}
+
+/**
+ * What a tester reads before they start.
+ *
+ * Three things, in this order, and nothing else: what the programme is, what *this* round
+ * is, and the one disclosure they could not have guessed. It is deliberately short.
+ *
+ * It does not explain the controls. Everybody reading it already plays the daily game.
+ *
+ * What is not here is as deliberate. An earlier version opened with the round's own
+ * question as its heading and followed it with a paragraph on what had changed in the
+ * ramp and how long a day was meant to take. That is our reasoning, not theirs, and it
+ * does active harm: a tester who knows what the round hopes to prove, or how long a hunt
+ * is supposed to last, rates the hunt against that instead of against how it felt. The
+ * question a round is asking now lives in `asks` and stays in the repository.
+ */
 function Intro({ round, count, onStart }: { round: Round; count: number; onStart(): void }) {
   return (
     <div className="app testbed">
       <div className="howto testbed-card" role="dialog" aria-label="About this round">
         <p className="review-step">play-testing</p>
-        <h2>{round.asks}</h2>
-        {round.note && <p>{round.note}</p>}
+        <h2>Thanks for testing Find Me</h2>
+
+        {/*
+          What the programme is, for both sides of it. Not how to play: everybody here
+          already plays the daily game, and telling them which way to pinch is filler
+          standing in front of the two things they actually need -- what this round is,
+          and the one disclosure at the bottom.
+        */}
         <p>
-          Same game, same controls: drag to move, pinch or scroll to zoom, twist to turn.
-          Frame the shape at the size and angle on the card. After each one you say how it
-          felt, in two taps.
+          This is where you tell us what a puzzle was really like, and where we find out
+          how a proposed change plays before it reaches the daily game.
         </p>
+
+        <p>
+          <strong>This round:</strong> {round.expect}
+        </p>
+
         <ul>
-          <li>{count} puzzles, about fifteen minutes.</li>
+          <li>
+            {count} {count === 1 ? 'puzzle' : 'puzzles'}, {minutesFor(count)}. You rate
+            each one as you finish it.
+          </li>
           <li>Stop whenever you like — this link picks up where you left off.</li>
           <li>
-            Stuck is useful. Press <strong>give up</strong> and the clock stops and the
-            board takes you to the shape, so you can still judge whether it was findable.
-            How long you looked before quitting is the most useful thing you can tell us.
+            Stuck is useful: press <strong>give up</strong> and the board takes you to the
+            shape, so you can still judge it.
           </li>
-          <li>None of this touches the real game, your streak or your times.</li>
+          <li>Nothing here touches the daily game, your streak or your times.</li>
         </ul>
+
         {/*
-          Said out loud, before they start, because it is the one thing here that is not
-          what somebody would assume. The daily game can be told not to count you, and
-          that switch is honoured everywhere in the game -- but a play-test round is
-          nothing but the answers, so it sends them regardless. Somebody who has turned
-          counting off has made a decision, and quietly making an exception to it would
-          be a worse thing to do than asking them to make it again knowingly.
+          The one thing here somebody would not assume. The daily game can be told not to
+          count you and that switch is honoured everywhere in the game -- but a round is
+          nothing but the answers, so it sends them regardless. Quietly making an exception
+          to a decision somebody has made would be worse than asking them to make it again
+          knowingly.
         */}
         <p className="howto-note">
-          <strong>This does send your answers</strong>, even if you have turned off
-          counting for the game itself — a round is nothing but the answers, so there
-          would be nothing to run. What goes is: which puzzle, how long you took, what you
-          rated it, and a random id that ties your six together. No account, no name,
+          <strong>Your answers are sent</strong> even if you have turned off counting for
+          the daily game — a round is only the answers. That is the puzzle, your time,
+          your rating, and a random id tying this round together. No account, no name,
           nothing that outlives the round.
         </p>
+
         <button type="button" className="btn btn-primary review-next" onClick={onStart}>
           Start
         </button>

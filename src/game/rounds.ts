@@ -25,10 +25,23 @@ export interface Round {
   opens: string;
   /** Last local date the round is served, inclusive. */
   closes: string;
-  /** The question, in the tester's words. Shown to them before they start. */
+  /**
+   * The question this round exists to answer.
+   *
+   * **Not shown to testers.** It is the record of why the round was run, for whoever
+   * reads the answers back months later. It stopped being tester-facing the first time a
+   * round's own goal was put in front of the people being asked: a tester told what the
+   * round hopes to prove has been handed the answer, and a tester told the time a day is
+   * meant to take rates it against that number instead of against how it felt.
+   */
   asks: string;
-  /** What to say about what changed, if anything did. Shown under `asks`. */
-  note?: string;
+  /**
+   * What a tester is told to expect from *this* round, in one or two sentences.
+   *
+   * Anything they need in order to know what they are about to play, and nothing about
+   * why we are asking. No expected times, no mention of what changed, no hypothesis.
+   */
+  expect: string;
   /** Bench puzzle ids, in the order they are served. */
   days: string[];
 }
@@ -39,10 +52,7 @@ export const ROUNDS: Round[] = [
     opens: '2026-09-05',
     closes: '2026-09-06',
     asks: 'Is the end of the week too hard?',
-    note:
-      'Six hunts on three paintings you have not seen in the game. Each painting gives ' +
-      'you its Friday and then its Saturday, so the pair is a comparison: Saturday is ' +
-      'meant to be the harder of the two, and the question is by how much.',
+    expect: 'Three paintings you have not seen in the game, two hunts on each.',
     days: [
       'proverbs-fri',
       'proverbs-sat',
@@ -57,14 +67,9 @@ export const ROUNDS: Round[] = [
     opens: '2026-09-07',
     closes: '2026-09-28',
     asks: 'Does a Monday feel like a Monday whatever the painting?',
-    note:
-      'Two hunts, and they are deliberately the same rung twice: the Monday of a very ' +
-      'busy painting and the Monday of a calm one. Both are paintings the game has ' +
-      'already been through, re-planned from scratch -- the shape is somewhere new, so ' +
-      'knowing the old one does not help. The ramp now measures how crowded a canvas is ' +
-      'and how dark the paint is where the shape sits, and asks for a bolder shape on a ' +
-      'busy painting, because the painting is already doing the hiding. A Monday is ' +
-      'meant to take under a minute on both. Tell us how hard each felt.',
+    expect:
+      'Two paintings the daily game has already been through. The shape is somewhere ' +
+      'new in each, so having played them before will not help.',
     days: ['starryreplan-mon', 'wavereplan-mon'],
   },
 ];

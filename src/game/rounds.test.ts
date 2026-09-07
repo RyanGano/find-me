@@ -55,8 +55,21 @@ describe('play-test rounds', () => {
     }
   });
 
-  it('asks a question, so a tester knows what they are answering about', () => {
+  it('records the question it exists to answer', () => {
     for (const round of ROUNDS) expect(round.asks.length).toBeGreaterThan(10);
+  });
+
+  it('tells a tester what to expect without telling them what it hopes to find', () => {
+    for (const round of ROUNDS) {
+      expect(round.expect.length, round.id).toBeGreaterThan(10);
+      // Short enough to be read rather than skipped. The first version of this copy ran
+      // to ninety words of rationale and was the reason `asks` stopped being shown.
+      expect(round.expect.length, `${round.id} expect is too long to read`).toBeLessThan(220);
+      // A tester told the time a day is meant to take rates it against that number.
+      expect(round.expect, `${round.id} tells testers how long a hunt should take`).not.toMatch(
+        /\b(second|minute|meant to|should take|expect(ed)? to)\b/i,
+      );
+    }
   });
 
   it('serves a round on its own days and nothing outside them', () => {
