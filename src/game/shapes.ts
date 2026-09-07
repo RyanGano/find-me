@@ -82,6 +82,35 @@ function blossomPath(petals: number): string {
   return parts.join(' ');
 }
 
+/**
+ * Four leaves on the diagonals: narrow where they meet the centre, round at the tip.
+ * Built about the box centre from one lobe rotated four times, so the leaves sit at
+ * exactly 45 degrees and the symmetry is exactly 4.
+ */
+function cloverPath(): string {
+  // Reach and width are set so the four leaves together cover the same area as the
+  // hand-drawn ones they replace, since that area is what the tuner solved each day's
+  // opacity against.
+  const reach = 32.11;
+  const half = 16.57;
+  const parts: string[] = [];
+  for (let i = 0; i < 4; i++) {
+    const a = Math.PI / 4 + (i * Math.PI) / 2;
+    const ux = Math.cos(a);
+    const uy = Math.sin(a);
+    const at = (along: number, across: number) =>
+      `${(50 + along * ux - across * uy).toFixed(2)} ${(50 + along * uy + across * ux).toFixed(2)}`;
+    // Out along one side of the diagonal to the tip, then the mirror of that back: the
+    // second control point sits square across the axis, so the tip comes out round and
+    // the waist at the centre comes out to a point.
+    parts.push(
+      `M50 50 C${at(0.3 * reach, 0.7 * half)} ${at(0.98 * reach, half)} ${at(reach, 0)}` +
+        ` C${at(0.98 * reach, -half)} ${at(0.3 * reach, -0.7 * half)} 50 50 Z`,
+    );
+  }
+  return parts.join(' ');
+}
+
 export const SHAPES: Record<string, ShapeDef> = {
   snowflake: {
     path: snowflakePath(),
@@ -140,11 +169,14 @@ export const SHAPES: Record<string, ShapeDef> = {
     emoji: '➡️',
   },
   clover: {
-    path:
-      'M50 50 C50 30 34 24 26 32 C16 42 26 56 50 50 Z ' +
-      'M50 50 C70 50 76 34 68 26 C58 16 44 26 50 50 Z ' +
-      'M50 50 C50 70 66 76 74 68 C84 58 74 44 50 50 Z ' +
-      'M50 50 C30 50 24 66 32 74 C42 84 56 74 50 50 Z',
+    /**
+     * Each leaf is centred exactly on a diagonal of the box, because the shape reads as
+     * one that ought to point at the corners: hand-drawn leaves a few degrees off the
+     * diagonal had players twisting past the match and back, fighting the instinct the
+     * drawing itself gives them. Same reach and area as the leaves it replaces, so a day
+     * hiding a clover is the size it always was.
+     */
+    path: cloverPath(),
     symmetry: 4,
     label: 'clover',
     emoji: '🍀',
