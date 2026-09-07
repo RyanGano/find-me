@@ -43,25 +43,34 @@
  *            said Rousseau's smooth sky and Bruegel's crowd were comparable when one was
  *            a beacon; dividing by local texture fixed that.
  *
- *            A third part used to sit on the *target* rather than the measure: the rung's
- *            scan was multiplied by the canvas's own search cost, on the reasoning that a
- *            painting with more ground to cover should be allowed a louder shape. That
- *            was wrong, and the shipped set proved it. `expectedSearchMs` in age.ts maps a
- *            *raw* scan reading to a time with no cost term in it, so scaling the target
- *            by a per-painting cost of 0.97 to 1.9 guaranteed equal rungs came out at
- *            wildly unequal times. Every Monday and most Tuesdays sat on that model's
- *            12-second floor; the Mona Lisa's entire week ran 12s to 64s while jatte's ran
- *            14s to 277s. One ramp, two different games, and a Monday nobody had to
- *            search for. The rungs below are now the raw target itself, derived from the
- *            time the day is meant to take, and identical on every canvas. Search cost is
- *            still measured and reported -- it says something true about a painting -- but
- *            it no longer moves the target.
+ *            It is not enough on its own, and for a long time this comment claimed it was.
+ *            A third part used to sit on the *target*: the rung's scan was multiplied by
+ *            the canvas's own search cost, so a painting with more ground to cover was
+ *            allowed a louder shape. That was removed, on the reasoning that
+ *            `expectedSearchMs` maps a raw scan reading to a time with no cost term in it,
+ *            so scaling the target by a per-painting cost guaranteed equal rungs came out
+ *            at unequal times. The reasoning was circular -- the cost-scaled targets were
+ *            judged against a clock that had been built without a cost term -- and removing
+ *            the mechanism rather than fixing it cost the set a year of wrong Mondays.
+ *
+ *            Real play settled it. Across seventeen days with recorded times -- eleven
+ *            shipped, six from a play-test round -- `scan` correlates with how long a day
+ *            actually takes at a rank correlation of 0.14, which is nothing, and with the
+ *            wrong sign. One Monday was solved in a median of 22 seconds and the next
+ *            Monday, on a busier canvas and the same rung and the same measured scan, took
+ *            3 minutes 21. See `CLUTTER_WEIGHT` for the term that fixes it and
+ *            `DIMNESS_WEIGHT` for the second one.
+ *
+ *            So the rung's authority is `seconds`, and `scanForTime` turns that into the
+ *            number the tuner aims at *on this painting, at this spot*. `scan` below is
+ *            that number at the reference canvas, kept because it is legible and because
+ *            every day tuned before this change was solved against it.
  *
  *            The scale is steep and the numbers are close together: 0.56 is twenty
  *            seconds and 0.36 is nearly four minutes. Small changes here are large
- *            changes in play. `expectedSearchMs` clamps to [0.3, 0.6], and age.test.ts
- *            holds every shipped day between ten seconds and six minutes, so the usable
- *            band is roughly 0.324 to 0.617 -- set a rung outside it and the suite fails.
+ *            changes in play. `expectedSearchMs` clamps to [0.3, 0.6], so the usable band
+ *            is roughly 0.324 to 0.617 -- ask for a time outside it on a canvas far from
+ *            the reference and `scanForTime` will clamp rather than obey.
  *
  *            The current rungs target 45s, 70s, 100s, 140s, 180s, 230s and 290s. Nothing
  *            else in this file moves difficulty. `size`, `company` and the asset
@@ -88,7 +97,21 @@ export interface Rung {
   key: string;
   label: string;
   size: number;
-  /** Target for `scan`, normalised by the painting's search cost. Solved for. */
+  /**
+   * What this day is for: how long the hunt is meant to take, in seconds.
+   *
+   * This is now the rung's authority, and `scan` is derived from it. It used to be the
+   * other way round -- `scan` was the number and the time was whatever it happened to
+   * buy -- which worked only as long as one scan reading meant the same hunt on every
+   * canvas. It does not; see `CLUTTER_WEIGHT`.
+   */
+  seconds: number;
+  /**
+   * Target for `scan` on a canvas of reference busyness. Not the number the tuner aims
+   * at: `scanForTime` shifts it by how much work the painting is to search and how dark
+   * the paint is where the shape sits. Kept because it is the legible form of `seconds`
+   * and what every already-tuned day in the set was solved against.
+   */
   scan: number;
   /** Expected contrast at the match. Diagnostic now, not a target -- see above. */
   ratio: number;
@@ -181,13 +204,13 @@ export interface Rung {
 
 /** Index 0 is Monday, index 6 is Sunday. */
 export const RAMP: Rung[] = [
-  { key: 'mon', label: 'Monday', size: 40, scan: 0.494, ratio: 3.2, texture: 9, angle: 12, scannable: 100, company: 1.6, fovScan: 0.42, opaque: true },
-  { key: 'tue', label: 'Tuesday', size: 37, scan: 0.458, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 0.8, fovScan: 0.4 },
-  { key: 'wed', label: 'Wednesday', size: 34, scan: 0.429, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 0.8, fovScan: 0.34 },
-  { key: 'thu', label: 'Thursday', size: 31, scan: 0.401, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 0.9, fovScan: 0.3 },
-  { key: 'fri', label: 'Friday', size: 28, scan: 0.38, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 1.0, fovScan: 0.26 },
-  { key: 'sat', label: 'Saturday', size: 25, scan: 0.36, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 1.2, fovScan: 0.21 },
-  { key: 'sun', label: 'Sunday', size: 22, scan: 0.341, ratio: 1.05, texture: 22, angle: 148, scannable: 36, company: 1.6, fovScan: 0.18 },
+  { key: 'mon', seconds: 45, label: 'Monday', size: 40, scan: 0.494, ratio: 3.2, texture: 9, angle: 12, scannable: 100, company: 1.6, fovScan: 0.42, opaque: true },
+  { key: 'tue', seconds: 70, label: 'Tuesday', size: 37, scan: 0.458, ratio: 2.6, texture: 9, angle: 25, scannable: 85, company: 0.8, fovScan: 0.4 },
+  { key: 'wed', seconds: 100, label: 'Wednesday', size: 34, scan: 0.429, ratio: 2.2, texture: 11, angle: 34, scannable: 72, company: 0.8, fovScan: 0.34 },
+  { key: 'thu', seconds: 140, label: 'Thursday', size: 31, scan: 0.401, ratio: 1.9, texture: 13, angle: 46, scannable: 60, company: 0.9, fovScan: 0.3 },
+  { key: 'fri', seconds: 180, label: 'Friday', size: 28, scan: 0.38, ratio: 1.6, texture: 16, angle: 70, scannable: 50, company: 1.0, fovScan: 0.26 },
+  { key: 'sat', seconds: 230, label: 'Saturday', size: 25, scan: 0.36, ratio: 1.3, texture: 19, angle: 104, scannable: 42, company: 1.2, fovScan: 0.21 },
+  { key: 'sun', seconds: 290, label: 'Sunday', size: 22, scan: 0.341, ratio: 1.05, texture: 22, angle: 148, scannable: 36, company: 1.6, fovScan: 0.18 },
 ];
 
 export const DAYS_PER_WEEK = RAMP.length;
@@ -202,4 +225,121 @@ export function angleWork(angle: number, symmetry = 1): number {
   let a = ((angle % period) + period) % period;
   if (a > period / 2) a -= period;
   return Math.abs(a);
+}
+
+/**
+ * What a canvas of average busyness looks like, and where the paint sits on the dark-to-
+ * light scale at an average hiding place.
+ *
+ * The medians of the shipped rotation, so the correction below is zero-mean across the
+ * set and adding it re-levels nothing: a day on a typical painting is asked for exactly
+ * the scan it was asked for before. What moves is the two ends.
+ *
+ * Both are measured by `npm run busyness` and written into the puzzle files -- `clutter`
+ * once per week, `dim` once per day. Neither is part of a day's `version`, so measuring
+ * them hands nobody's finished board back.
+ */
+export const CANVAS_REFERENCE = { clutter: 0.606, dim: 0.624 } as const;
+
+/**
+ * The range the correction has ever been measured over. Readings are clamped to it
+ * rather than extrapolated, because the fit below rests on seventeen days and the curve
+ * it sits on is an exponential -- a canvas half a point past the end of the evidence
+ * would be asked for a shape twice as loud as anything that has been looked at.
+ */
+export const CANVAS_RANGE = {
+  clutter: [0.38, 0.78],
+  dim: [0.1, 0.95],
+} as const;
+
+/**
+ * How much longer a busy canvas takes, per unit of `clutter`, in log-seconds.
+ *
+ * **This is the term the ramp was missing.** `scan` is a local reading: the shift the
+ * shape imposes over the paint immediately around it. It answers "how well is this shape
+ * hidden where it sits" and it has nothing to say about "how many other places on this
+ * canvas will the eye stop on before it gets there" -- and the second question is most of
+ * the hunt. A shape among a thousand small brushstrokes is harder than the same shape,
+ * measured identically, on a smooth glaze, and the old ramp made no allowance for it at
+ * all. Worse, the tuner drove every canvas to the same reading, so the busy weeks came out
+ * exactly as much harder as the painting happened to make them.
+ *
+ * Fitted on seventeen days with real recorded times, as the residual of
+ * `expectedSearchMs` against `clutter` and `dim`: eleven shipped days from the daily
+ * tally, six from play-test round `r1-weekend`. It moves the model's rank correlation
+ * with observed time from -0.14 -- slightly worse than knowing nothing -- to 0.49.
+ *
+ * The number is large because the range is small and the effect is not: the rotation runs
+ * 0.39 to 0.73, which this prices at a factor of about thirty in time-to-find. That is not
+ * an overreach of the fit; it is roughly the spread the tally shows between the calmest
+ * and busiest weeks in the set.
+ *
+ * **Provisional.** Seventeen days is enough to establish the sign, the rough size and the
+ * fact that the old model had neither, and it is not enough to trust the third digit. It
+ * is meant to be refitted as the tally grows. What it is *not* is optional -- reverting to
+ * no term at all is reverting to a measure that does not predict the thing it is for.
+ */
+export const CLUTTER_WEIGHT = 10.34;
+
+/**
+ * How much longer a dark hiding place takes, per unit of `dim`, in log-seconds.
+ *
+ * The contrast readings the tuner solves against are absolute grey-level shifts, and a
+ * shift of a given size is harder to pick out of dark paint than out of light. So a day
+ * solved to the same reading on a night scene plays harder than the same day on a bright
+ * one, and nothing in the ramp said so.
+ *
+ * Much the smaller of the two terms -- across the shipped set it is worth about 1.4x end
+ * to end, against clutter's thirty -- and the weaker finding of the pair: it is the second
+ * term in a three-parameter fit on seventeen points, so read it as "the sign is right and
+ * the size is small" rather than as a measurement. Adding it took the fit's R-squared from
+ * 0.25 to 0.48, which is why it is here rather than in the notes.
+ */
+export const DIMNESS_WEIGHT = 1.38;
+
+const clamp = (v: number, [lo, hi]: readonly [number, number]) => Math.min(hi, Math.max(lo, v));
+
+/**
+ * How much longer this canvas and this spot make a hunt, in log-seconds, relative to a
+ * day on the reference painting.
+ *
+ * Zero when both readings are at the reference, positive on a busier or darker one. It is
+ * the single place the two corrections are combined, so the tuner (which solves a scan
+ * target from a time) and `expectedSearchMs` (which reads a time back out of a scan) can
+ * be exact inverses of each other rather than two drifting opinions.
+ *
+ * Missing readings mean the reference, so an un-measured week behaves exactly as it did
+ * before this existed.
+ */
+export function canvasShift(clutter?: number, dim?: number): number {
+  const c = clamp(clutter ?? CANVAS_REFERENCE.clutter, CANVAS_RANGE.clutter);
+  const d = clamp(dim ?? CANVAS_REFERENCE.dim, CANVAS_RANGE.dim);
+  return (
+    CLUTTER_WEIGHT * (c - CANVAS_REFERENCE.clutter) + DIMNESS_WEIGHT * (d - CANVAS_REFERENCE.dim)
+  );
+}
+
+/** Slope and intercept of the scan-to-time curve; see `expectedSearchMs` in age.ts. */
+export const SCAN_CURVE = { intercept: 12.35, slope: 12.2, pivot: 0.36 } as const;
+
+/**
+ * The scan reading a day must be solved to, to take `seconds` on *this* painting at
+ * *this* spot. The exact inverse of `expectedSearchMs`.
+ *
+ * This is what the tuner aims at. On a busy or dark canvas it asks for a louder shape
+ * than the rung's headline number, because the canvas is already supplying the
+ * difficulty the rung wanted -- which is the whole correction, stated the other way
+ * round: a week of heavy paint does not need to be *made* harder.
+ */
+export function scanForTime(seconds: number, clutter?: number, dim?: number): number {
+  const shift = canvasShift(clutter, dim);
+  const raw =
+    SCAN_CURVE.pivot +
+    (SCAN_CURVE.intercept + shift - Math.log(seconds * 1000)) / SCAN_CURVE.slope;
+  return Math.min(0.6, Math.max(0.3, raw));
+}
+
+/** The target for a rung on a given canvas: `scanForTime` with the rung's own clock. */
+export function scanTarget(rung: Rung, clutter?: number, dim?: number): number {
+  return scanForTime(rung.seconds, clutter, dim);
 }

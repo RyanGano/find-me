@@ -24,9 +24,10 @@
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { RAMP } from '../src/game/difficulty.ts';
+import { RAMP, scanTarget, CANVAS_REFERENCE } from '../src/game/difficulty.ts';
 import { paintFor } from './lib/paint.mjs';
 import { sample } from './lib/sight.mjs';
+import { clutterOf, dimnessOf } from './lib/busy.mjs';
 
 const URL = process.env.FIND_ME_URL ?? 'http://localhost:4173/';
 const args = process.argv.slice(2);
@@ -46,7 +47,7 @@ const only = args.filter((a) => !a.startsWith('-'));
 
 /** One line per day in puzzles.ts, read from the source of truth rather than duplicated. */
 const DAY_LINE =
-  /\{ shape: '([\w-]+)', cx: (\d+), cy: (\d+), size: (\d+), angle: (-?\d+), fill: '(#[0-9a-f]+)', opacity: ([\d.]+), blend: '(\w+)', blur: ([\d.]+), ratio: ([\d.]+), scan: ([\d.]+) \},/g;
+  /\{ shape: '([\w-]+)', cx: (\d+), cy: (\d+), size: (\d+), angle: (-?\d+), fill: '(#[0-9a-f]+)', opacity: ([\d.]+), blend: '(\w+)', blur: ([\d.]+), ratio: ([\d.]+), scan: ([\d.]+)(?:, dim: ([\d.]+))? \},/g;
 
 function puzzles(source) {
   const out = [];
@@ -73,6 +74,7 @@ function puzzles(source) {
         blur: +m[9],
         ratio: +m[10],
         scan: +m[11],
+        dim: m[12] === undefined ? undefined : +m[12],
       });
       d++;
     }
@@ -226,38 +228,14 @@ const list = puzzles(source).filter(
 if (!list.length) throw new Error('no puzzles matched');
 
 /**
- * How long a scanner has to work on this canvas before the odd one out turns up: how much
- * ground there is to cover, and how much of it looks like something. Same formula as
- * `npm run rate`, and the reason a scan reading on one painting can be compared with a
- * scan reading on another.
+ * How much work this canvas is to scan: the share of it carrying detail at the scale of
+ * the shape, which is what the eye has to stop and check on the way.
+ *
+ * This replaces `searchCost`, which measured the median standard deviation of 200px
+ * windows and was measuring the wrong thing -- coarse structure rather than shape-scale
+ * clutter. It ranked the flattest painting on the bench above the busiest, and real play
+ * separated those two by a factor of thirty. See `scripts/lib/busy.mjs`.
  */
-async function searchCost(id) {
-  const { data, info } = await sharp(`public/puzzles/${id}.jpg`).greyscale().raw().toBuffer({ resolveWithObject: true });
-  const margin = 200;
-  const side = 200;
-  const stds = [];
-  for (let y = margin; y < info.height - margin; y += 32) {
-    for (let x = margin; x < info.width - margin; x += 32) {
-      let sum = 0;
-      let sumSq = 0;
-      let n = 0;
-      for (let dy = -side / 2; dy < side / 2; dy += 3) {
-        for (let dx = -side / 2; dx < side / 2; dx += 3) {
-          const v = data[(y + dy) * info.width + (x + dx)];
-          sum += v;
-          sumSq += v * v;
-          n++;
-        }
-      }
-      const mean = sum / n;
-      if (mean < 28 || mean > 228) continue;
-      stds.push(Math.sqrt(Math.max(0, sumSq / n - mean * mean)));
-    }
-  }
-  stds.sort((a, b) => a - b);
-  const median = stds[Math.round((stds.length - 1) * 0.5)] || 1;
-  return Math.sqrt((info.width * info.height) / (2600 * 1841)) * Math.sqrt(median / 24.6);
-}
 
 /** Raw pixels per painting, loaded once each and reused across its seven days. */
 const images = new Map();
@@ -266,8 +244,17 @@ async function imageFor(id) {
   return images.get(id);
 }
 
-const costs = new Map();
-for (const id of new Set(list.map((p) => p.image))) costs.set(id, await searchCost(id));
+const clutters = new Map();
+for (const id of new Set(list.map((p) => p.image))) clutters.set(id, await clutterOf(id));
+
+/**
+ * Dimness of the paint at each hiding place, measured on the painting alone.
+ *
+ * Read here rather than trusted from the file, so a day whose spot has moved since the
+ * last `npm run busyness` is still solved against the ground it is actually on.
+ */
+const dims = new Map();
+for (const p of list) dims.set(p.id, await dimnessOf(p.image, p.cx, p.cy, p.size));
 
 const browser = await chromium.launch({ channel: 'chrome', args: ['--force-device-scale-factor=1'] });
 const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
@@ -293,24 +280,26 @@ for (const p of list) {
     week = p.image;
     console.log('  ' + week);
   }
-  // What this day is being solved for: a time-to-find, expressed directly as a scan
-  // reading.
+  // What this day is being solved for: the time-to-find its rung asks for, turned into a
+  // scan reading *on this painting, at this spot*.
   //
-  // This used to be `rung.scan * costs.get(p.image)`, scaling the target by how much work
-  // the canvas is to search. That was wrong, and measurably so. `expectedSearchMs` in
-  // age.ts maps a *raw* scan reading to a time with no cost term in it, so multiplying the
-  // target by a per-painting cost of 0.97 to 1.9 guaranteed that equal rungs came out at
-  // wildly unequal times. The shipped set proved it: every Monday and most Tuesdays sat on
-  // the model's 12-second floor, the Mona Lisa's whole week ran 12s to 64s, and jatte's ran
-  // 14s to 277s. One ramp, two different games.
+  // This was `rung.scan * costs.get(p.image)` once, then a flat `rung.scan`, and both were
+  // wrong in the same place. The first scaled the target by a busyness measure that did
+  // not measure busyness; the second removed the mechanism instead of fixing the measure,
+  // and left the tuner driving every canvas to one reading. Real play showed what that
+  // costs: `scan` correlates with observed time at a rank correlation of -0.14, and one
+  // Monday came out nine times slower than the Monday before it on the same rung.
   //
-  // The rung now carries the target scan itself, derived from the time that day is meant
-  // to take (see difficulty.ts), and it is the same number on every canvas. The search
-  // cost is still measured and reported, because it says something real about a painting,
-  // but it no longer moves the target.
+  // `scanTarget` asks for a louder shape on a busy or dark canvas, because the canvas is
+  // already supplying the difficulty the rung wanted. It is the exact inverse of
+  // `expectedSearchMs`, so a day solved here is priced the same way when the age is
+  // scored. See `CLUTTER_WEIGHT` in difficulty.ts.
+  //
   // Under --fov the day is solved against the corrected reading's ladder instead. The two
   // scales are not interchangeable, so this is for rescuing named days, never the set.
-  const want = fov ? rung.fovScan : rung.scan;
+  const clutter = clutters.get(p.image);
+  const dim = dims.get(p.id);
+  const want = fov ? rung.fovScan : scanTarget(rung, clutter, dim);
 
   let paint = { opacity: p.opacity, fill: p.fill };
 
@@ -385,7 +374,8 @@ for (const p of list) {
       ' opacity ' + String(paint.opacity).padEnd(6) + paint.fill +
       '  scan ' + scanned.ratio.toFixed(3).padStart(6) + ' (want ' + want.toFixed(3).padEnd(6) + ')' +
       '  found ' + got.ratio.toFixed(2).padStart(5) +
-      '  cost ' + costs.get(p.image).toFixed(2) +
+      '  clutter ' + clutter.toFixed(2) + (clutter > CANVAS_REFERENCE.clutter ? '+' : '-') +
+      ' dim ' + dim.toFixed(2) +
       (raised ? '   raised to stay visible once framed' : '') +
       (dimmed ? '   dimmed: it was a beacon once framed' : '') +
       (got.ratio < FRAMED_FLOOR ? '   TOO FAINT once framed even at full strength' : ''),
@@ -396,7 +386,8 @@ for (const p of list) {
       .replace(/fill: '#[0-9a-f]+'/, `fill: '${paint.fill}'`)
       .replace(/opacity: [\d.]+/, `opacity: ${paint.opacity}`)
       .replace(/ratio: [\d.]+/, `ratio: ${Math.round(got.ratio * 100) / 100}`)
-      .replace(/scan: [\d.]+/, `scan: ${Math.round(scanned.ratio * 1000) / 1000}`);
+      .replace(/scan: [\d.]+/, `scan: ${Math.round(scanned.ratio * 1000) / 1000}`)
+      .replace(/(, dim: [\d.]+)? \},$/, `, dim: ${Math.round(dim * 1000) / 1000} },`);
     out = out.replace(p.line, fixed);
   }
 }

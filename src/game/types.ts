@@ -39,6 +39,14 @@ export interface Target {
    * one the week's ramp is asserted against. See `difficulty.ts`.
    */
   scan?: number;
+  /**
+   * How dark the paint is where the shape sits, 0 (white) to 1 (black), measured on the
+   * painting alone by `npm run busyness`. A given contrast shift is harder to pick out of
+   * dark paint than out of light, and this is the term that prices it -- see
+   * `DIMNESS_WEIGHT` in difficulty.ts. Deliberately not part of a day's `version`: it is
+   * a reading of the painting, not a change to the challenge.
+   */
+  dim?: number;
 }
 
 export interface Puzzle {
@@ -57,6 +65,12 @@ export interface Puzzle {
   width: number;
   height: number;
   target: Target;
+  /**
+   * The share of this painting's canvas carrying detail at the scale of the shape --
+   * how much there is to stop and check on the way. Shared by all seven days of the
+   * week, measured by `npm run busyness`. See `CLUTTER_WEIGHT` in difficulty.ts.
+   */
+  clutter?: number;
   /** Human-readable name of the thing to find, e.g. "star". */
   thing: string;
   /** Emoji used in the shared result. */

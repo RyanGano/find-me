@@ -48,6 +48,13 @@ interface TestbedWeek {
   sourceWidth?: number;
   width: number;
   height: number;
+  /**
+   * How much of this canvas carries detail at the scale of the shape -- how much there is
+   * to stop and check on the way to the right thing. Measured by `npm run busyness` and
+   * written here; it moves every day's scan target, because a busy painting is already
+   * supplying difficulty the rung did not ask for. See `CLUTTER_WEIGHT` in difficulty.ts.
+   */
+  clutter?: number;
   /** Shrinks the whole size ladder; see `sizeScale` in `puzzles.ts`. */
   sizeScale?: number;
   /**
@@ -68,14 +75,15 @@ const WEEKS: TestbedWeek[] = [
       'https://commons.wikimedia.org/wiki/File:Pieter_Bruegel_the_Elder_-_The_Dutch_Proverbs_-_Google_Art_Project.jpg',
     width: 2600,
     height: 1841,
+    clutter: 0.649,
     days: [
-      { shape: 'snowflake', cx: 257, cy: 1073, size: 40, angle: -168, fill: '#312a1f', opacity: 1, blend: 'screen', blur: 0.5, ratio: 3.72, scan: 0.494 },
-      { shape: 'star', cx: 785, cy: 353, size: 37, angle: 47, fill: '#d19876', opacity: 0.198, blend: 'screen', blur: 0.5, ratio: 2.91, scan: 0.453 },
-      { shape: 'clover', cx: 2201, cy: 401, size: 34, angle: 34, fill: '#aab68c', opacity: 0.213, blend: 'screen', blur: 0.5, ratio: 1.42, scan: 0.428 },
-      { shape: 'key', cx: 2177, cy: 905, size: 31, angle: -46, fill: '#c5cbae', opacity: 0.398, blend: 'screen', blur: 0.5, ratio: 2.09, scan: 0.4 },
-      { shape: 'crescent', cx: 1169, cy: 1049, size: 28, angle: 70, fill: '#db977e', opacity: 0.441, blend: 'screen', blur: 0.5, ratio: 1.48, scan: 0.379 },
-      { shape: 'heart', cx: 2153, cy: 1553, size: 25, angle: -104, fill: '#cfc1a9', opacity: 0.35, blend: 'screen', blur: 0.5, ratio: 1.38, scan: 0.359 },
-      { shape: 'anchor', cx: 1193, cy: 1481, size: 22, angle: 148, fill: '#96c3b8', opacity: 0.327, blend: 'screen', blur: 0.5, ratio: 1.58, scan: 0.34 },
+      { shape: 'snowflake', cx: 257, cy: 1073, size: 40, angle: -168, fill: '#393124', opacity: 1, blend: 'screen', blur: 0.5, ratio: 4.35, scan: 0.563, dim: 0.878 },
+      { shape: 'star', cx: 785, cy: 353, size: 37, angle: 47, fill: '#d19876', opacity: 0.213, blend: 'screen', blur: 0.5, ratio: 3.13, scan: 0.503, dim: 0.791 },
+      { shape: 'clover', cx: 2201, cy: 401, size: 34, angle: 34, fill: '#aab68c', opacity: 0.293, blend: 'screen', blur: 0.5, ratio: 1.99, scan: 0.484, dim: 0.786 },
+      { shape: 'key', cx: 2177, cy: 905, size: 31, angle: -46, fill: '#c5cbae', opacity: 0.433, blend: 'screen', blur: 0.5, ratio: 2.3, scan: 0.418, dim: 0.472 },
+      { shape: 'crescent', cx: 1169, cy: 1049, size: 28, angle: 70, fill: '#db977e', opacity: 0.489, blend: 'screen', blur: 0.5, ratio: 1.66, scan: 0.433, dim: 0.753 },
+      { shape: 'heart', cx: 2153, cy: 1553, size: 25, angle: -104, fill: '#cfc1a9', opacity: 0.398, blend: 'screen', blur: 0.5, ratio: 1.56, scan: 0.39, dim: 0.606 },
+      { shape: 'anchor', cx: 1193, cy: 1481, size: 22, angle: 148, fill: '#96c3b8', opacity: 0.379, blend: 'screen', blur: 0.5, ratio: 1.85, scan: 0.387, dim: 0.666 },
     ],
   },
   {
@@ -88,14 +96,15 @@ const WEEKS: TestbedWeek[] = [
       'https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Terrace_of_a_Caf%C3%A9_at_Night_(Place_du_Forum)_1888.jpg',
     width: 2600,
     height: 3242,
+    clutter: 0.508,
     days: [
-      { shape: 'star', cx: 1769, cy: 1385, size: 40, angle: -156, fill: '#131725', opacity: 1, blend: 'screen', blur: 0.5, ratio: 2.35, scan: 0.492 },
-      { shape: 'clover', cx: 1457, cy: 257, size: 37, angle: -155, fill: '#6da5ed', opacity: 0.226, blend: 'screen', blur: 0.5, ratio: 2.46, scan: 0.461 },
-      { shape: 'triangle', cx: 2225, cy: 1097, size: 34, angle: 86, fill: '#7fc4af', opacity: 0.17, blend: 'screen', blur: 0.5, ratio: 2.36, scan: 0.425 },
-      { shape: 'anchor', cx: 1529, cy: 2321, size: 31, angle: 46, fill: '#d7c693', opacity: 0.234, blend: 'screen', blur: 0.5, ratio: 2.21, scan: 0.404 },
-      { shape: 'fish', cx: 2441, cy: 2057, size: 28, angle: -70, fill: '#bfc3a1', opacity: 0.507, blend: 'screen', blur: 0.5, ratio: 4.15, scan: 0.377 },
-      { shape: 'arrow', cx: 257, cy: 2801, size: 25, angle: 104, fill: '#8fa1b8', opacity: 0.273, blend: 'screen', blur: 0.5, ratio: 1.87, scan: 0.369 },
-      { shape: 'key', cx: 353, cy: 1817, size: 22, angle: -148, fill: '#b4c4a2', opacity: 0.348, blend: 'screen', blur: 0.5, ratio: 1.77, scan: 0.344 },
+      { shape: 'star', cx: 1769, cy: 1385, size: 40, angle: -156, fill: '#10131e', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.94, scan: 0.438, dim: 0.865 },
+      { shape: 'clover', cx: 1457, cy: 257, size: 37, angle: -155, fill: '#6da5ed', opacity: 0.249, blend: 'screen', blur: 0.5, ratio: 2.65, scan: 0.378, dim: 0.728 },
+      { shape: 'triangle', cx: 2225, cy: 1097, size: 34, angle: 86, fill: '#7fc4af', opacity: 0.119, blend: 'screen', blur: 0.5, ratio: 1.63, scan: 0.351, dim: 0.765 },
+      { shape: 'anchor', cx: 1529, cy: 2321, size: 31, angle: 46, fill: '#d7c693', opacity: 0.198, blend: 'screen', blur: 0.5, ratio: 1.83, scan: 0.308, dim: 0.581 },
+      { shape: 'fish', cx: 2441, cy: 2057, size: 28, angle: -70, fill: '#bfc3a1', opacity: 0.366, blend: 'screen', blur: 0.5, ratio: 2.97, scan: 0.296, dim: 0.616 },
+      { shape: 'arrow', cx: 257, cy: 2801, size: 25, angle: 104, fill: '#8fa1b8', opacity: 0.249, blend: 'screen', blur: 0.5, ratio: 1.69, scan: 0.298, dim: 0.766 },
+      { shape: 'key', cx: 353, cy: 1817, size: 22, angle: -148, fill: '#b4c4a2', opacity: 0.273, blend: 'screen', blur: 0.5, ratio: 1.4, scan: 0.302, dim: 0.575 },
     ],
   },
   {
@@ -109,14 +118,15 @@ const WEEKS: TestbedWeek[] = [
     sourceWidth: 3840,
     width: 2600,
     height: 2562,
+    clutter: 0.483,
     days: [
-      { shape: 'clover', cx: 2297, cy: 2129, size: 40, angle: 12, fill: '#3d2e27', opacity: 1, blend: 'screen', blur: 0.5, ratio: 3.12, scan: 0.496 },
-      { shape: 'triangle', cx: 1865, cy: 281, size: 37, angle: -25, fill: '#bad85f', opacity: 0.131, blend: 'screen', blur: 0.5, ratio: 1.64, scan: 0.453 },
-      { shape: 'star', cx: 1121, cy: 1289, size: 34, angle: -38, fill: '#e37d6c', opacity: 0.571, blend: 'screen', blur: 0.5, ratio: 2.92, scan: 0.431 },
-      { shape: 'arrow', cx: 2441, cy: 1385, size: 31, angle: -46, fill: '#b29487', opacity: 0.162, blend: 'screen', blur: 0.5, ratio: 2.02, scan: 0.394 },
-      { shape: 'key', cx: 185, cy: 2177, size: 28, angle: 70, fill: '#b5a28b', opacity: 0.323, blend: 'screen', blur: 0.5, ratio: 2.67, scan: 0.374 },
-      { shape: 'crescent', cx: 233, cy: 1073, size: 25, angle: -104, fill: '#d67168', opacity: 0.441, blend: 'screen', blur: 0.5, ratio: 1.54, scan: 0.359 },
-      { shape: 'heart', cx: 1769, cy: 1505, size: 22, angle: 148, fill: '#62502f', opacity: 0.493, blend: 'multiply', blur: 0.5, ratio: 2.06, scan: 0.343 },
+      { shape: 'clover', cx: 2297, cy: 2129, size: 40, angle: 12, fill: '#2e231d', opacity: 1, blend: 'screen', blur: 0.5, ratio: 2.38, scan: 0.421, dim: 0.875 },
+      { shape: 'triangle', cx: 1865, cy: 281, size: 37, angle: -25, fill: '#bad85f', opacity: 0.119, blend: 'screen', blur: 0.5, ratio: 1.47, scan: 0.362, dim: 0.79 },
+      { shape: 'star', cx: 1121, cy: 1289, size: 34, angle: -38, fill: '#e37d6c', opacity: 0.489, blend: 'screen', blur: 0.5, ratio: 2.46, scan: 0.352, dim: 0.865 },
+      { shape: 'arrow', cx: 2441, cy: 1385, size: 31, angle: -46, fill: '#b29487', opacity: 0.127, blend: 'screen', blur: 0.5, ratio: 1.59, scan: 0.325, dim: 0.882 },
+      { shape: 'key', cx: 185, cy: 2177, size: 28, angle: 70, fill: '#b5a28b', opacity: 0.304, blend: 'screen', blur: 0.5, ratio: 2.56, scan: 0.3, dim: 0.825 },
+      { shape: 'crescent', cx: 233, cy: 1073, size: 25, angle: -104, fill: '#d67168', opacity: 0.336, blend: 'screen', blur: 0.5, ratio: 1.18, scan: 0.304, dim: 0.827 },
+      { shape: 'heart', cx: 1769, cy: 1505, size: 22, angle: 148, fill: '#62502f', opacity: 0.383, blend: 'multiply', blur: 0.5, ratio: 1.6, scan: 0.3, dim: 0.415 },
     ],
   },
 ];

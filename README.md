@@ -107,23 +107,19 @@ player actually experiences. Targets, and the levers that reach them
   Bruegel's crowd were comparable when one was a beacon. Dividing by local texture fixed
   that. The scale is steep: 0.56 is twenty seconds and 0.36 is nearly four minutes.
 
-  A third term used to sit on the *target*: the rung's scan was multiplied by that
-  canvas's **search cost** — how much ground there is to cover and how much of it looks
-  like something — on the reasoning that a busier painting has earned a louder shape. It
-  had to go. `expectedSearchMs` in `age.ts` turns a *raw* scan reading into a time with no
-  cost term in it, so scaling the target by a per-painting cost of 0.97 to 1.9 guaranteed
-  that one rung produced wildly different days. Measured across the whole shipped set,
-  every Monday and most Tuesdays sat on that model's twelve-second floor, the Mona Lisa's
-  week ran 12s to 64s, and jatte's ran 14s to 277s — one ramp, two different games, and a
-  Monday nobody had to search for. The rungs are now the raw target itself, derived from
-  the time each day is meant to take and identical on every canvas: **45s, 70s, 100s,
-  140s, 180s, 230s, 290s**. Search cost is still measured and printed by
-  `npm run camouflage`, because it says something true about a painting, but it no longer
-  moves the target.
+  `scan` is a **local** reading, and for a long time that was the whole of the ramp. It
+  answers "how well is this shape hidden where it sits". It has nothing to say about "how
+  many other places on this canvas will the eye stop on before it gets there" — and the
+  second question turns out to be most of the hunt. See
+  [Busyness](#busyness-what-the-ramp-was-missing), which is the correction.
 
-  The usable band is narrow. `expectedSearchMs` clamps to [0.3, 0.6] and
-  `age.test.ts` holds every shipped day between ten seconds and six minutes, so a rung
-  outside roughly 0.324–0.617 fails the suite.
+  The rungs below are the target **at a canvas of reference busyness**, derived from the
+  time each day is meant to take: **45s, 70s, 100s, 140s, 180s, 230s, 290s**.
+  `scanForTime` shifts them for the painting the day is actually on.
+
+  The usable band is narrow. `expectedSearchMs` clamps to [0.3, 0.6], so a target outside
+  it is clamped rather than obeyed — and on a very calm painting that clamp bites for most
+  of the week. `npm run rungs` prints where.
 
   **Nothing else moves difficulty.** Size, `company` and the asset resolution were each
   tried as levers, and the solver compensated every one of them straight back out — it
@@ -201,6 +197,94 @@ worse. Hand-picked ceilings dimmed nearly every day in the set, taking Bruegel's
 to 1.96 and four days below 1.0; a relative rule, never louder than yesterday, chained
 instead, one loud Tuesday dragging its whole week down to 0.68. `npm run camouflage`
 flags it and `npm run preview:week` settles it.
+
+### Busyness: what the ramp was missing
+
+**It is harder to spot a clover among a thousand paint splotches, and the ramp did not
+know that.** Every day, on every painting, was solved to the same `scan` reading. So a
+week of heavy, crowded, high-frequency paint came out exactly as much harder than a week
+of smooth glaze as the painting happened to make it — and nothing in the tooling said so.
+
+The numbers are not subtle. Across seventeen days with real recorded times — eleven from
+the daily tally, six from play-test round `r1-weekend` — `scan`, the reading the entire
+ramp is solved against, correlates with how long a day actually takes at a **rank
+correlation of −0.14**. That is slightly worse than knowing nothing at all, and with the
+sign the wrong way round. Two consecutive Mondays: same rung, same measured scan, a median
+of **22 seconds** on the calmer painting and **3 minutes 21** on the busier one.
+
+There had been a term for this, and it was removed. The rung's scan used to be multiplied
+by the canvas's **search cost**, on exactly the right reasoning — a painting with more
+ground to cover has earned a louder shape. It was dropped because `expectedSearchMs`
+mapped a raw scan reading to a time with no cost term in it, so cost-scaled targets came
+out at unequal times. That argument is circular: the targets were being judged against a
+clock built without the term they were carrying. Two things were wrong at once, and only
+one of them was the mechanism.
+
+The other was the measure. `searchCost` was the median standard deviation of 200px
+windows — **coarse** structure: a wave's edge, a figure's outline, the join between a
+curtain and a wall. That is not what a hunt competes with. It ranked the flattest painting
+on the bench (1.56) *above* the busiest (1.32), and real play separated those two by a
+factor of thirty on the same rung.
+
+What competes with the hunt is detail **the size of the shape**, because that is what the
+eye has to stop and check. So `clutter` (`scripts/lib/busy.mjs`) is a band-pass: subtract
+a blurred copy of the painting, and what survives is everything at roughly one shape
+width. `clutter` is the share of the canvas carrying any of it. The rotation runs 0.39
+(smooth glazed portrait) to 0.73 (dense short brushwork).
+
+A second, smaller term came out of the same data. Contrast readings are absolute
+grey-level shifts, and the same shift is harder to pick out of dark paint than out of
+light, so `dim` — how dark the ground is at the hiding place — is measured per day.
+
+Together, in `canvasShift`:
+
+| | weight | range across the set | worth |
+|---|---|---|---|
+| `clutter` | 10.34 | 0.39 – 0.73 | about 30× in time to find |
+| `dim` | 1.38 | 0.11 – 0.90 | about 1.4× |
+
+Both are fitted as the residual of `expectedSearchMs` against those seventeen days, and
+both are held zero-mean at the rotation's median canvas, so adding them re-levels nothing:
+a day on a typical painting is asked for exactly the scan it was asked for before. What
+moves is the two ends. The model's rank correlation with observed time goes from **−0.14
+to +0.49**.
+
+**What this is worth, and what it is not.** Seventeen days is enough to establish the
+sign, the rough size, and the fact that the old model had neither. It is not enough to
+trust the third digit, and `dim` in particular is the second term in a three-parameter fit
+— read it as "the sign is right and the size is small". Both are meant to be refitted as
+the tally grows. What is *not* on the table is going back to no term at all: that is a
+measure that does not predict the thing it exists to predict.
+
+Three things the fit says that are worth knowing before touching any of it:
+
+- **Two open residuals.** Within one painting the model still misses badly in both
+  directions — one bench Friday it prices at 93 seconds took a median of 387, and one
+  bench Saturday it prices at 92 took 330. Canvas-level busyness cannot explain a
+  within-painting swing; the hiding place can, and no local reading tried so far has
+  predicted it. Local clutter at four window sizes was tested and added nothing beyond the
+  canvas reading.
+- **The whole set runs fast.** At the reference canvas the shipped days come in about
+  2.5× quicker than the ramp intends. That is a separate question from busyness — a
+  level, not a spread — and it is deliberately *not* folded into the correction here,
+  because re-levelling the ramp on seventeen days would move every day in the game at
+  once.
+- **Paint alone cannot make a hard day on a calm painting.** `npm run rungs` prints the
+  target for the calmest and busiest canvas in the set, and on the calmest six of the
+  seven rungs clamp at the bottom of the fitted range. The Mona Lisa's Friday, Saturday
+  and Sunday ran 8s, 12s and 15s in the tally, and no opacity fixes that. `sizeScale` is
+  the lever that might; a very calm painting carrying a whole week may simply be a bad
+  idea.
+
+Both readings are measured by `npm run busyness`, written into `puzzles.ts` (`clutter` per
+week) and into each day line (`dim`), and read by both the tuner and the age scale.
+Neither is part of a day's `version` — they describe the painting, not the challenge — so
+measuring them hands nobody a finished board back.
+
+`scanForTime` and `expectedSearchMs` are exact inverses, and `busyness.test.ts` holds them
+to it. The tuner solves a day with the first and the age scores it with the second; if the
+two ever drift, the game starts pricing a day differently from the way it built it —
+silently, and only visibly in a play-test months later.
 
 ### Choosing a painting
 
@@ -904,16 +988,40 @@ instantly, which is how the densest canvas in the set produced both the hardest 
 one of the easiest. So a busy painting is where a hiding place needs the most caution, in
 both directions — not where the hardest days should be put.
 
-Proposed, not yet done, because the round is still open and more testers are expected:
+**Closed 2026-09-07 with 30 answers from 5 testers**, all five finishing all six hunts.
+Final medians: `proverbs-fri` 6:27 with three give-ups, `cafe-sat` 5:30 with two,
+`ambassadors-sat` 10.6s, `proverbs-sat` 22.2s, `cafe-fri` 21.5s, `ambassadors-fri` 47.1s.
+The reading above stands: the rung explains almost none of it and the painting explains
+most of it.
 
-- Re-plan and re-tune all three bench weeks (`npm run plan -- --testbed <image>`, then
-  `npm run camouflage -- --testbed --solve <image>`). Four of the six days sit nowhere
-  near their rung and the errors point both ways, so there is no single correction to
-  apply. This costs the rotation nothing; no shipped fingerprint moves.
-- Re-run the same question afterwards. This round answered a different one than it asked.
-- The bench is currently planned by older tooling than the rotation it stands in for: the
-  shipped weeks were re-planned onto the new shapes and the bench was not. Re-planning it
-  closes that gap as a side effect.
+**What it was actually measuring, found afterwards.** The two paragraphs above stop one
+step short. "Busy paintings raise the ceiling on how wrong a day can go" is the right
+observation with the wrong conclusion attached — the answer is not to be careful where
+hiding places go on a busy canvas, it is that busyness is a *measurable difficulty term
+the ramp did not have*. Pooling these six answers with eleven shipped days from the daily
+tally made that testable, and it is not close: `scan` predicts observed time at a rank
+correlation of −0.14, canvas busyness at +0.70. See
+[Busyness](#busyness-what-the-ramp-was-missing).
+
+Done in response, all on the bench, no shipped fingerprint moved:
+
+- `clutter` and `dim` added to the ramp, and the tuner pointed at `scanForTime` instead of
+  a flat per-rung target.
+- All three bench weeks **re-tuned, deliberately not re-planned**. Re-planning would have
+  moved every hiding place and thrown away the only before-and-after this round bought:
+  four of these six days are the same spot and the same shape, repainted against the new
+  target. The paint is the change being tested, so the paint is the only thing that moved.
+- Round `r2-busyness` opened on those four days plus the Mondays of the busiest and the
+  calmest bench painting, which is the question this round raised and could not answer.
+
+Still open, and named rather than fixed:
+
+- The bench is planned by older tooling than the rotation it stands in for. Re-planning it
+  is still worth doing, but not while it is the control for `r2-busyness`.
+- `cafe-sat` is the new model's worst miss — priced at 92 seconds, played at 330 — and is
+  deliberately left out of `r2-busyness`, because the correction would push a day that is
+  already too hard harder still. Whatever makes that hiding place hard is not on the
+  canvas-level reading.
 
 Not proposed: any change to `difficulty.ts`. Adjacent rungs are not separable in this data,
 and a within-rung spread this large is a placement finding, not a ramp finding.
@@ -935,6 +1043,14 @@ it does. `r1-weekend` found two days tuned to the same opacity coming out 40× a
 35× spread inside a single rung, which says the tuner hits its target and the target does
 not predict the hunt. That was a side finding from a round asking something else. This
 would ask it directly.
+
+**Partly answered since, and worth less than it was.** Pooling that round with the daily
+tally showed most of the fan is *between* paintings and is explained by
+[busyness](#busyness-what-the-ramp-was-missing), which is now a term in the ramp — so the
+interesting version of this question is the one this slice was already designed for: four
+hiding places on **one** canvas, where clutter is held constant by construction. What is
+left over there is the residual the new term cannot explain, and two bench days say it is
+still large. Ask it after `r2-busyness` reports, not instead of it.
 
 **The slice:** one painting, one rung, four hiding places, each tuned to the same `scan`.
 Four hunts is a short round, which is what allows the same painting four times over.

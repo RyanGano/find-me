@@ -13,6 +13,8 @@ export interface BuildableWeek {
   year: string;
   width: number;
   height: number;
+  /** Shape-scale busyness of the canvas, written by `npm run busyness`. */
+  clutter?: number;
   days: Target[];
 }
 
@@ -56,6 +58,7 @@ export function buildWeek(week: BuildableWeek): Puzzle[] {
       thing: shape.label,
       emoji: shape.emoji,
       version: fingerprint(week.image, rung.key, target),
+      clutter: week.clutter,
       target: { symmetry: shape.symmetry, ...target },
     };
   });

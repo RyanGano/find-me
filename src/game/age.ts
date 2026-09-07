@@ -1,4 +1,4 @@
-import { angleWork, RAMP } from './difficulty';
+import { angleWork, canvasShift, RAMP, SCAN_CURVE } from './difficulty';
 import type { RunMetrics } from './metrics';
 import type { Puzzle } from './types';
 
@@ -134,11 +134,18 @@ export interface AgeEstimate {
  * costs about twenty seconds, and 0.36 costs nearly four minutes. The scale is steep --
  * see `difficulty.ts` -- which is exactly why it has to be applied rather than ignored.
  */
-export function expectedSearchMs(scan: number): number {
+export function expectedSearchMs(scan: number, clutter?: number, dim?: number): number {
   // Clamped well inside the ramp's own range: the curve is steep enough that
   // extrapolating past the days that were actually played gives silly numbers.
   const s = Math.min(0.6, Math.max(0.3, scan));
-  return Math.exp(12.35 - 12.2 * (s - 0.36));
+  // `canvasShift` is what says a shape among a thousand brushstrokes, or one sitting in
+  // the dark, takes longer than the same reading on a calm bright canvas. Omitting the
+  // readings means the reference canvas and no shift at all, so an un-measured week is
+  // priced exactly as it was before the term existed. This and `scanForTime` are exact
+  // inverses; keep them that way.
+  return Math.exp(
+    SCAN_CURVE.intercept - SCAN_CURVE.slope * (s - SCAN_CURVE.pivot) + canvasShift(clutter, dim),
+  );
 }
 
 /**
@@ -236,7 +243,7 @@ export function estimateAge(
   const rung = RAMP[puzzle.dayOfWeek] ?? RAMP[0];
   const scan = puzzle.target.scan ?? rung.scan;
   const work = angleWork(puzzle.target.angle, puzzle.target.symmetry);
-  const search = expectedSearchMs(scan);
+  const search = expectedSearchMs(scan, puzzle.clutter, puzzle.target.dim);
   const adjust = expectedAdjustMs(work);
 
   // Anything short of a finished, well-formed collection falls back to the clock: the

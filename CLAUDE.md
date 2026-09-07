@@ -77,7 +77,9 @@ node scripts/diag-camouflage.mjs mona '[{}]' out.jpg   # one hiding place at mat
 node scripts/diag-size.mjs                 # badge vs shape geometry check
 node scripts/diag-badge.mjs               # badge colour vs the shape as painted
 npm run fingerprint --silent              # every shipped puzzle as JSON, to diff across a change
-npm run rungs                             # the ramp, with the time each rung aims at
+npm run rungs                             # the ramp, and what each rung costs on a calm vs busy canvas
+npm run busyness                          # measure every painting's clutter and every day's dimness
+npm run busyness -- --write               # ...and write them into the puzzle files
 npm run preview:shapes                    # every shape, at play sizes, with its share emoji
 ```
 
@@ -119,8 +121,18 @@ and each shape's rotational symmetry, which `match.ts` uses to wrap the angle er
 **Difficulty is measured, not chosen.** One painting runs Monday–Sunday and gets harder
 each day. `src/game/difficulty.ts` is the ramp and the authority on what each rung means;
 `scripts/plan-weeks.mjs` picks hiding places, and `scripts/tune-camouflage.mjs`
-binary-searches each day's opacity in a real browser against the rung's `scan` target,
-then rewrites the day lines in `puzzles.ts` in place. Those lines are machine-written —
+binary-searches each day's opacity in a real browser against the rung's target, then
+rewrites the day lines in `puzzles.ts` in place.
+
+A rung is a **time**, not a contrast, and the scan reading that buys that time is not the
+same on every painting. `clutter` (how much of a canvas carries detail at the scale of the
+shape) and `dim` (how dark the paint is at the hiding place) shift it, via `scanForTime`
+-- because a busy or dark painting is already supplying difficulty the rung did not ask
+for. Both are measured by `npm run busyness` and written into the puzzle files; neither is
+part of a day's `version`. `scanForTime` and `expectedSearchMs` in `age.ts` are exact
+inverses and `busyness.test.ts` holds them to it. Read "Busyness" in README.md before
+touching any of it: the term existed once, was removed for a circular reason, and the
+shipped weeks paid for it. Those lines are machine-written —
 one dense line per day; hand edits are fine but must stay on one line.
 
 **A week is seven different things.** `src/game/palette.ts` names the colour of a hiding

@@ -37,7 +37,7 @@ export const ROUNDS: Round[] = [
   {
     id: 'r1-weekend',
     opens: '2026-09-05',
-    closes: '2026-09-30',
+    closes: '2026-09-07',
     asks: 'Is the end of the week too hard?',
     note:
       'Six hunts on three paintings you have not seen in the game. Each painting gives ' +
@@ -48,6 +48,27 @@ export const ROUNDS: Round[] = [
       'proverbs-sat',
       'cafe-fri',
       'cafe-sat',
+      'ambassadors-fri',
+      'ambassadors-sat',
+    ],
+  },
+  {
+    id: 'r2-busyness',
+    opens: '2026-09-08',
+    closes: '2026-09-28',
+    asks: 'Does a Monday feel like a Monday whatever the painting?',
+    note:
+      'Six hunts on the same three paintings as last time, but every shape has been ' +
+      'repainted. The ramp now measures how busy a canvas is and how dark the paint is ' +
+      'where the shape sits, and asks for a bolder shape on a crowded painting and a ' +
+      'fainter one on a calm one -- so a Monday should be a Monday on all three. Two of ' +
+      'these are Mondays, and four are days you played last time, so the pair of rounds ' +
+      'is the comparison. Tell us how hard each one felt, not how long it took.',
+    days: [
+      'proverbs-mon',
+      'ambassadors-mon',
+      'proverbs-fri',
+      'cafe-fri',
       'ambassadors-fri',
       'ambassadors-sat',
     ],

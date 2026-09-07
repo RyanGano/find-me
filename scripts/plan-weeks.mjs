@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { RAMP } from '../src/game/difficulty.ts';
 import { SHAPES } from '../src/game/shapes.ts';
 import { colourAt, paintFor } from './lib/paint.mjs';
+import { dimnessOf } from './lib/busy.mjs';
 import {
   MAX_DAYS_PER_COLOUR,
   MIN_COLOURS_PER_WEEK,
@@ -661,9 +662,13 @@ for (const [w, week] of [...found.entries()].reverse()) {
     const { blend, fill } = paintFor(rgb.data, rgb.info, spot.cx, spot.cy, rung.size);
     const angle = angleFor(w, d, shape);
     const opacity = rung.opaque ? 1 : 0.4;
+    // How dark the ground is here. Written now rather than left to `npm run busyness`,
+    // because the tuner reads it to work out what scan target this spot is worth, and a
+    // freshly planned week must be tunable without a second tool run in between.
+    const dim = Math.round((await dimnessOf(week.image, spot.cx, spot.cy, rung.size)) * 1000) / 1000;
     lines.push(
       `      { shape: '${shape}', cx: ${spot.cx}, cy: ${spot.cy}, size: ${rung.size}, angle: ${angle}, ` +
-        `fill: '${fill}', opacity: ${opacity}, blend: '${blend}', blur: 0.5, ratio: ${rung.ratio}, scan: ${rung.scan} },`,
+        `fill: '${fill}', opacity: ${opacity}, blend: '${blend}', blur: 0.5, ratio: ${rung.ratio}, scan: ${rung.scan}, dim: ${dim} },`,
     );
     report.push(
       `  ${rung.key}  ${shape.padEnd(10)} at ${String(spot.cx).padStart(4)},${String(spot.cy).padStart(4)}` +

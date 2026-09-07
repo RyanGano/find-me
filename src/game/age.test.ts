@@ -12,23 +12,55 @@ import {
   SPREAD,
 } from './age';
 import { dayIndex, puzzleForDay } from './daily';
-import { angleWork, RAMP } from './difficulty';
+import { angleWork, CANVAS_REFERENCE, RAMP } from './difficulty';
 import type { RunMetrics } from './metrics';
 import { PUZZLES } from './puzzles';
 import type { Puzzle } from './types';
 
-/** A stand-in puzzle sitting exactly on the given rung of the week. */
+/**
+ * The weeks that were already in the calendar when busyness was added to the ramp.
+ *
+ * Every one of them was solved to the same scan target whatever canvas it sat on, so the
+ * model now prices them anywhere from a few seconds to a quarter of an hour -- which is
+ * exactly the failure the term was added to stop, showing up in the days that have it.
+ * Re-tuning them would move hiding places players have already been served, so they are
+ * exempted instead, and roll off this list as the calendar moves past them.
+ *
+ * A list of *exemptions*, never of weeks held to the rule: a painting added tomorrow is
+ * caught by default.
+ */
+const BEFORE_BUSYNESS = [
+  'mona',
+  'wave',
+  'starry',
+  'boating',
+  'jatte',
+  'hunters',
+  'issus',
+  'babel',
+  'deheem',
+  'venice',
+];
+
+/**
+ * A stand-in puzzle sitting exactly on the given rung of the week, on a canvas of
+ * reference busyness -- so `rung.scan` means what the rung says it means. A real day's
+ * clutter and dimness shift its price either way (see `canvasShift` in difficulty.ts),
+ * and these tests are about the ramp, not about any one painting.
+ */
 function onRung(dayOfWeek: number): Puzzle {
   const rung = RAMP[dayOfWeek];
   return {
     ...PUZZLES[0],
     dayOfWeek,
+    clutter: CANVAS_REFERENCE.clutter,
     target: {
       ...PUZZLES[0].target,
       size: rung.size,
       angle: rung.angle,
       symmetry: 1,
       scan: rung.scan,
+      dim: CANVAS_REFERENCE.dim,
     },
   };
 }
@@ -37,7 +69,7 @@ function onRung(dayOfWeek: number): Puzzle {
 function parRun(puzzle: Puzzle): { ms: number; metrics: RunMetrics } {
   const rung = RAMP[puzzle.dayOfWeek];
   const work = angleWork(puzzle.target.angle, puzzle.target.symmetry);
-  const searchMs = expectedSearchMs(puzzle.target.scan ?? rung.scan);
+  const searchMs = expectedSearchMs(puzzle.target.scan ?? rung.scan, puzzle.clutter, puzzle.target.dim);
   const adjustMs = expectedAdjustMs(work);
   const ms = searchMs + adjustMs;
   return {
@@ -128,6 +160,12 @@ type Observed = (typeof OBSERVED)[number];
  * has to hold the puzzle as it actually was, or every future change to the ramp silently
  * invalidates the calibration set. Pin it here, and add a line whenever new runs are
  * recorded.
+ *
+ * The same applies to the canvas readings. Both of these days were solved and played
+ * before the ramp had any term for how busy a painting is, so they are pinned to the
+ * reference canvas -- which is what "no term for it" means, arithmetically. Pricing them
+ * with their real `clutter` and `dim` would move wave-mon from a fifty-second day to a
+ * twenty-second one and read every run on it years older than the person was told.
  */
 const PLAYED_AT: Record<string, number> = {
   'mona-sun': 0.465,
@@ -135,7 +173,11 @@ const PLAYED_AT: Record<string, number> = {
 };
 
 function asPlayed(id: string, puzzle: Puzzle): Puzzle {
-  return { ...puzzle, target: { ...puzzle.target, scan: PLAYED_AT[id] } };
+  return {
+    ...puzzle,
+    clutter: CANVAS_REFERENCE.clutter,
+    target: { ...puzzle.target, scan: PLAYED_AT[id], dim: CANVAS_REFERENCE.dim },
+  };
 }
 
 const DAYS: Record<string, Puzzle> = {
@@ -161,7 +203,7 @@ const REPLAYABLE = OBSERVED.filter((o) => 'metrics' in o);
  */
 function playedRun(puzzle: Puzzle, ms: number, style: 'clean' | 'ordinary'): RunMetrics {
   const rung = RAMP[puzzle.dayOfWeek];
-  const search = expectedSearchMs(puzzle.target.scan ?? rung.scan);
+  const search = expectedSearchMs(puzzle.target.scan ?? rung.scan, puzzle.clutter, puzzle.target.dim);
   const searchShare =
     search /
     (search + expectedAdjustMs(angleWork(puzzle.target.angle, puzzle.target.symmetry)));
@@ -408,11 +450,32 @@ describe('estimateAge', () => {
     // The measured `scan` values in the set run from about 0.35 to 0.81, and the curve
     // is steep enough that the easy end wants clamping -- a par of one second is not a
     // par. Guards both ends against a future day walking off the fitted range.
+    //
+    // Priced the way the game prices it, with the painting's own clutter and the hiding
+    // place's own dimness folded in -- which is the whole point of those terms, and is
+    // why the weeks below need naming. See `BEFORE_BUSYNESS`.
     for (const puzzle of PUZZLES) {
-      const expected = expectedSearchMs(puzzle.target.scan ?? RAMP[puzzle.dayOfWeek].scan);
+      if (BEFORE_BUSYNESS.includes(puzzle.image)) continue;
+      const expected = expectedSearchMs(
+        puzzle.target.scan ?? RAMP[puzzle.dayOfWeek].scan,
+        puzzle.clutter,
+        puzzle.target.dim,
+      );
       expect(expected, puzzle.id).toBeGreaterThan(10000);
       expect(expected, puzzle.id).toBeLessThan(6 * 60000);
     }
+  });
+
+  it('says how far off the weeks tuned before busyness existed actually are', () => {
+    // Not a guard -- a record. Every one of these was solved to a flat scan target on
+    // every canvas, so the model now prices them wherever the painting happens to put
+    // them, and that spread is the finding rather than a bug to be silenced. It is
+    // asserted only so that the number in the README cannot quietly stop being true.
+    const priced = PUZZLES.filter((p) => BEFORE_BUSYNESS.includes(p.image)).map((p) =>
+      expectedSearchMs(p.target.scan ?? RAMP[p.dayOfWeek].scan, p.clutter, p.target.dim),
+    );
+    const spread = Math.max(...priced) / Math.min(...priced);
+    expect(spread).toBeGreaterThan(20);
   });
 
   it('is a whole number for every puzzle in the set', () => {
