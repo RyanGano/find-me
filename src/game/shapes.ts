@@ -173,8 +173,8 @@ export const SHAPES: Record<string, ShapeDef> = {
      * Each leaf is centred exactly on a diagonal of the box, because the shape reads as
      * one that ought to point at the corners: hand-drawn leaves a few degrees off the
      * diagonal had players twisting past the match and back, fighting the instinct the
-     * drawing itself gives them. Same reach and area as the leaves it replaces, so a day
-     * hiding a clover is the size it always was.
+     * drawing itself gives them. They cover the same area as the leaves they replace, so
+     * a day hiding a clover is the weight of paint it always was.
      */
     path: cloverPath(),
     symmetry: 4,
