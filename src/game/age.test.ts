@@ -23,24 +23,16 @@ import type { Puzzle } from './types';
  * Every one of them was solved to the same scan target whatever canvas it sat on, so the
  * model now prices them anywhere from a few seconds to a quarter of an hour -- which is
  * exactly the failure the term was added to stop, showing up in the days that have it.
- * Re-tuning them would move hiding places players have already been served, so they are
- * exempted instead, and roll off this list as the calendar moves past them.
+ *
+ * A week comes off this list when it is re-tuned. `jatte`, `hunters` and `deheem` have
+ * been, and are now held to the band like anything new. `starry` stays on it for one day
+ * only: its Tuesday to Sunday were corrected in flight, but its Monday had already been
+ * played and moving a served day hands it back to whoever set a time on it.
  *
  * A list of *exemptions*, never of weeks held to the rule: a painting added tomorrow is
  * caught by default.
  */
-const BEFORE_BUSYNESS = [
-  'mona',
-  'wave',
-  'starry',
-  'boating',
-  'jatte',
-  'hunters',
-  'issus',
-  'babel',
-  'deheem',
-  'venice',
-];
+const BEFORE_BUSYNESS = ['mona', 'wave', 'starry', 'boating', 'issus', 'babel', 'venice'];
 
 /**
  * A stand-in puzzle sitting exactly on the given rung of the week, on a canvas of

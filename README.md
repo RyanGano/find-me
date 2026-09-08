@@ -1051,6 +1051,54 @@ Done in response, all on the bench, no shipped fingerprint moved:
   the new term. One rung, two canvases nine times apart, and nothing else varying — the
   narrowest form of the question this round raised and could not answer.
 
+**`r2-busyness`, first three testers.** Both Mondays, no give-ups, nothing flagged unfair
+— where in `r1` every give-up and both unfair flags had landed on the textured canvases.
+
+| canvas | before | after | distance from the 45s Monday asks for |
+|---|---|---|---|
+| busy | 200.6s | **75.6s** | 4.5× over → 1.7× over |
+| calm | 22.0s | 20.3s | 2.0× under → 2.2× under |
+
+The gap between two Mondays on the same rung went from **9.1× to 3.7×**. On that the term
+was rolled forward — see below. Three answers a day, so the medians are thin.
+
+**The lever is weaker than the curve says, and on a calm canvas it may not work at all.**
+Measuring what the `scan` change actually bought on each of the two days:
+
+| canvas | scan | predicted | actual | implied slope |
+|---|---|---|---|---|
+| busy | 0.490 → 0.605 | 49s | 76s | 8.5 |
+| calm | 0.481 → 0.415 | 49s | 20s | −1.2 |
+
+`SCAN_CURVE.slope` is 12.2. On the busy canvas the lever works and the curve overstates it.
+On the calm canvas a substantial move in the target produced *nothing* — 20.3s against 22.0s
+before, marginally the wrong way. That is the same wall as "paint alone cannot make a hard
+day on a calm painting", showing up in play rather than in the clamp. Confounded by a
+re-planned hiding place, `sizeScale 0.73` and n=3, so it is a flag, not a finding.
+
+**What was rolled out, and what was held.** The correction is two opposite changes, and only
+one of them is supported. Weeks busier than the reference get a bolder shape and become
+easier; calmer ones get a fainter shape and become harder. `starry` Tuesday to Sunday,
+`jatte`, `hunters` and `deheem` were re-tuned — 26 days, all in the easier direction, which
+is also the safer way to be wrong. `boating`, `issus` and `venice` were held: rolling out to
+them means making them 1.6× to 2.2× harder (one `venice` day 4×) with a lever that had just
+failed to move a calm canvas. `babel` was held as near-neutral. `mona` and `wave` are served
+and off limits.
+
+`starry`'s Monday was **not** re-tuned. It had already been played, and moving a served day
+hands it back to everyone who set a time on it. The cost is that its Monday is now harder
+than its Tuesday; `MONDAY_LEFT_AS_SERVED` in `week.test.ts` names it and asserts the ramp
+from Tuesday. It is the served day that is out of line, so every day still ahead of a player
+climbs properly.
+
+Two tests moved with it. The week ramp is now asserted on the **time** each day is priced at
+rather than on `scan`: those used to be the same statement, and since the ramp gained a
+dimness term the same reading buys a different hunt on dark paint than on light, so a week
+can climb correctly in time while its scan numbers wander. Two shipped weeks do exactly
+that, and asserting the proxy would have failed them for being right. And `BEFORE_BUSYNESS`
+in `age.test.ts` lost the three weeks that have been corrected — they are held to the band
+like anything new now.
+
 Still open, and named rather than fixed:
 
 - The bench is planned by older tooling than the rotation it stands in for. Re-planning it
@@ -1059,6 +1107,11 @@ Still open, and named rather than fixed:
   deliberately left out of `r2-busyness`, because the correction would push a day that is
   already too hard harder still. Whatever makes that hiding place hard is not on the
   canvas-level reading.
+- **Does the scan lever move a calm canvas at all?** The one measurement says no, and three
+  weeks are waiting on the answer. This is the next round to run, and it is a cheap one: one
+  calm painting, one rung, the same hiding place tuned to two targets a long way apart. If
+  the times come out the same, `scan` is not the lever on a calm canvas and no amount of
+  re-tuning `boating`, `issus` or `venice` will make them harder — `sizeScale` would be.
 
 Not proposed: any change to `difficulty.ts`. Adjacent rungs are not separable in this data,
 and a within-rung spread this large is a placement finding, not a ramp finding.
