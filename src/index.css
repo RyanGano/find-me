@@ -586,20 +586,25 @@ body,
   /* Neutral mid-tone: the target fills run from pale ice blue to dark slate, and the
      badge has to show each of them honestly. */
   background: #6d6862;
-  box-shadow: 0 0 0 2px transparent;
-  transition: box-shadow 0.2s ease-out;
+  outline: 2px solid transparent;
+  transition: outline-color 0.2s ease-out;
 }
 
 /*
  * The whole of the running feedback, and it lives here rather than on the hidden shape
  * so that it cannot give away a hiding place the player has not found yet.
+ *
+ * Near is dashed and found is solid, so the two states differ in line as well as in
+ * hue: amber against green is the pair red-green colour blindness separates worst.
+ * The same boolean as the colour, drawn a second way -- no finer-grained than it.
  */
 .reference.is-near {
   border-color: var(--accent);
+  border-style: dashed;
 }
 
 .reference.is-near .reference-well {
-  box-shadow: 0 0 0 2px var(--accent);
+  outline: 2px dashed var(--accent);
 }
 
 .reference.is-near .reference-label {
@@ -611,7 +616,7 @@ body,
 }
 
 .reference.is-solved .reference-well {
-  box-shadow: 0 0 0 2px var(--ok);
+  outline: 2px solid var(--ok);
 }
 
 .reference.is-solved .reference-label {
@@ -632,7 +637,7 @@ button.reference {
 
 button.reference:hover .reference-well,
 button.reference:focus-visible .reference-well {
-  box-shadow: 0 0 0 2px var(--ok);
+  outline: 2px solid var(--ok);
   filter: brightness(1.08);
 }
 
