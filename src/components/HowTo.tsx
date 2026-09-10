@@ -30,7 +30,8 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         <h2>What&rsquo;s counted</h2>
         <p className="howto-note">
           The only thing this site records is that a run happened, how it ended — solved,
-          given up on, or left — and how long it took. Nothing that identifies you.
+          given up on, or left — how long it took, and whether the result was shared.
+          Nothing that identifies you.
         </p>
         <div className="howto-foot">
           <button type="button" className="btn btn-primary" onClick={() => setShowPrivacy(false)}>

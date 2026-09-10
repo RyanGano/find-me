@@ -2,8 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { estimateAge, type AgePart } from '../game/age';
 import { msUntilTomorrow } from '../game/daily';
 import { formatCountdown, formatTime } from '../game/format';
+import type { DayTally } from '../game/count';
 import type { RunMetrics } from '../game/metrics';
-import { buildAgeDataText, buildGaveUpText, buildShareText, shareResult, speedBar } from '../game/share';
+import {
+  buildAgeDataText,
+  buildGaveUpText,
+  buildShareText,
+  shareResult,
+  speedBar,
+  tallyLine,
+} from '../game/share';
 import type { Stats } from '../game/storage';
 import type { Puzzle } from '../game/types';
 
@@ -20,10 +28,25 @@ interface Props {
   gaveUp?: boolean;
   /** How the run was played. Absent for a solve recorded before the age existed. */
   metrics: RunMetrics | null;
+  /** How everyone else did today, once it has arrived. Null means say nothing. */
+  tally: DayTally | null;
+  /** The share button was pressed, for the tally. */
+  onShared: () => void;
   onReplay: () => void;
 }
 
-export function ResultCard({ day, puzzle, ms, stats, isPractice, gaveUp, metrics, onReplay }: Props) {
+export function ResultCard({
+  day,
+  puzzle,
+  ms,
+  stats,
+  isPractice,
+  gaveUp,
+  metrics,
+  tally,
+  onShared,
+  onReplay,
+}: Props) {
   const [status, setStatus] = useState<'idle' | 'shared' | 'copied' | 'failed'>('idle');
   const [dataStatus, setDataStatus] = useState<'idle' | 'shared' | 'copied' | 'failed'>(
     'idle',
@@ -47,7 +70,9 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, gaveUp, metrics
     const text = gaveUp
       ? buildGaveUpText(day, puzzle, ms)
       : buildShareText(day, puzzle, ms, stats.streak, age);
-    setStatus(await shareResult(text));
+    const result = await shareResult(text);
+    setStatus(result);
+    if (result !== 'failed') onShared();
   };
 
   // Beta only, and never folded into the share text: what a player posts in public
@@ -145,6 +170,8 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, gaveUp, metrics
           </button>
         </div>
       )}
+
+      {tally && <p className="result-others">{tallyLine(tally)}</p>}
 
       <p className="result-art">
         <strong>{puzzle.title}</strong>

@@ -31,8 +31,12 @@ const OPT_OUT = 'find-me:no-count';
  * reading of "this day is harder than it was priced at" that the tally can take: unlike
  * a leave it cannot be a phone call, and unlike a give-up it is also sent by the people
  * who went on to find it.
+ *
+ * `shared` is the other one that is not an ending: the player pressed share on the result
+ * card. The server records it as a flag on a run it already has, and never lets it create
+ * a run, so it can never count as a play.
  */
-export type RunState = 'start' | 'stuck' | 'left' | 'gave-up' | 'solved';
+export type RunState = 'start' | 'stuck' | 'left' | 'gave-up' | 'solved' | 'shared';
 
 export interface CountPayload {
   run: string;
@@ -124,4 +128,58 @@ export function count(run: string, day: number, state: RunState, ms?: number): v
   } catch {
     // Blocked, offline, or refused. The run is unaffected.
   }
+}
+
+/** How everyone else did on a day, as the server hands it back. Aggregates only. */
+export interface DayTally {
+  played: number;
+  solved: number;
+  medianMs: number;
+}
+
+/**
+ * Fewer solves than this and the card says nothing. A median of a handful is noise, and a
+ * median of one is somebody's time. The server holds the same floor, so a thin day never
+ * leaves it at all; this is the client refusing to trust that.
+ *
+ * Low while the game is in beta, so the line can be seen at all. The issue that asked for
+ * it started at 30, which is where this should go once there are players to fill it.
+ */
+export const TALLY_FLOOR = 5;
+
+/**
+ * Read how everyone else did on a day, or null.
+ *
+ * Only ever called once a run is over -- a solve rate on screen before or during a hunt
+ * is a difficulty hint, and would leak into the very times the ramp is tuned against.
+ * Silent on every failure, like everything else here: no endpoint, opted out, blocked,
+ * slow, malformed or thin all come back as null, and the card simply goes without.
+ */
+export async function fetchTally(day: number, timeoutMs = 5000): Promise<DayTally | null> {
+  const url = endpoint();
+  if (!url || !isCounted()) return null;
+  try {
+    const ctrl = typeof AbortController === 'function' ? new AbortController() : undefined;
+    const timer = ctrl && setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      // A plain GET with no custom headers: a simple request, so no preflight.
+      const res = await fetch(`${url}?day=${day}`, { mode: 'cors', signal: ctrl?.signal });
+      if (!res.ok) return null;
+      const body: unknown = await res.json();
+      return readTally(body);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  } catch {
+    return null;
+  }
+}
+
+function readTally(body: unknown): DayTally | null {
+  if (!body || typeof body !== 'object') return null;
+  const { played, solved, medianMs } = body as Record<string, unknown>;
+  const whole = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0;
+  if (!whole(played) || !whole(solved) || !whole(medianMs)) return null;
+  if (solved < TALLY_FLOOR || solved > played) return null;
+  return { played, solved, medianMs };
 }

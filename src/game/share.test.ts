@@ -3,7 +3,27 @@ import { formatCountdown, formatTime } from './format';
 import { PUZZLES } from './puzzles';
 import { PAR_AGE, SPREAD } from './age';
 import type { RunMetrics } from './metrics';
-import { buildAgeDataText, buildGaveUpText, buildShareText, speedBar } from './share';
+import {
+  buildAgeDataText,
+  buildGaveUpText,
+  buildShareText,
+  speedBar,
+  tallyLine,
+} from './share';
+
+describe('tallyLine', () => {
+  it('says the share who found it and the typical time, to the second', () => {
+    expect(tallyLine({ played: 40, solved: 17, medianMs: 160400 })).toBe(
+      '43% of players found it today · typically in 2:40',
+    );
+  });
+
+  it('drops the minutes under one', () => {
+    expect(tallyLine({ played: 5, solved: 5, medianMs: 42000 })).toBe(
+      '100% of players found it today · typically in 42s',
+    );
+  });
+});
 
 describe('formatTime', () => {
   it('shows sub-minute times in seconds', () => {

@@ -818,6 +818,13 @@ button.reference:focus-visible {
   color: var(--muted);
 }
 
+/* How everyone else did. Context for the time, not a second score, so it is quiet. */
+.result-others {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 .result-art {
   display: flex;
   flex-direction: column;

@@ -7,7 +7,7 @@ import { Stage } from './components/Stage';
 import { UpdateNotice } from './components/UpdateNotice';
 import { giveUpAfterMs } from './game/age';
 import { isInAppBrowser } from './game/browser';
-import { count, newRunId } from './game/count';
+import { count, fetchTally, newRunId, type DayTally } from './game/count';
 import { isTestMode } from './game/testMode';
 import { puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
@@ -240,6 +240,27 @@ export default function App() {
   const done = solvedMs ?? gaveUpMs;
 
   const canGiveUp = startedAt !== null && done === null && clock >= gate;
+
+  // How everyone else did, asked for only once the run is over -- never before or during a
+  // hunt, where a solve rate would be a difficulty hint. A practice run is not counted and
+  // is given no comparison either. Absent until it arrives, and absent for good if it
+  // never does; the card never waits on it.
+  const finished = done !== null;
+  const [tally, setTally] = useState<DayTally | null>(null);
+  useEffect(() => {
+    if (isPractice || !finished) return;
+    let live = true;
+    void fetchTally(day).then((t) => {
+      if (live) setTally(t);
+    });
+    return () => {
+      live = false;
+    };
+  }, [isPractice, finished, day]);
+
+  const onShared = useCallback(() => {
+    if (!isPractice) count(runId, day, 'shared');
+  }, [isPractice, runId, day]);
 
   // The plea, or nothing: it has no business on screen once the door it was about has
   // opened, and the button that raises it stands down for as long as it is up.
@@ -670,6 +691,8 @@ export default function App() {
             isPractice={isPractice}
             gaveUp={gaveUpMs !== null}
             metrics={metrics}
+            tally={isPractice ? null : tally}
+            onShared={onShared}
             onReplay={replay}
           />
         )}

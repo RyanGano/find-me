@@ -978,8 +978,22 @@ runs are never counted.
 
 `What's counted` in the how-to panel says as much to the player, and switches it off.
 
+It also records, as a flag on a run it already has, whether the share button was pressed
+-- the clearest sign the result card is worth reading, and so the thing to watch when the
+card changes. A share never creates a run and never counts as a play.
+
+The tally is read back in exactly one place: the result card, once a run is over, says
+what share of the day's runs found the shape and the median find time. Never before or
+during a hunt -- a solve rate on screen is a difficulty hint, and would leak into the
+times the ramp is tuned against -- and never on a practice run. It is aggregates only,
+computed on a schedule and served from cache, and a day with fewer than `TALLY_FLOOR`
+solves says nothing: a median of a handful is noise, and a median of one is somebody's
+time. The floor is 5 while the game is in beta so the line can be seen at all; it
+should rise towards 30 as there are players to fill it. It is not yet in the share text,
+and should not be until the numbers have been watched for a while.
+
 The client half is `src/game/count.ts`, and it posts to whatever `VITE_COUNT_URL` the
-build was given. Everything on the other end of that URL -- where the rows go, and how to
+build was given, and reads from the same address. Everything on the other end of that URL -- where the rows go, and how to
 read them -- is deliberately not in this repository.
 
 ## Play-testing

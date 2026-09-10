@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { count, isCounted, newRunId, setCounted, type CountPayload } from './count';
+import {
+  count,
+  fetchTally,
+  isCounted,
+  newRunId,
+  setCounted,
+  TALLY_FLOOR,
+  type CountPayload,
+} from './count';
 
 const URL = 'https://example.invalid/api/count';
 
@@ -82,6 +90,11 @@ describe('count', () => {
     expect(posts[0].body).toEqual({ run: 'run-1', day: 42, state: 'stuck', ms: 30000 });
   });
 
+  it('posts a share, with no time on it', () => {
+    count('run-1', 42, 'shared');
+    expect(posts[0].body).toEqual({ run: 'run-1', day: 42, state: 'shared' });
+  });
+
   it('says nothing at all once the player has opted out', () => {
     setCounted(false);
     count('run-1', 42, 'start');
@@ -102,6 +115,52 @@ describe('count', () => {
   it('never reports a negative clock', () => {
     count('run-1', 42, 'solved', -5);
     expect(posts[0].body.ms).toBe(0);
+  });
+});
+
+describe('fetchTally', () => {
+  function serve(body: unknown, ok = true) {
+    const asked: string[] = [];
+    vi.stubGlobal('fetch', (url: string) => {
+      asked.push(url);
+      return Promise.resolve({ ok, json: () => Promise.resolve(body) });
+    });
+    return asked;
+  }
+
+  it('reads a day from the same endpoint, by day', async () => {
+    const asked = serve({ day: 42, played: 20, solved: 8, medianMs: 160000 });
+    expect(await fetchTally(42)).toEqual({ played: 20, solved: 8, medianMs: 160000 });
+    expect(asked).toEqual([`${URL}?day=42`]);
+  });
+
+  it('says nothing about a day with too few solves', async () => {
+    serve({ played: 9, solved: TALLY_FLOOR - 1, medianMs: 60000 });
+    expect(await fetchTally(42)).toBeNull();
+  });
+
+  it('says nothing when the server has nothing, or something malformed', async () => {
+    serve({});
+    expect(await fetchTally(42)).toBeNull();
+    serve({ played: 3, solved: 8, medianMs: 1000 });
+    expect(await fetchTally(42)).toBeNull();
+    serve({ played: 20, solved: 8, medianMs: 1000 }, false);
+    expect(await fetchTally(42)).toBeNull();
+  });
+
+  it('fails silently when the request does', async () => {
+    vi.stubGlobal('fetch', () => Promise.reject(new Error('blocked')));
+    expect(await fetchTally(42)).toBeNull();
+  });
+
+  it('asks nothing without an endpoint, or once opted out', async () => {
+    const asked = serve({ played: 20, solved: 8, medianMs: 1000 });
+    vi.stubEnv('VITE_COUNT_URL', '');
+    expect(await fetchTally(42)).toBeNull();
+    vi.stubEnv('VITE_COUNT_URL', URL);
+    setCounted(false);
+    expect(await fetchTally(42)).toBeNull();
+    expect(asked).toHaveLength(0);
   });
 });
 

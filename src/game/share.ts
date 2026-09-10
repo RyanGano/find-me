@@ -1,4 +1,5 @@
 import { PAR_AGE, SPREAD } from './age';
+import type { DayTally } from './count';
 import { RAMP } from './difficulty';
 import { formatTime } from './format';
 import type { RunMetrics } from './metrics';
@@ -33,6 +34,22 @@ export function buildShareText(
   if (streak > 1) lines.push(`🔥 ${streak} day streak`);
   lines.push(SITE_URL);
   return lines.join('\n');
+}
+
+/**
+ * How everyone else did, in one line: the share who found it, and the typical find. To
+ * the second, since a median of other people's times has no business looking precise.
+ *
+ * Card only, for now. It goes into `buildShareText` once the numbers have been watched
+ * long enough to be trusted -- and it is spoiler-free when it does, since a percentage
+ * says nothing about where anything is.
+ */
+export function tallyLine({ played, solved, medianMs }: DayTally): string {
+  const pct = Math.round((100 * solved) / Math.max(1, played));
+  const secs = Math.round(medianMs / 1000);
+  const typical =
+    secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+  return `${pct}% of players found it today · typically in ${typical}`;
 }
 
 /**
