@@ -22,7 +22,17 @@
  * recorded before the metrics existed.
  */
 
-const NAME = 'fm-results';
+import { isTestMode } from './testMode';
+
+/**
+ * The cookie's name. A test run mirrors to a cookie of its own, for the same reason it
+ * writes to a localStorage key of its own -- the two halves of the store have to move
+ * together, or a test run would heal itself out of the real player's mirror. See
+ * `testMode.ts`.
+ */
+function cookieName(): string {
+  return isTestMode() ? 'fm-test' : 'fm-results';
+}
 
 /**
  * How many days of history fit. An entry costs about 20 bytes and a cookie holds 4KB,
@@ -118,7 +128,7 @@ function writeCookie(name: string, value: string): void {
 /** The mirrored results, or undefined if there is no usable cookie (or no cookies). */
 export function load(): Backup | undefined {
   try {
-    const raw = readCookie(NAME);
+    const raw = readCookie(cookieName());
     return raw ? parse(raw) : undefined;
   } catch {
     return undefined;
@@ -131,7 +141,7 @@ export function load(): Backup | undefined {
  */
 export function save(backup: Backup): void {
   try {
-    writeCookie(NAME, serialise(backup));
+    writeCookie(cookieName(), serialise(backup));
   } catch {
     // Cookies disabled. The localStorage copy is still doing its job, or nothing is.
   }
@@ -144,7 +154,7 @@ export function save(backup: Backup): void {
  */
 export function persists(): boolean {
   try {
-    const probe = `${NAME}-probe`;
+    const probe = `${cookieName()}-probe`;
     writeCookie(probe, '1');
     const ok = readCookie(probe) === '1';
     document.cookie = `${probe}=; path=/; max-age=0; SameSite=Lax; Secure`;

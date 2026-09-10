@@ -220,6 +220,12 @@ card and the panels.
 - Practice runs, for testing: `?puzzle=starry-wed` or `?day=3`. They are not recorded and
   do not affect a streak. `?puzzle=` also serves a bench day (`?puzzle=cafe-fri`), which is
   how the browser tools drive the bench through the real page.
+- `?test` is the other one, and is not the same thing: it plays today's real puzzle and
+  records everything, but to `find-me:test` and the `fm-test` cookie rather than the
+  player's store, and its tally beacons carry `dry: true` so every reader leaves them out.
+  Use it for a change to the streak, the result card, resuming a left run, or the beacons
+  -- the parts practice mode cannot reach, because practice mode writes nothing. It sticks
+  for the tab once entered; `?test=off` leaves. See "`?test`" in README.md.
 - Changing anything a player already has: `npm run fingerprint --silent > before.json`
   before the change and `diff` after. An empty diff means no recorded time was invalidated
   and no finished board was handed back as playable. Every change that is not meant to move

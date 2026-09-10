@@ -16,6 +16,8 @@
  * no `sendBeacon` -- none of it is allowed to cost the player their run.
  */
 
+import { isTestMode } from './testMode';
+
 const OPT_OUT = 'find-me:no-count';
 
 /**
@@ -38,6 +40,16 @@ export interface CountPayload {
   state: RunState;
   /** Run-clock milliseconds, excluding pauses. Absent on `start`, where it is always 0. */
   ms?: number;
+  /**
+   * A checking run rather than a player -- somebody walking the game in `?test` to see a
+   * change working. Sent so the row exists and the whole write path is exercised, and
+   * flagged so every reader can leave it out: a row that says it is a dry run can be
+   * excluded, and a row that was never written cannot be reasoned about at all. The same
+   * flag the play-test bench puts on a review it does not want counted.
+   *
+   * Absent, rather than false, on a real run.
+   */
+  dry?: true;
 }
 
 /**
@@ -93,6 +105,7 @@ export function count(run: string, day: number, state: RunState, ms?: number): v
 
   const payload: CountPayload = { run, day, state };
   if (ms !== undefined) payload.ms = Math.max(0, Math.round(ms));
+  if (isTestMode()) payload.dry = true;
   const body = JSON.stringify(payload);
 
   try {

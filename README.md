@@ -740,6 +740,45 @@ recorded or counted towards a streak.
 ?day=3               # by day number
 ```
 
+### `?test`
+
+Practice mode forces a puzzle and then writes *nothing* — no result, no streak, no
+tally. That makes it the wrong tool for a change to the parts of the game that only
+exist because something is written: the streak, the result card, resuming a run that was
+left mid-hunt, the beacons. `?test` is for those. It plays **today's real puzzle** at
+today's real difficulty and records everything, against a store and a tally row that are
+not real:
+
+| | real run | `?test` |
+| --- | --- | --- |
+| results | `find-me:v1` | `find-me:test` |
+| cookie mirror | `fm-results` | `fm-test` |
+| tally row | counted | written with `dry: true`, excluded by every reader |
+
+Three things are worth knowing about it.
+
+**It sticks for the tab.** A query parameter alone is lost by any reload that does not
+carry it — the update-available reload, a relaunch from the home screen — and a run that
+silently fell back to the real store halfway through would be writing real results while
+looking exactly like a test. So entering `?test` sets a `sessionStorage` flag and every
+later load in that tab stays in test mode. `?test=off` leaves, and so does closing the
+tab. A banner says which mode you are in on every render, because the two look identical
+otherwise.
+
+**The tally row is written, not suppressed.** Suppressing it would mean the beacon path
+is the one path a test run cannot check. Writing it flagged means the path is exercised
+and the row is excluded at read time — and, importantly, before the rollup can fold it
+into a day summary, which is a thing that cannot be undone by deleting the row
+afterwards. This is the same `dry` flag the play-test bench puts on a review it does not
+want counted, for the same stated reason: *a row that says it is a dry run can be
+excluded, and a row that was never written cannot be reasoned about.*
+
+**There is still no user id.** A run is keyed by the random per-run id it always was,
+minted when the clock starts and forgotten when the run ends. `dry` is a property of the
+row, not of a person — nothing here identifies who sent it, and nothing outlives the run.
+That property is the whole design of `count.ts` and was not worth trading away for a
+convenience.
+
 ### Browser smoke test
 
 `scripts/smoke.mjs` drives the real page with Playwright: it solves the puzzle through

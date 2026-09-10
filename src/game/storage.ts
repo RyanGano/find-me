@@ -1,8 +1,16 @@
 import * as backup from './backup';
 import { isTracker, type RunMetrics, type Tracker } from './metrics';
+import { isTestMode } from './testMode';
 import type { Transform } from './types';
 
-const KEY = 'find-me:v1';
+/**
+ * Where the results live. A test run gets a key of its own, so everything below runs for
+ * real -- the streak, the versioning, the resume -- against a store that is not the
+ * player's. See `testMode.ts`.
+ */
+function storeKey(): string {
+  return isTestMode() ? 'find-me:test' : 'find-me:v1';
+}
 
 export interface Result {
   /** Solve time in milliseconds. */
@@ -43,7 +51,7 @@ interface Store {
 
 function readLocal(): Store {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(storeKey());
     if (!raw) return { results: {} };
     const parsed = JSON.parse(raw) as Partial<Store>;
     let progress = isProgress(parsed.progress) ? parsed.progress : undefined;
@@ -87,7 +95,10 @@ function write(store: Store): void {
   try {
     // `carried` belongs to the mirror and is recomputed from it on every read, so it is
     // not part of what the primary store holds.
-    localStorage.setItem(KEY, JSON.stringify({ results: store.results, progress: store.progress }));
+    localStorage.setItem(
+      storeKey(),
+      JSON.stringify({ results: store.results, progress: store.progress }),
+    );
   } catch {
     // Private browsing, quota, or storage disabled: the cookie mirror may still hold.
   }
@@ -137,7 +148,7 @@ export function touch(): void {
  */
 export function isPersistent(): boolean {
   try {
-    const probe = `${KEY}:probe`;
+    const probe = `${storeKey()}:probe`;
     localStorage.setItem(probe, '1');
     const ok = localStorage.getItem(probe) === '1';
     localStorage.removeItem(probe);

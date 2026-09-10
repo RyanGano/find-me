@@ -8,6 +8,7 @@ import { UpdateNotice } from './components/UpdateNotice';
 import { giveUpAfterMs } from './game/age';
 import { isInAppBrowser } from './game/browser';
 import { count, newRunId } from './game/count';
+import { isTestMode } from './game/testMode';
 import { puzzleNumber, selectPuzzle } from './game/daily';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
@@ -72,6 +73,9 @@ function setFlag(key: string): void {
 export default function App() {
   const selection = useMemo(() => selectPuzzle(window.location.search), []);
   const { puzzle, index: day, isPractice } = selection;
+  // Read once, like the mode itself: everything below has to agree about which store it
+  // is writing to for the whole life of the component. See `testMode.ts`.
+  const isTest = useMemo(() => isTestMode(), []);
 
   // A solve already recorded for today opens as a finished board, not a fresh timer.
   const prior = useMemo(
@@ -524,6 +528,17 @@ export default function App() {
       )}
 
       {isPractice && <p className="practice-note">practice mode — this run is not recorded</p>}
+
+      {/* Test mode looks exactly like the real game, which is the point of it and also
+          the danger: without this there is nothing on the screen to tell you that the
+          streak you are looking at is not your streak. It sticks for the tab, so it
+          has to say so on every render and not just on the visit that turned it on. */}
+      {isTest && (
+        <p className="practice-note">
+          test mode — separate store, tally marked dry.{' '}
+          <a href="?test=off">leave</a>
+        </p>
+      )}
 
       <main className="board">
         <Stage
