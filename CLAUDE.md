@@ -12,6 +12,25 @@ commit message, PR body, code comment or test fixture. The tally endpoint reache
 build only through the `VITE_COUNT_URL` env var, supplied by a repository variable in CI.
 `src/game/count.ts` reads it and does nothing when it is empty.
 
+## Changing what is reported
+
+Any change to what `src/game/count.ts` sends or reads — a new `RunState`, a new field on
+`CountPayload`, a new read — is not finished until each of these holds, and a change that
+cannot meet them should not ship:
+
+1. **The server keeps it.** The tally server accepts, stores and rolls it up, and the
+   deployed server is the one doing so — check a real or `?test` row carries it.
+2. **The dashboard shows it.** If it is not on the stats dashboard it does not exist: add
+   it to the overview and to a day page, restart the dashboard, and look at it.
+3. **The player is told.** `What's counted` in `src/components/HowTo.tsx` names it in plain
+   words, and "Counting" in README.md records it. A read counts too: say what it asks for
+   and what switching counting off costs.
+4. **The private record is updated.** The checklist and field table in the gitignored
+   folder's own README list it.
+
+Where the server and dashboard live, and how to reach them, is in that folder and nowhere
+else; the rule under "Secrets and paths" still applies to every word of this.
+
 ## Never write down where a shape hides
 
 The game is the fun of finding it, and this repository is public. No tracked file — this

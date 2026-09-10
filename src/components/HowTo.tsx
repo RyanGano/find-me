@@ -30,9 +30,14 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         <h2>What&rsquo;s counted</h2>
         <p className="howto-note">
           The only thing this site records is that a run happened, how it ended — solved,
-          given up on, or left — how long it took, whether the result was shared, and
-          whether you looked at your stats.
-          Nothing that identifies you.
+          given up on, or left — how long it took, how far in you first pressed give up if
+          you did so before it opened, whether the result was shared, and whether you looked
+          at your stats. Nothing that identifies you.
+        </p>
+        <p className="howto-note">
+          To show how everyone else did, the game asks for the totals of days you have
+          finished. That request is not recorded. With counting off it is not made, so you
+          won&rsquo;t see how everyone else did.
         </p>
         <div className="howto-foot">
           <button type="button" className="btn btn-primary" onClick={() => setShowPrivacy(false)}>

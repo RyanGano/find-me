@@ -977,6 +977,9 @@ outlives a single run, so the rows cannot be grouped by person even in principle
 runs are never counted.
 
 `What's counted` in the how-to panel says as much to the player, and switches it off.
+Switching it off also stops the reads below: a player who has asked not to be counted is
+not asking the server anything either, so they go without everyone else's numbers, and
+the note tells them so.
 
 It also records, as a flag on a run it already has, whether the share button was pressed
 -- the clearest sign the result card is worth reading, and so the thing to watch when the
