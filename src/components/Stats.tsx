@@ -87,9 +87,8 @@ export function Stats({ onDismiss }: Props) {
 
           <h3>Every week so far, by day</h3>
           <p className="stats-note">
-            Your typical time on all the Mondays, all the Tuesdays and so on, across every
-            week you have played
-            {anyOthers ? ' — beside everyone else’s on those same days' : ''}.
+            Your typical time for a day of the week
+            {anyOthers ? ' compared to everyone else’s' : ''}.
           </p>
           <ul className="stats-week">
             {week.map((w) => (
