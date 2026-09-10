@@ -248,6 +248,38 @@ export function getStats(today: number): Stats {
   return { played: Math.max(days.length, carried?.played ?? 0), best, streak };
 }
 
+/** One recorded day, as the stats panel needs it. */
+export interface HistoryDay {
+  day: number;
+  ms: number;
+  gaveUp: boolean;
+}
+
+export interface History {
+  /** Every day this browser can name, oldest first, whatever version it was set on. */
+  days: HistoryDay[];
+  /**
+   * Days the cookie mirror still counts towards `played` but can no longer name, because
+   * they fell out of the window it keeps. Zero almost everywhere; never guessed at.
+   */
+  unnamed: number;
+}
+
+/** Everything recorded, in day order -- the same results `getStats` reduces to three numbers. */
+export function getHistory(): History {
+  const store = read();
+  const days = Object.keys(store.results)
+    .map(Number)
+    .filter((n) => Number.isFinite(n))
+    .sort((a, b) => a - b)
+    .map((day) => {
+      const result = store.results[String(day)];
+      return { day, ms: result.ms, gaveUp: result.gaveUp === true };
+    });
+  const unnamed = Math.max(0, (store.carried?.played ?? 0) - days.length);
+  return { days, unnamed };
+}
+
 /**
  * A run in progress: where the player had got to when they left the page.
  *

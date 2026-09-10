@@ -4,6 +4,7 @@ import { HowTo } from './components/HowTo';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
+import { Stats as StatsPanel } from './components/Stats';
 import { UpdateNotice } from './components/UpdateNotice';
 import { giveUpAfterMs } from './game/age';
 import { isInAppBrowser } from './game/browser';
@@ -102,6 +103,7 @@ export default function App() {
   const [stats, setStats] = useState<Stats>(() => getStats(day));
 
   const [showCredits, setShowCredits] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   // Up between pressing the way out and meaning it. Giving up is not a thing to do by
   // accident on a phone, and it is the one button here that cannot be taken back.
   const [confirming, setConfirming] = useState(false);
@@ -229,7 +231,7 @@ export default function App() {
     puzzle,
     resume: saved,
     prior: prior ? { ms: prior.ms, metrics: prior.m, gaveUp: prior.gaveUp } : undefined,
-    blocked: showHowTo || showCredits,
+    blocked: showHowTo || showCredits || showStats,
     runId,
     onStart,
     onSolved,
@@ -356,12 +358,26 @@ export default function App() {
   // Every panel goes away the same way: a tap on the board behind it. Whichever one is
   // up is put away by its own means -- the how-to still counts as read, so it does not
   // come back at the player tomorrow.
-  const anyPanel = showResult || showCredits || showHowTo;
+  const anyPanel = showResult || showCredits || showHowTo || showStats;
   const dismissPanels = useCallback(() => {
     if (showResult) closeResult();
     if (showCredits) setShowCredits(false);
     if (showHowTo) dismissHowTo();
-  }, [showResult, closeResult, showCredits, showHowTo, dismissHowTo]);
+    if (showStats) setShowStats(false);
+  }, [showResult, closeResult, showCredits, showHowTo, dismissHowTo, showStats]);
+
+  /**
+   * Reported once per run, the first time the stats panel is opened with the run on
+   * record -- which is what says whether the panel earns its place, and whether it is
+   * reached for more after a slow day than a fast one. Before the clock starts there is no
+   * row for the flag to land on, so an open then is not counted.
+   */
+  const reportedStats = useRef(false);
+  const noteStatsOpened = useCallback(() => {
+    if (isPractice || startedAt === null || reportedStats.current) return;
+    reportedStats.current = true;
+    count(runId, day, 'stats');
+  }, [isPractice, startedAt, runId, day]);
 
   // Every button that opens a panel is a switch, not a door. Solving used to be one-way
   // -- the result card came down on any tap and a refresh was the only way back to your
@@ -370,15 +386,23 @@ export default function App() {
   // the button belonging to the panel already up just puts it away, rather than closing
   // it and opening it again in the same tap.
   const togglePanel = useCallback(
-    (panel: 'result' | 'credits' | 'howto') => {
-      const wasOpen = panel === 'result' ? showResult : panel === 'credits' ? showCredits : showHowTo;
+    (panel: 'result' | 'credits' | 'howto' | 'stats') => {
+      const wasOpen = {
+        result: showResult,
+        credits: showCredits,
+        howto: showHowTo,
+        stats: showStats,
+      }[panel];
       dismissPanels();
       if (wasOpen) return;
       if (panel === 'result') setShowResult(true);
       else if (panel === 'credits') setShowCredits(true);
-      else setShowHowTo(true);
+      else if (panel === 'stats') {
+        setShowStats(true);
+        noteStatsOpened();
+      } else setShowHowTo(true);
     },
-    [showResult, showCredits, showHowTo, dismissPanels],
+    [showResult, showCredits, showHowTo, showStats, dismissPanels, noteStatsOpened],
   );
 
   return (
@@ -415,21 +439,24 @@ export default function App() {
         >
           beta
         </button>
-        {/* Second door back to the result, for anyone whose eye goes up to their time
-            rather than down to the badge. Costs no space: it is the clock either way. */}
-        {done !== null ? (
+        {/* The clock only while there is a hunt to time. Either side of one -- before the
+            first move, and once the day is over -- the same slot is the way into the
+            player's stats. The badge is still the way back to the result. */}
+        {startedAt !== null && done === null ? (
+          <p className={`clock${running ? ' is-running' : ''}`}>{formatTime(clock)}</p>
+        ) : (
           <button
             type="button"
-            className={`clock is-done${gaveUpMs !== null ? ' is-quiet' : ''}`}
-            onClick={() => togglePanel('result')}
-            title="Show your result"
+            className={`btn btn-icon btn-stats${showStats ? ' is-on' : ''}`}
+            onClick={() => togglePanel('stats')}
+            title="Your stats"
+            aria-label="Your stats"
+            aria-pressed={showStats}
           >
-            {formatTime(clock)}
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M6 18v-6M12 18V6M18 18v-9" />
+            </svg>
           </button>
-        ) : (
-          <p className={`clock${running ? ' is-running' : ''}`}>
-            {startedAt === null ? 'ready' : formatTime(clock)}
-          </p>
         )}
         <div className="topbar-actions">
           {done !== null && (
@@ -671,6 +698,8 @@ export default function App() {
         />
 
         {showCredits && <Credits puzzle={puzzle} onDismiss={() => setShowCredits(false)} />}
+
+        {showStats && <StatsPanel onDismiss={() => setShowStats(false)} />}
 
         {showHowTo && <HowTo thing={puzzle.thing} rung={RAMP[puzzle.dayOfWeek].label} onDismiss={dismissHowTo} />}
 

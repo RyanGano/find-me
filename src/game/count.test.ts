@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   count,
+  fetchTallies,
   fetchTally,
   isCounted,
+  MAX_TALLY_DAYS,
   newRunId,
   setCounted,
   TALLY_FLOOR,
@@ -95,6 +97,11 @@ describe('count', () => {
     expect(posts[0].body).toEqual({ run: 'run-1', day: 42, state: 'shared' });
   });
 
+  it('posts a stats-panel open, with no time on it', () => {
+    count('run-1', 42, 'stats');
+    expect(posts[0].body).toEqual({ run: 'run-1', day: 42, state: 'stats' });
+  });
+
   it('says nothing at all once the player has opted out', () => {
     setCounted(false);
     count('run-1', 42, 'start');
@@ -160,6 +167,61 @@ describe('fetchTally', () => {
     vi.stubEnv('VITE_COUNT_URL', URL);
     setCounted(false);
     expect(await fetchTally(42)).toBeNull();
+    expect(asked).toHaveLength(0);
+  });
+});
+
+describe('fetchTallies', () => {
+  function serve(body: unknown, ok = true) {
+    const asked: string[] = [];
+    vi.stubGlobal('fetch', (url: string) => {
+      asked.push(url);
+      return Promise.resolve({ ok, json: () => Promise.resolve(body) });
+    });
+    return asked;
+  }
+
+  it('asks for every day in one read and keeps the ones that come back', async () => {
+    const asked = serve({ 3: { played: 20, solved: 8, medianMs: 60000 } });
+    const found = await fetchTallies([3, 4]);
+    expect(asked).toEqual([`${URL}?days=3,4`]);
+    expect([...found]).toEqual([[3, { played: 20, solved: 8, medianMs: 60000 }]]);
+  });
+
+  it('drops a thin or malformed day and keeps the rest', async () => {
+    serve({
+      3: { played: 20, solved: TALLY_FLOOR - 1, medianMs: 60000 },
+      4: { played: 1, solved: 8, medianMs: 60000 },
+      5: { played: 20, solved: 8, medianMs: 70000 },
+    });
+    expect([...(await fetchTallies([3, 4, 5])).keys()]).toEqual([5]);
+  });
+
+  it('asks for no more than the server will answer, keeping the most recent days', async () => {
+    const asked = serve({});
+    const days = Array.from({ length: MAX_TALLY_DAYS + 10 }, (_, i) => i);
+    await fetchTallies(days);
+    expect(asked[0].split('=')[1].split(',')).toHaveLength(MAX_TALLY_DAYS);
+    expect(asked[0].startsWith(`${URL}?days=10,`)).toBe(true);
+  });
+
+  it('comes back empty, never failing, when anything goes wrong', async () => {
+    vi.stubGlobal('fetch', () => Promise.reject(new Error('blocked')));
+    expect((await fetchTallies([3])).size).toBe(0);
+    serve([1, 2]);
+    expect((await fetchTallies([3])).size).toBe(0);
+    serve({ 3: { played: 20, solved: 8, medianMs: 1 } }, false);
+    expect((await fetchTallies([3])).size).toBe(0);
+  });
+
+  it('asks nothing with no days, no endpoint, or once opted out', async () => {
+    const asked = serve({});
+    await fetchTallies([]);
+    vi.stubEnv('VITE_COUNT_URL', '');
+    await fetchTallies([3]);
+    vi.stubEnv('VITE_COUNT_URL', URL);
+    setCounted(false);
+    await fetchTallies([3]);
     expect(asked).toHaveLength(0);
   });
 });

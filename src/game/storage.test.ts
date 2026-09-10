@@ -4,6 +4,7 @@ import {
   isPersistent,
   touch,
   getCurrentResult,
+  getHistory,
   getProgress,
   getResult,
   getStats,
@@ -11,6 +12,7 @@ import {
   saveProgress,
   saveResult,
 } from './storage';
+import * as backup from './backup';
 import { newTracker, type RunMetrics } from './metrics';
 import { PUZZLES } from './puzzles';
 
@@ -387,6 +389,50 @@ describe('the cookie mirror', () => {
   it('ignores a mirror written by a format it does not know', () => {
     document.cookie = 'fm-results=9~zz~zz~nonsense';
     expect(getStats(11)).toEqual({ played: 0, best: null, streak: 0 });
+  });
+});
+
+describe('getHistory', () => {
+  it('is empty before anything is played', () => {
+    expect(getHistory()).toEqual({ days: [], unnamed: 0 });
+  });
+
+  it('hands back every recorded day in day order, give-ups included', () => {
+    saveResult(12, 30000, V1);
+    saveGaveUp(3, 240000, V1);
+    saveResult(7, 20000, V2);
+    expect(getHistory()).toEqual({
+      days: [
+        { day: 3, ms: 240000, gaveUp: true },
+        { day: 7, ms: 20000, gaveUp: false },
+        { day: 12, ms: 30000, gaveUp: false },
+      ],
+      unnamed: 0,
+    });
+  });
+
+  it('keeps a result from an older version of its day, as the stats do', () => {
+    localStorage.setItem(KEY, JSON.stringify({ results: { 3: { ms: 12345, at: '' } } }));
+    expect(getHistory().days).toEqual([{ day: 3, ms: 12345, gaveUp: false }]);
+  });
+
+  it('reports the days the mirror can count but not name, rather than dropping them', () => {
+    installCookies();
+    // A mirror that has carried forty days in its totals but can only name two of them.
+    backup.save({
+      entries: [
+        { day: 50, ms: 30000, v: V1 },
+        { day: 51, ms: 20000, v: V1 },
+      ],
+      played: 40,
+      best: 9000,
+    });
+    installStorage();
+    const history = getHistory();
+    expect(history.days.map((d) => d.day)).toEqual([50, 51]);
+    expect(history.unnamed).toBe(38);
+    // ...and the totals it sits beside agree with it.
+    expect(getStats(51).played).toBe(40);
   });
 });
 

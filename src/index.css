@@ -123,32 +123,6 @@ body,
   border-color: var(--accent);
 }
 
-.clock.is-done {
-  color: var(--ok);
-  border-color: var(--ok);
-}
-
-/* Done, but not won. Green is the colour this game uses for landing the match, and a
-   clock left green over a day nobody solved says the opposite of what happened. */
-.clock.is-done.is-quiet {
-  color: var(--muted);
-  border-color: var(--line);
-}
-
-/* Once the run is over the clock is a button back to the result. Same pill either way:
-   the element does not move, grow, or restyle, it just becomes pressable. */
-button.clock {
-  font-family: inherit;
-  font-weight: inherit;
-  background: none;
-  cursor: pointer;
-}
-
-button.clock:focus-visible {
-  outline: 2px solid var(--ok);
-  outline-offset: 2px;
-}
-
 .topbar-actions {
   display: flex;
   gap: 6px;
@@ -1033,6 +1007,169 @@ button.reference:focus-visible {
 .update-refresh:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ---------- stats ---------- */
+
+/* Sits where the clock does when there is no hunt to time, so it takes the clock's
+   job of pushing the buttons over to the right. */
+.btn-stats {
+  margin: 0 auto 0 0;
+  color: var(--muted);
+}
+
+.btn-stats.is-on {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.btn-stats svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.stats h3 {
+  margin: 16px 0 4px;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stats .result-stats {
+  margin: 4px 0 8px;
+}
+
+.howto p.stats-note {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.stats-week {
+  list-style: none;
+  margin: 8px 0 6px;
+  padding: 0;
+}
+
+.stats-week li {
+  display: grid;
+  grid-template-columns: 2.4em 1fr 3.2em;
+  grid-template-areas: "day track time" ". sub sub";
+  align-items: center;
+  column-gap: 8px;
+  margin: 0 0 6px;
+}
+
+.stats-day {
+  grid-area: day;
+  font-size: 0.82rem;
+}
+
+.stats-track {
+  grid-area: track;
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.stats-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--ok);
+}
+
+.stats-tick {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+}
+
+.stats-time {
+  grid-area: time;
+  text-align: right;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-sub {
+  grid-area: sub;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.howto p.stats-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.stats-key-bar {
+  width: 14px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ok);
+}
+
+.stats-key-tick {
+  width: 2px;
+  height: 12px;
+  margin-left: 8px;
+  background: var(--text);
+}
+
+.stats-recent {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  max-width: 260px;
+  margin: 8px 0 14px;
+}
+
+.stats-head {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.stats-mark {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
+.stats-mark.is-solved {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.stats-mark.is-gave-up {
+  background: var(--muted);
+  border-color: var(--muted);
+  opacity: 0.55;
+}
+
+.stats-mark.is-today {
+  border-color: var(--accent);
+}
+
+.stats-mark.is-ahead,
+.stats-mark.is-none {
+  border-style: dashed;
+  opacity: 0.35;
 }
 
 /* ---------- what's counted ---------- */

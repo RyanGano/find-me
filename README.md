@@ -982,8 +982,16 @@ It also records, as a flag on a run it already has, whether the share button was
 -- the clearest sign the result card is worth reading, and so the thing to watch when the
 card changes. A share never creates a run and never counts as a play.
 
-The tally is read back in exactly one place: the result card, once a run is over, says
-what share of the day's runs found the shape and the median find time. Never before or
+Opening the stats panel is recorded the same way, as a flag on a run the server already
+has: it says whether the panel is opened at all, and -- read against the run's own time --
+whether it is reached for more after a slow day than a fast one. Because it can only land
+on an existing run, an open before the clock starts or on a board reopened after a reload
+is not counted. Nothing that would join one run to the next is kept to make those count.
+
+The tally is read back in two places. The result card, once a run is over, says what
+share of the day's runs found the shape and the median find time. The stats panel sets
+each weekday of the player's own history beside everyone's median on the same days --
+only ever days the player has already finished, asked for together in one read. Never before or
 during a hunt -- a solve rate on screen is a difficulty hint, and would leak into the
 times the ramp is tuned against -- and never on a practice run. It is aggregates only,
 computed on a schedule and served from cache, and a day with fewer than `TALLY_FLOOR`

@@ -25,6 +25,11 @@ export function weekday(d: Date): number {
  */
 const EPOCH_WEEKDAY = weekday(EPOCH);
 
+/** The weekday a day number falls on, Monday as 0 -- which is also its rung in `RAMP`. */
+export function weekdayOf(index: number): number {
+  return (((index + EPOCH_WEEKDAY) % 7) + 7) % 7;
+}
+
 /** Days elapsed since the epoch, in the player's own timezone. */
 export function dayIndex(now: Date = new Date()): number {
   return Math.round((localMidnight(now) - localMidnight(EPOCH)) / DAY_MS);

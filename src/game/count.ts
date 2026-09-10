@@ -35,8 +35,12 @@ const OPT_OUT = 'find-me:no-count';
  * `shared` is the other one that is not an ending: the player pressed share on the result
  * card. The server records it as a flag on a run it already has, and never lets it create
  * a run, so it can never count as a play.
+ *
+ * `stats` is the same kind of flag: the player opened their stats panel while this run was
+ * on record. Like a share it can only land on a run the server already has, so a panel
+ * opened before the clock starts, or on a board reopened after a reload, is not counted.
  */
-export type RunState = 'start' | 'stuck' | 'left' | 'gave-up' | 'solved' | 'shared';
+export type RunState = 'start' | 'stuck' | 'left' | 'gave-up' | 'solved' | 'shared' | 'stats';
 
 export interface CountPayload {
   run: string;
@@ -173,6 +177,48 @@ export async function fetchTally(day: number, timeoutMs = 5000): Promise<DayTall
   } catch {
     return null;
   }
+}
+
+/** Most days one read asks for; the server refuses to answer more than this anyway. */
+export const MAX_TALLY_DAYS = 60;
+
+/**
+ * How everyone did on several days at once, for the stats panel. Only days that clear
+ * the floor come back; the rest, and every failure, are simply absent.
+ *
+ * The caller asks only for days the player has already finished, so this can never be
+ * the difficulty hint `fetchTally` is careful not to be.
+ */
+export async function fetchTallies(
+  days: number[],
+  timeoutMs = 5000,
+): Promise<Map<number, DayTally>> {
+  const found = new Map<number, DayTally>();
+  const url = endpoint();
+  const asked = days.slice(-MAX_TALLY_DAYS);
+  if (!url || !isCounted() || asked.length === 0) return found;
+  try {
+    const ctrl = typeof AbortController === 'function' ? new AbortController() : undefined;
+    const timer = ctrl && setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(`${url}?days=${asked.join(',')}`, {
+        mode: 'cors',
+        signal: ctrl?.signal,
+      });
+      if (!res.ok) return found;
+      const body: unknown = await res.json();
+      if (!body || typeof body !== 'object' || Array.isArray(body)) return found;
+      for (const day of asked) {
+        const t = readTally((body as Record<string, unknown>)[String(day)]);
+        if (t) found.set(day, t);
+      }
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  } catch {
+    // Blocked, slow or refused: the panel draws the player's own times on their own.
+  }
+  return found;
 }
 
 function readTally(body: unknown): DayTally | null {
