@@ -156,18 +156,20 @@ export function ResultCard({
         <div className="result-age-block">
           <p className="result-age">
             Your Find Me Age: <strong>{age}</strong>
+            <button
+              type="button"
+              className="result-age-info"
+              aria-label="How is this worked out?"
+              title="How is this worked out?"
+              onClick={() => setShowAgeInfo(true)}
+            >
+              i
+            </button>
           </p>
           {/* What the number was made of. Only the two signals furthest from par are
               named: the whole list is a wall of jargon, and the interesting thing about a
               run is always the one or two ways it was unusual. */}
           {parts.length > 0 && <p className="result-age-why">{whyLine(parts)}</p>}
-          <button
-            type="button"
-            className="result-age-info"
-            onClick={() => setShowAgeInfo(true)}
-          >
-            How is this worked out?
-          </button>
         </div>
       )}
 
