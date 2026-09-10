@@ -367,17 +367,19 @@ export default function App() {
   }, [showResult, closeResult, showCredits, showHowTo, dismissHowTo, showStats]);
 
   /**
-   * Reported once per run, the first time the stats panel is opened with the run on
-   * record -- which is what says whether the panel earns its place, and whether it is
-   * reached for more after a slow day than a fast one. Before the clock starts there is no
-   * row for the flag to land on, so an open then is not counted.
+   * Reported once per page load, the first time the stats panel is opened -- which is what
+   * says whether the panel earns its place. Most opens come before the day's clock starts
+   * or on a finished board reopened later, so this must not wait for a run: gating it on
+   * one once meant the tally heard almost none of them. With a run on record the server
+   * keeps it as a flag on that run, to read against the run's time; without one it is
+   * counted on its own and never as a play.
    */
   const reportedStats = useRef(false);
   const noteStatsOpened = useCallback(() => {
-    if (isPractice || startedAt === null || reportedStats.current) return;
+    if (isPractice || reportedStats.current) return;
     reportedStats.current = true;
     count(runId, day, 'stats');
-  }, [isPractice, startedAt, runId, day]);
+  }, [isPractice, runId, day]);
 
   // Every button that opens a panel is a switch, not a door. Solving used to be one-way
   // -- the result card came down on any tap and a refresh was the only way back to your

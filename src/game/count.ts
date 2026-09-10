@@ -36,9 +36,10 @@ const OPT_OUT = 'find-me:no-count';
  * card. The server records it as a flag on a run it already has, and never lets it create
  * a run, so it can never count as a play.
  *
- * `stats` is the same kind of flag: the player opened their stats panel while this run was
- * on record. Like a share it can only land on a run the server already has, so a panel
- * opened before the clock starts, or on a board reopened after a reload, is not counted.
+ * `stats` is sent once per page load when the player opens their stats panel. On a run the
+ * server already has it is a flag like a share; with no run behind it -- the panel opened
+ * before the clock starts, or on a board reopened after a reload -- the server counts the
+ * open on its own. Either way it never counts as a play.
  */
 export type RunState = 'start' | 'stuck' | 'left' | 'gave-up' | 'solved' | 'shared' | 'stats';
 

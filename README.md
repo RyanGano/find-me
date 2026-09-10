@@ -985,11 +985,13 @@ It also records, as a flag on a run it already has, whether the share button was
 -- the clearest sign the result card is worth reading, and so the thing to watch when the
 card changes. A share never creates a run and never counts as a play.
 
-Opening the stats panel is recorded the same way, as a flag on a run the server already
-has: it says whether the panel is opened at all, and -- read against the run's own time --
-whether it is reached for more after a slow day than a fast one. Because it can only land
-on an existing run, an open before the clock starts or on a board reopened after a reload
-is not counted. Nothing that would join one run to the next is kept to make those count.
+Opening the stats panel is recorded once per page load. With a run on record it is a flag
+on that run, so it can be read against the run's own time -- is the panel reached for more
+after a slow day than a fast one. Without one -- opened before the clock starts, or on a
+board reopened after a reload -- it is counted on its own, as that page load's random id
+and the day, and never as a play. It used to be dropped in those cases, and since that is
+where most opens happen the count read zero while players were sharing pictures of the
+panel. Nothing that would join one run or page load to the next is kept.
 
 The tally is read back in two places. The result card, once a run is over, says what
 share of the day's runs found the shape and the median find time. The stats panel sets
