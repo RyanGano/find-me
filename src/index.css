@@ -267,6 +267,69 @@ button.clock:focus-visible {
   background: var(--accent);
 }
 
+/*
+ * The test-mode banner.
+ *
+ * The same full-width bar a practice run gets, because being obvious is the whole job: a
+ * test run looks exactly like the real game, and the one thing standing between that and
+ * a real result in the wrong store is this strip of colour across the top. A tidier pill
+ * was tried and was worse -- it read as a decoration to be scanned past, and on a phone
+ * the sentence had to be ellipsised to fit inside it.
+ *
+ * What it adds over the practice bar is the way out, because leaving is a plain address
+ * this can simply link to -- the mode lives in the URL and nowhere else.
+ */
+.test-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0;
+  padding: 5px 10px 5px 14px;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--accent);
+}
+
+.test-banner-what {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * An anchor, not a button: leaving is a navigation to the plain address and should behave
+ * like one -- middle-click, long-press and "open in new tab" all do the right thing. It
+ * is boxed rather than underlined so that it reads as the control it is, on a bar whose
+ * every other word is a caption.
+ */
+.test-banner-exit {
+  flex: none;
+  padding: 2px 12px;
+  border: 1px solid var(--bg);
+  border-radius: 999px;
+  color: var(--bg);
+  font: inherit;
+  text-decoration: none;
+}
+
+.test-banner-exit:hover,
+.test-banner-exit:focus-visible {
+  color: var(--accent);
+  background: var(--bg);
+}
+
+/* Narrow enough that the sentence would be cut mid-word: keep the mode and the way out,
+   which are the two things that matter, and drop the explanation. */
+@media (max-width: 26rem) {
+  .test-banner-what span {
+    display: none;
+  }
+}
+
 /* ---------- ?diag ---------- */
 
 .diag {

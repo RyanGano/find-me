@@ -531,14 +531,17 @@ export default function App() {
 
       {/* Test mode looks exactly like the real game, which is the point of it and also
           the danger: without this there is nothing on the screen to tell you that the
-          streak you are looking at is not your streak. It sticks for the tab, so it
-          has to say so on every render and not just on the visit that turned it on. */}
+          streak you are looking at is not your streak. It carries its own way out,
+          because the way out is a plain address the banner can simply link to -- the
+          mode lives in the URL and nowhere else. */}
       {isTest && (
-        <p className="practice-note">
-          test mode — separate store, tally marked dry.{' '}
-          {/* The plain address, because that is the whole of how you leave: the mode
-              lives in the URL and nowhere else. */}
-          <a href="./">leave</a>
+        <p className="test-banner">
+          <span className="test-banner-what">
+            test mode <span>— separate store, tally not counted</span>
+          </span>
+          <a className="test-banner-exit" href="./">
+            exit
+          </a>
         </p>
       )}
 
