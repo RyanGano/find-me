@@ -237,6 +237,10 @@ export default function App() {
 
   const canGiveUp = startedAt !== null && done === null && clock >= gate;
 
+  // The plea, or nothing: it has no business on screen once the door it was about has
+  // opened, and the button that raises it stands down for as long as it is up.
+  const pleading = plea !== null && !confirming && !canGiveUp ? plea : null;
+
   /**
    * Reported once per run, the first time somebody reaches for a way out that is not
    * open yet.
@@ -440,32 +444,6 @@ export default function App() {
               </svg>
             </button>
           )}
-          {/* Visible from the moment the clock starts, and shut rather than hidden until
-              the day has had a proper hunt out of the player. A button that appears from
-              nowhere half way through a run is a button nobody knows is coming, and the
-              player it exists for -- the one about to close the tab -- has to be able to
-              see that a way out exists before they need it. Pressing it early is not a
-              mis-tap either: it is somebody saying they are stuck, which is worth
-              hearing, so it answers rather than doing nothing.
-
-              Which is why it carries no disabled state at all, `aria-disabled` included:
-              it is dimmed, but it is a button that works, and a screen reader announcing
-              it as unavailable would be describing a different button. What changes
-              before the gate is what pressing it does, and the label says so. */}
-          {startedAt !== null && done === null && (
-            <button
-              type="button"
-              className={`btn giveup-btn${canGiveUp ? '' : ' is-shut'}`}
-              onClick={askToGiveUp}
-              title={
-                canGiveUp
-                  ? 'Stop the clock and show me where it is'
-                  : 'Not yet — keep looking a little longer'
-              }
-            >
-              give up
-            </button>
-          )}
           <button type="button" className="btn btn-icon" onClick={reset} title="Reset view">
             ⟲
           </button>
@@ -568,10 +546,44 @@ export default function App() {
           </p>
         )}
 
-        {plea && !confirming && !canGiveUp && (
-          <p className="giveup-note is-plea" role="status" key={plea.n}>
-            {plea.text}
+        {pleading && (
+          <p className="giveup-note is-plea" role="status" key={pleading.n}>
+            {pleading.text}
           </p>
+        )}
+
+        {/* Visible from the moment the clock starts, and shut rather than hidden until
+            the day has had a proper hunt out of the player. A button that appears from
+            nowhere half way through a run is a button nobody knows is coming, and the
+            player it exists for -- the one about to close the tab -- has to be able to
+            see that a way out exists before they need it. Pressing it early is not a
+            mis-tap either: it is somebody saying they are stuck, which is worth
+            hearing, so it answers rather than doing nothing.
+
+            Which is why it carries no disabled state at all, `aria-disabled` included:
+            it is dimmed, but it is a button that works, and a screen reader announcing
+            it as unavailable would be describing a different button. What changes
+            before the gate is what pressing it does, and the label says so.
+
+            It lives on the board rather than in the bar because the bar was full, and
+            because this corner is where the answer arrives: press it and the reply --
+            the question, or a word of encouragement -- comes up in the same band along
+            the bottom. It stands down while that reply is on screen, which is also what
+            keeps the two off each other on a narrow phone, where the note is nearly the
+            full width of the board. */}
+        {startedAt !== null && done === null && !confirming && !pleading && (
+          <button
+            type="button"
+            className={`giveup-btn${canGiveUp ? '' : ' is-shut'}`}
+            onClick={askToGiveUp}
+            title={
+              canGiveUp
+                ? 'Stop the clock and show me where it is'
+                : 'Not yet — keep looking a little longer'
+            }
+          >
+            give up
+          </button>
         )}
 
         {/* Gone the instant the run ends, including by the player finding the thing

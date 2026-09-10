@@ -816,7 +816,7 @@ button.reference:focus-visible {
 }
 
 @media (max-width: 420px) {
-  /* Four buttons, a clock and a title already fill the bar on a phone. */
+  /* A title, a clock and three buttons still fill the bar on a phone. */
   .beta-pill {
     padding: 2px 5px;
     letter-spacing: 0.08em;
@@ -826,6 +826,12 @@ button.reference:focus-visible {
     top: 8px;
     right: 8px;
     padding: 8px 8px 6px;
+  }
+
+  /* Mirrors the badge's inset in the opposite corner. */
+  .giveup-btn {
+    bottom: 8px;
+    left: 8px;
   }
 
   .result-time {
@@ -1170,24 +1176,52 @@ button.reference:focus-visible {
 /*
  * The way out of a hunt, in the daily game.
  *
- * A text button, quiet enough not to compete with the pause and the reset -- it is the
- * one control here that ends the day, and a control that ends the day should not be the
- * loudest thing in the bar. `is-shut` is the state before the day has let them have it:
- * dimmed like a disabled button, but still live, because pressing it early is somebody
- * saying they are stuck and that is worth hearing rather than swallowing.
+ * Bottom-left of the board, diagonally opposite the badge and in the one corner nothing
+ * else uses. It was in the top bar, where it was a fifth control in a row that was
+ * already full on a phone; down here it costs the bar nothing and sits in the band the
+ * answer comes back in, so the question and the reply happen in the same place.
+ *
+ * It wears the badge's own card treatment rather than the bar's button, because it is
+ * now a thing on the painting and has to stay legible over whatever paint is under it --
+ * and the two corner objects should read as the same family. Quiet all the same: it is
+ * the one control that ends the day, and a control that ends the day should not be the
+ * loudest thing on the board. `is-shut` is the state before the day has let them have
+ * it: dimmed like a disabled button, but still live, because pressing it early is
+ * somebody saying they are stuck and that is worth hearing rather than swallowing.
+ *
+ * No z-index, like the badge: the scrim and the panels are meant to cover it.
  */
 .giveup-btn {
-  padding: 6px 10px;
-  font-size: 0.8rem;
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
   color: var(--muted);
+  padding: 7px 12px;
+  background: rgba(18, 16, 14, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .giveup-btn:hover {
   color: var(--text);
+  border-color: var(--muted);
+}
+
+.giveup-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .giveup-btn.is-shut {
-  opacity: 0.4;
+  opacity: 0.5;
 }
 
 /*
