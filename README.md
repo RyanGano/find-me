@@ -601,6 +601,25 @@ hearing, so it answers rather than doing nothing. What comes back is deliberatel
 about how much longer -- a countdown turns the wait into the thing being watched, and a
 player watching a number is not looking at the painting.
 
+**The wait is known to run long, and is deliberately not corrected.** The first look at
+real play against the ramp -- a dozen shipped days, every one of them with a finish rate
+above ninety per cent, so the medians are not missing the slow half -- came in at a median
+of about a third of what `expectedSearchMs` predicts. The gate inherits that, so it opens
+later than the 1.5x it claims to.
+
+The obvious fix is a calibration constant on the gate, and it was rejected. It would give
+the ramp and the gate two different beliefs about how long a day takes while `age.ts` went
+on using the uncorrected one, and a difficulty number that disagrees with itself in two
+places is the failure this file already records twice. If the curve runs long, the curve is
+what is wrong, and refitting it means refitting the age with it -- on far more than a dozen
+days of a handful of runs each, mostly from people who play every day and are quicker than
+the players the number is meant to describe.
+
+So the gate is left approximate on purpose, erring late. Late is the safer error: the risk
+worth avoiding is a way out so easy to reach that it eats into the solve rate. What settles
+it is not more solve medians but the `stuck` readings below, which measure the wanted thing
+directly.
+
 That early press is also the best difficulty reading the tally has ever had. A `left`
 beacon is ambiguous: a phone call, a back-swipe, a flat battery. A give-up is
 unambiguous but only ever heard from the players who stopped. The early press -- `stuck`
