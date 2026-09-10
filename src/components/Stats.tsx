@@ -85,10 +85,11 @@ export function Stats({ onDismiss }: Props) {
             </p>
           )}
 
-          <h3>Your week</h3>
+          <h3>Every week so far, by day</h3>
           <p className="stats-note">
-            Your typical time on each day
-            {anyOthers ? ', and everyone else’s on the same days' : ''}.
+            Your typical time on all the Mondays, all the Tuesdays and so on, across every
+            week you have played
+            {anyOthers ? ' — beside everyone else’s on those same days' : ''}.
           </p>
           <ul className="stats-week">
             {week.map((w) => (
@@ -107,7 +108,6 @@ export function Stats({ onDismiss }: Props) {
                   {w.solved + w.gaveUp === 0
                     ? 'not played yet'
                     : [
-                        w.solved > 0 && `${w.solved} found`,
                         w.gaveUp > 0 && `${w.gaveUp} not found`,
                         w.othersMs !== null && `everyone ${rough(w.othersMs)}`,
                       ]
