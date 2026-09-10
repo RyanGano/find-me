@@ -14,45 +14,30 @@
  * default. Nothing has to be cleaned up afterwards -- and nothing here is a user id: a
  * run is still keyed by the random per-run id it always was.
  *
- * It sticks for the tab. A query parameter alone is lost by any reload that does not
- * carry it -- the update-available reload, a relaunch from the home screen -- and a
- * player who silently fell back to the real store halfway through a test run would be
- * writing real results while believing they were not. `?test=off` leaves it, as does
- * closing the tab.
+ * It lasts exactly as long as the URL says so, and not one load longer. A flag that
+ * outlived the address would have to be *left* rather than simply navigated away from,
+ * and the ways of leaving are not all under the player's nose: `sessionStorage` survives
+ * every navigation within a tab and is handed back by session restore, so quitting the
+ * browser and reopening it would return someone to test mode without their having asked
+ * for it twice. Going to the plain address means the real game, always. The one reload
+ * the app performs itself -- the update notice -- keeps the query string, so a test run
+ * cannot lose the mode underneath itself either.
  */
 
-const KEY = 'find-me:test-mode';
-
-/** True for `?test`, `?test=1`; false for `?test=off` and `?test=0`. */
-function asked(search: string): boolean | undefined {
+/** True for `?test` and `?test=1`; false for `?test=off` and `?test=0`. */
+function asked(search: string): boolean {
   const value = new URLSearchParams(search).get('test');
-  if (value === null) return undefined;
+  if (value === null) return false;
   return value !== 'off' && value !== '0';
 }
 
 function detect(): boolean {
-  let sticky = false;
   try {
-    sticky = sessionStorage.getItem(KEY) === '1';
-  } catch {
-    // Storage disabled: test mode then lasts exactly as long as the URL does.
-  }
-
-  let wanted: boolean | undefined;
-  try {
-    wanted = asked(window.location.search);
+    return asked(window.location.search);
   } catch {
     // No `window`, which means a test or a tool, neither of which is in test mode.
+    return false;
   }
-  if (wanted === undefined) return sticky;
-
-  try {
-    if (wanted) sessionStorage.setItem(KEY, '1');
-    else sessionStorage.removeItem(KEY);
-  } catch {
-    // As above.
-  }
-  return wanted;
 }
 
 let active = detect();
@@ -62,9 +47,9 @@ export function isTestMode(): boolean {
 }
 
 /**
- * Re-read the URL and the tab. Only the tests call this; the app decides once, on load,
- * because a mode that could change under a running hunt is a mode that could bank half
- * a run to one store and half to the other.
+ * Re-read the URL. Only the tests call this; the app decides once, on load, because a
+ * mode that could change under a running hunt is a mode that could bank half a run to
+ * one store and half to the other.
  */
 export function refreshTestMode(): void {
   active = detect();

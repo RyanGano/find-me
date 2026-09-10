@@ -757,13 +757,22 @@ not real:
 
 Three things are worth knowing about it.
 
-**It sticks for the tab.** A query parameter alone is lost by any reload that does not
-carry it — the update-available reload, a relaunch from the home screen — and a run that
-silently fell back to the real store halfway through would be writing real results while
-looking exactly like a test. So entering `?test` sets a `sessionStorage` flag and every
-later load in that tab stays in test mode. `?test=off` leaves, and so does closing the
-tab. A banner says which mode you are in on every render, because the two look identical
-otherwise.
+**It lasts exactly as long as the URL says so.** Going to the plain address is the real
+game, always — there is no flag to clear and no state to remember. The first version of
+this did keep a `sessionStorage` flag, on the theory that a reload which dropped the
+parameter would silently put a half-finished test run back on the real store. That theory
+was wrong twice over. The only reload the app performs itself is the update notice's
+`location.reload()`, which keeps the query string; and `sessionStorage` survives every
+navigation within a tab *and* is handed back by session restore, so quitting the browser
+and reopening it would return you to test mode without your having asked for it a second
+time. Predictable beat sticky. A banner still says which mode you are in on every render,
+because the two look identical otherwise.
+
+The cost is real and worth stating: leave a test run mid-hunt and come back to the plain
+address, and you are in the real game. The banked test run is still in `find-me:test`,
+untouched and unreachable until you ask for `?test` again — so nothing is lost, but the
+run is not resumed either. That is the right way round. A mode that quietly resumed as
+*test* on the real address would be the failure this arrangement exists to prevent.
 
 **The tally row is written, not suppressed.** Suppressing it would mean the beacon path
 is the one path a test run cannot check. Writing it flagged means the path is exercised

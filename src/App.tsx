@@ -536,7 +536,9 @@ export default function App() {
       {isTest && (
         <p className="practice-note">
           test mode — separate store, tally marked dry.{' '}
-          <a href="?test=off">leave</a>
+          {/* The plain address, because that is the whole of how you leave: the mode
+              lives in the URL and nowhere else. */}
+          <a href="./">leave</a>
         </p>
       )}
 

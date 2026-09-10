@@ -3,7 +3,7 @@ import { count, type CountPayload } from './count';
 import { getStats, saveResult } from './storage';
 import { isTestMode, refreshTestMode } from './testMode';
 
-/** Land on the page with this query string, keeping whatever the tab already holds. */
+/** Land on the page with this query string. */
 function open(search: string): void {
   Object.defineProperty(globalThis, 'window', {
     configurable: true,
@@ -12,28 +12,9 @@ function open(search: string): void {
   refreshTestMode();
 }
 
-let session = new Map<string, string>();
-
-function installSession(data: Map<string, string>): void {
-  session = data;
-  Object.defineProperty(globalThis, 'sessionStorage', {
-    configurable: true,
-    value: {
-      getItem: (k: string) => data.get(k) ?? null,
-      setItem: (k: string, v: string) => void data.set(k, v),
-      removeItem: (k: string) => void data.delete(k),
-    },
-  });
-}
-
-beforeEach(() => {
-  installSession(new Map());
-});
-
 afterEach(() => {
   vi.unstubAllGlobals();
   Reflect.deleteProperty(globalThis, 'window');
-  Reflect.deleteProperty(globalThis, 'sessionStorage');
   refreshTestMode();
 });
 
@@ -58,46 +39,35 @@ describe('test mode', () => {
     expect(isTestMode()).toBe(true);
   });
 
+  it('reads ?test=off as off, not as a mode named off', () => {
+    open('?test=off');
+    expect(isTestMode()).toBe(false);
+    open('?test=0');
+    expect(isTestMode()).toBe(false);
+  });
+
   /**
-   * The whole reason the mode is sticky: a reload that drops the query string -- the
-   * update-available reload, a relaunch from the home screen -- must not quietly put a
-   * half-finished test run back onto the real store.
+   * The point of the whole thing: coming back to the plain address is the real game,
+   * however you left. Nothing about the mode outlives the URL that asked for it -- not a
+   * navigation within the tab, and not a browser restart that hands the tab back.
    */
-  it('survives a reload that loses the parameter', () => {
+  it('does not outlive the address that asked for it', () => {
     open('?test');
-    open('');
-    expect(isTestMode()).toBe(true);
-  });
-
-  it('is left by ?test=off, and stays left', () => {
-    open('?test');
-    open('?test=off');
-    expect(isTestMode()).toBe(false);
     open('');
     expect(isTestMode()).toBe(false);
   });
 
-  it('lasts only as long as the URL when the tab cannot remember it', () => {
-    Object.defineProperty(globalThis, 'sessionStorage', {
-      configurable: true,
-      value: {
-        getItem: () => null,
-        setItem: () => {
-          throw new Error('no');
-        },
-        removeItem: () => {},
-      },
+  it('leaves nothing behind that a later load could pick up', () => {
+    const wrote: string[] = [];
+    vi.stubGlobal('sessionStorage', {
+      getItem: () => null,
+      setItem: (k: string) => void wrote.push(k),
+      removeItem: () => {},
     });
+    vi.stubGlobal('document', { cookie: '' });
     open('?test');
     expect(isTestMode()).toBe(true);
-    open('');
-    expect(isTestMode()).toBe(false);
-  });
-
-  it('does not leave the flag behind once it is off', () => {
-    open('?test');
-    open('?test=off');
-    expect(session.size).toBe(0);
+    expect(wrote).toEqual([]);
   });
 });
 
