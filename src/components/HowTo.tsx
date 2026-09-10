@@ -29,8 +29,8 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
       <div className="howto" role="dialog" aria-label="What’s counted">
         <h2>What&rsquo;s counted</h2>
         <p className="howto-note">
-          The only thing this site records is that a run happened, whether it was solved,
-          and how long it took — nothing that identifies you.
+          The only thing this site records is that a run happened, how it ended — solved,
+          given up on, or left — and how long it took. Nothing that identifies you.
         </p>
         <div className="howto-foot">
           <button type="button" className="btn btn-primary" onClick={() => setShowPrivacy(false)}>
@@ -68,6 +68,10 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
       <p className="howto-note">
         The painting stays blurred, and the clock stays stopped, until your first move — so
         there is no free look.
+      </p>
+      <p className="howto-note">
+        If it beats you, <strong>give up</strong> in the top bar will show you where it
+        was. It opens once you have hunted for a while, and it ends your streak.
       </p>
       <p className="howto-note">
         This painting stays all week, with something different to find in it each day and

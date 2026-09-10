@@ -6,6 +6,7 @@ import {
   expectedIdleMs,
   expectedPasses,
   expectedSearchMs,
+  giveUpAfterMs,
   MAX_AGE,
   MIN_AGE,
   PAR_AGE,
@@ -517,5 +518,41 @@ describe('the breakdown', () => {
     const { parts } = estimateAge(puzzle, ms, { ...metrics, passes: 0, overshoots: 0 });
     expect(parts.find((p) => p.key === 'passes')!.ratio).toBeLessThan(1);
     expect(parts.find((p) => p.key === 'search')!.ratio).toBeCloseTo(1);
+  });
+});
+
+/**
+ * When the daily game opens the way out of a hunt.
+ *
+ * The rules it has to keep are about shape, not about the two numbers behind it: it has
+ * to be later on the days that ask for more looking, it has to be reachable on every day
+ * in the calendar, and it must never be so late that waiting for it is itself the reason
+ * somebody walks away.
+ */
+describe('giveUpAfterMs', () => {
+  it('never asks anybody to hunt for more than three minutes first', () => {
+    for (const p of PUZZLES) expect(giveUpAfterMs(p), p.id).toBeLessThanOrEqual(3 * 60 * 1000);
+  });
+
+  it('never opens on a day so gentle that a glance would reach it', () => {
+    // The floor, and the reason for it: 1.5x a Monday priced in seconds is a way out
+    // that arrives before the player has finished looking at the painting.
+    for (const p of PUZZLES) expect(giveUpAfterMs(p), p.id).toBeGreaterThanOrEqual(45 * 1000);
+  });
+
+  it('opens later on a day that expects a longer hunt', () => {
+    const easy = { ...PUZZLES[0], target: { ...PUZZLES[0].target, scan: 0.56 } };
+    const hard = { ...PUZZLES[0], target: { ...PUZZLES[0].target, scan: 0.36 } };
+    expect(giveUpAfterMs(hard)).toBeGreaterThan(giveUpAfterMs(easy));
+  });
+
+  it("opens after the day's own median hunt, not before it", () => {
+    for (const p of PUZZLES) {
+      const search = expectedSearchMs(p.target.scan ?? RAMP[p.dayOfWeek].scan, p.clutter, p.target.dim);
+      // Except where a bound has taken over, which is the point of the bounds.
+      if (giveUpAfterMs(p) < 3 * 60 * 1000) {
+        expect(giveUpAfterMs(p), p.id).toBeGreaterThanOrEqual(search);
+      }
+    }
   });
 });

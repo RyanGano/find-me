@@ -558,6 +558,56 @@ Before that, live size and angle gauges ran along the bottom. They worked, but t
 you dial in a perfect match before finding anything and then simply sweep the painting,
 which turned a seek game into a scan.
 
+### Giving up
+
+Every estimate in `difficulty.ts` is a **median**, so by construction a large slice of
+players are well past it on any given day, and the back half of the week is where that
+slice is largest. For a long time the game's only answer to those players was a blank
+screen: close the tab, and the day ends with no answer, no result and no record that you
+played at all. That is the single most likely way a streak ends for good, and it is the
+one outcome that teaches a player nothing -- the whole skill this game trains is a way of
+scanning a painting, and you cannot learn it from a puzzle you never saw the answer to.
+
+So there is a deliberate way out. It stops the clock, frames the shape in the middle of
+the board at a little **under** the size a match needs, and closes the day out as played.
+The framing is `reveal()` in `useHunt.ts` and is deliberately on the zoomed-*out* side of
+the match: from there every zoom-out leads away from the match and towards the whole
+canvas, which is where somebody who has just been shown the answer is trying to get to.
+Landing on the match, or past it, would trip the solve on the way.
+
+**The streak ends.** A give-up counts towards `played` and never towards `best`, and it
+breaks the streak on the day it happened. The alternative was considered and is worse: a
+give-up that kept the streak alive would be strictly better than not playing at all, which
+is exactly the wrong thing to reward. The share text says plainly that it was not found
+and carries no speed bar and no Find Me Age -- both of those say how well a hunt went, and
+a hunt that ended in being shown the answer did not go well. Dressing it as a score is the
+one thing this must not do.
+
+**The wait before it opens** is 1.5x the day's own `expectedSearchMs`, floored at
+forty-five seconds and capped at three minutes (`giveUpAfterMs` in `age.ts`). A multiple
+rather than a fixed number because the ramp already knows how hard each day is. The floor
+because the multiple alone is nonsense at the gentle end -- a Monday priced at a few
+seconds of searching would open its exit eleven seconds in, before somebody who had
+merely opened the page had finished looking at the painting, and a Monday give-up rate
+built out of glances would mean nothing. The cap because past about three minutes the
+wait stops protecting the puzzle and becomes the thing the player quits over, which is
+the failure it exists to prevent arrived at by a longer road.
+
+The button is **visible from the moment the clock starts** and merely shut until then --
+not hidden and then produced half way through a run. A control nobody knows is coming
+cannot reassure the player it exists for, who is deciding whether to close the tab. And
+pressing it early is not a mis-tap: it is somebody saying they are stuck, which is worth
+hearing, so it answers rather than doing nothing. What comes back is deliberately vague
+about how much longer -- a countdown turns the wait into the thing being watched, and a
+player watching a number is not looking at the painting.
+
+That early press is also the best difficulty reading the tally has ever had. A `left`
+beacon is ambiguous: a phone call, a back-swipe, a flat battery. A give-up is
+unambiguous but only ever heard from the players who stopped. The early press -- `stuck`
+in `count.ts`, recorded on the run row beside whatever the run goes on to become -- is
+heard from the players who carried on and **found** it too. Per-day give-up and stuck
+rates arrive for every player, rather than for the handful a testbed round can reach.
+
 ## How it is built
 
 The whole game is one similarity transform. `src/game/transform.ts` maps image-space
@@ -829,7 +879,8 @@ has to match the domain.
 ## Counting
 
 The site keeps an anonymous tally: how many runs are started each day, how many are
-solved, and how long both take. One row per run, keyed by a random id the page mints when
+solved, how many end in a give-up, how many simply walk away, how long each of those
+took, and how far into a hunt somebody first reached for the way out. One row per run, keyed by a random id the page mints when
 the clock starts and forgets when the run ends -- no account, no cookie, and nothing that
 outlives a single run, so the rows cannot be grouped by person even in principle. Practice
 runs are never counted.

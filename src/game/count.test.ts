@@ -70,10 +70,24 @@ describe('count', () => {
     expect(beacons[0].body).toEqual({ run: 'run-1', day: 42, state: 'left', ms: 8000 });
   });
 
+  it('posts a give-up with how long the hunt ran before it', () => {
+    count('run-1', 42, 'gave-up', 240000);
+    expect(posts[0].body).toEqual({ run: 'run-1', day: 42, state: 'gave-up', ms: 240000 });
+    // Not a beacon: the player is still on the page, looking at what they missed.
+    expect(beacons).toHaveLength(0);
+  });
+
+  it('posts a reach for the way out before it was open', () => {
+    count('run-1', 42, 'stuck', 30000);
+    expect(posts[0].body).toEqual({ run: 'run-1', day: 42, state: 'stuck', ms: 30000 });
+  });
+
   it('says nothing at all once the player has opted out', () => {
     setCounted(false);
     count('run-1', 42, 'start');
+    count('run-1', 42, 'stuck', 3000);
     count('run-1', 42, 'left', 8000);
+    count('run-1', 42, 'gave-up', 9000);
     count('run-1', 42, 'solved', 9000);
     expect(posts).toHaveLength(0);
     expect(beacons).toHaveLength(0);

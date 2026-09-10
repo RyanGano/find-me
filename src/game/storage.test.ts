@@ -7,6 +7,7 @@ import {
   getProgress,
   getResult,
   getStats,
+  saveGaveUp,
   saveProgress,
   saveResult,
 } from './storage';
@@ -143,6 +144,78 @@ describe('saveResult / getCurrentResult', () => {
     expect(getCurrentResult(1, V1)).toBeUndefined();
     saveResult(1, 500, V1);
     expect(getCurrentResult(1, V1)?.ms).toBe(500);
+  });
+});
+
+describe('giving up', () => {
+  it('closes the day out, so coming back does not hand it over again', () => {
+    saveGaveUp(3, 240000, V1);
+    expect(getCurrentResult(3, V1)?.ms).toBe(240000);
+    expect(getCurrentResult(3, V1)?.gaveUp).toBe(true);
+  });
+
+  it('counts as played', () => {
+    saveGaveUp(3, 240000, V1);
+    expect(getStats(3).played).toBe(1);
+  });
+
+  it('is never a best time, however long or short the hunt was', () => {
+    saveResult(2, 30000, V1);
+    saveGaveUp(3, 900, V1);
+    expect(getStats(3).best).toBe(30000);
+  });
+
+  it('has no best to show when it is the only day played', () => {
+    saveGaveUp(3, 240000, V1);
+    expect(getStats(3).best).toBeNull();
+  });
+
+  it('ends the streak on the day it happened', () => {
+    saveResult(1, 30000, V1);
+    saveResult(2, 30000, V1);
+    saveGaveUp(3, 240000, V1);
+    expect(getStats(3).streak).toBe(0);
+  });
+
+  it('is still a break in the streak once the day has passed', () => {
+    saveResult(1, 30000, V1);
+    saveGaveUp(2, 240000, V1);
+    saveResult(3, 30000, V1);
+    expect(getStats(3).streak).toBe(1);
+  });
+
+  it('does not stop a streak that has not reached it yet', () => {
+    saveGaveUp(1, 240000, V1);
+    saveResult(2, 30000, V1);
+    saveResult(3, 30000, V1);
+    expect(getStats(3).streak).toBe(2);
+  });
+
+  it('is protected like a solve: the day cannot be replayed into a time', () => {
+    saveGaveUp(3, 240000, V1);
+    saveResult(3, 1000, V1);
+    expect(getCurrentResult(3, V1)?.gaveUp).toBe(true);
+    expect(getStats(3).best).toBeNull();
+  });
+
+  it('is superseded by a re-hidden day, exactly as a solve is', () => {
+    saveGaveUp(3, 240000, V1);
+    expect(getCurrentResult(3, V2)).toBeUndefined();
+    saveResult(3, 1000, V2);
+    expect(getCurrentResult(3, V2)?.gaveUp).toBeUndefined();
+  });
+
+  it('survives the mirror as a give-up, not as a time somebody earned', () => {
+    installCookies();
+    saveResult(1, 30000, V1);
+    saveGaveUp(2, 900, V1);
+    saveResult(3, 30000, V1);
+
+    // iOS has swept localStorage; only the cookie is left.
+    installStorage();
+
+    expect(getStats(3)).toEqual({ played: 3, best: 30000, streak: 1 });
+    expect(getCurrentResult(2, V1)?.gaveUp).toBe(true);
   });
 });
 

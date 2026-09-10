@@ -3,7 +3,7 @@ import { formatCountdown, formatTime } from './format';
 import { PUZZLES } from './puzzles';
 import { PAR_AGE, SPREAD } from './age';
 import type { RunMetrics } from './metrics';
-import { buildAgeDataText, buildShareText, speedBar } from './share';
+import { buildAgeDataText, buildGaveUpText, buildShareText, speedBar } from './share';
 
 describe('formatTime', () => {
   it('shows sub-minute times in seconds', () => {
@@ -67,6 +67,33 @@ describe('buildShareText', () => {
   it('adds the streak only once it is worth bragging about', () => {
     expect(buildShareText(1, PUZZLES[0], 1000, 1, 20)).not.toContain('streak');
     expect(buildShareText(1, PUZZLES[0], 1000, 4, 20)).toContain('🔥 4 day streak');
+  });
+});
+
+describe('buildGaveUpText', () => {
+  it('names the day and says plainly that it was not found', () => {
+    const text = buildGaveUpText(12, PUZZLES[0], 240000);
+    expect(text).toContain('Find Me #12');
+    expect(text).toContain(PUZZLES[0].emoji);
+    expect(text.toLowerCase()).toContain("didn't find it");
+  });
+
+  it('gives it no speed bar and no age: a give-up is not a score', () => {
+    const text = buildGaveUpText(12, PUZZLES[0], 240000);
+    expect(text).not.toContain('🟩');
+    expect(text).not.toContain('⬜');
+    expect(text).not.toContain('Find Me Age');
+    expect(text).not.toContain('streak');
+  });
+
+  it('still gives nothing away about the painting or the spot', () => {
+    const text = buildGaveUpText(12, PUZZLES[0], 240000);
+    expect(text).not.toContain(PUZZLES[0].title);
+    expect(text).not.toContain(String(PUZZLES[0].target.cx));
+  });
+
+  it('sends them back to the game', () => {
+    expect(buildGaveUpText(12, PUZZLES[0], 240000)).toContain('findme.ryangano.com');
   });
 });
 

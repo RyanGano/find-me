@@ -3,7 +3,7 @@ import { estimateAge, type AgePart } from '../game/age';
 import { msUntilTomorrow } from '../game/daily';
 import { formatCountdown, formatTime } from '../game/format';
 import type { RunMetrics } from '../game/metrics';
-import { buildAgeDataText, buildShareText, shareResult, speedBar } from '../game/share';
+import { buildAgeDataText, buildGaveUpText, buildShareText, shareResult, speedBar } from '../game/share';
 import type { Stats } from '../game/storage';
 import type { Puzzle } from '../game/types';
 
@@ -13,12 +13,17 @@ interface Props {
   ms: number;
   stats: Stats;
   isPractice: boolean;
+  /**
+   * The day was given up on rather than solved, and `ms` is how long the hunt ran before
+   * that. The card says so plainly and drops everything that would read as a score.
+   */
+  gaveUp?: boolean;
   /** How the run was played. Absent for a solve recorded before the age existed. */
   metrics: RunMetrics | null;
   onReplay: () => void;
 }
 
-export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onReplay }: Props) {
+export function ResultCard({ day, puzzle, ms, stats, isPractice, gaveUp, metrics, onReplay }: Props) {
   const [status, setStatus] = useState<'idle' | 'shared' | 'copied' | 'failed'>('idle');
   const [dataStatus, setDataStatus] = useState<'idle' | 'shared' | 'copied' | 'failed'>(
     'idle',
@@ -29,14 +34,19 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
   const countdown = useCountdown(!isPractice);
 
   // Derived, never stored: retuning the estimate re-reads old runs rather than leaving
-  // them pinned to whatever the formula said on the day.
+  // them pinned to whatever the formula said on the day. Never asked for at all on a run
+  // that did not finish -- an age is a reading of how a hunt was played, and a hunt that
+  // ended in being shown the answer has no such reading. Asking anyway would still
+  // produce a number, and a number on this card reads as a score.
   const { age, parts } = useMemo(
-    () => estimateAge(puzzle, ms, metrics),
-    [puzzle, ms, metrics],
+    () => (gaveUp ? { age: null, parts: [] } : estimateAge(puzzle, ms, metrics)),
+    [gaveUp, puzzle, ms, metrics],
   );
 
   const share = async () => {
-    const text = buildShareText(day, puzzle, ms, stats.streak, age);
+    const text = gaveUp
+      ? buildGaveUpText(day, puzzle, ms)
+      : buildShareText(day, puzzle, ms, stats.streak, age);
     setStatus(await shareResult(text));
   };
 
@@ -45,7 +55,7 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
   // estimate, not a result. It lives behind the explanation because that is where a
   // tester asked to send their data has just been reading what the data is.
   const shareAgeData = async () => {
-    const text = buildAgeDataText(day, puzzle, ms, age, metrics, isPractice);
+    const text = buildAgeDataText(day, puzzle, ms, age ?? 0, metrics, isPractice);
     setDataStatus(await shareResult(text));
   };
 
@@ -97,27 +107,44 @@ export function ResultCard({ day, puzzle, ms, stats, isPractice, metrics, onRepl
   }
 
   return (
-    <div className="result" role="dialog" aria-label="Puzzle solved">
-      <p className="result-eyebrow">{puzzle.emoji} found</p>
-      <p className="result-time">{formatTime(ms)}</p>
-      <p className="result-bar">{speedBar(ms)}</p>
-
-      <div className="result-age-block">
-        <p className="result-age">
-          Your Find Me Age: <strong>{age}</strong>
+    <div
+      className="result"
+      role="dialog"
+      aria-label={gaveUp ? 'Puzzle given up' : 'Puzzle solved'}
+    >
+      <p className="result-eyebrow">{puzzle.emoji} {gaveUp ? 'not found' : 'found'}</p>
+      <p className={`result-time${gaveUp ? ' is-quiet' : ''}`}>{formatTime(ms)}</p>
+      {/* No speed bar and no age on a give-up: both of them say how well a hunt went,
+          and this one did not go well. What replaces them is the one thing the player
+          came back for -- where it was -- which is already framed on the board behind
+          this card. */}
+      {gaveUp ? (
+        <p className="result-gaveup">
+          hunted, then shown. It is framed on the board behind this card &mdash; have a
+          look at what you walked past.
         </p>
-        {/* What the number was made of. Only the two signals furthest from par are named:
-            the whole list is a wall of jargon, and the interesting thing about a run is
-            always the one or two ways it was unusual. */}
-        {parts.length > 0 && <p className="result-age-why">{whyLine(parts)}</p>}
-        <button
-          type="button"
-          className="result-age-info"
-          onClick={() => setShowAgeInfo(true)}
-        >
-          How is this worked out?
-        </button>
-      </div>
+      ) : (
+        <p className="result-bar">{speedBar(ms)}</p>
+      )}
+
+      {!gaveUp && age !== null && (
+        <div className="result-age-block">
+          <p className="result-age">
+            Your Find Me Age: <strong>{age}</strong>
+          </p>
+          {/* What the number was made of. Only the two signals furthest from par are
+              named: the whole list is a wall of jargon, and the interesting thing about a
+              run is always the one or two ways it was unusual. */}
+          {parts.length > 0 && <p className="result-age-why">{whyLine(parts)}</p>}
+          <button
+            type="button"
+            className="result-age-info"
+            onClick={() => setShowAgeInfo(true)}
+          >
+            How is this worked out?
+          </button>
+        </div>
+      )}
 
       <p className="result-art">
         <strong>{puzzle.title}</strong>

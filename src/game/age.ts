@@ -149,6 +149,36 @@ export function expectedSearchMs(scan: number, clutter?: number, dim?: number): 
 }
 
 /**
+ * How long a hunt has to have run before the player is allowed to give up on it.
+ *
+ * A multiple of the day's own expected search time rather than a fixed wait, because the
+ * ramp already knows how hard each day is: a wait that ignored it would either hand
+ * Sunday's players a way out before they had properly looked, or leave Monday's staring
+ * at a shut door on a puzzle they were never going to enjoy.
+ *
+ * Both bounds matter, and neither is decoration.
+ *
+ * The floor is there because the multiple alone is nonsense at the gentle end. Monday is
+ * priced at a few seconds of searching, and 1.5x a few seconds is a way out that opens
+ * before somebody who has merely opened the page has finished looking at the painting --
+ * which would show up in the tally as a Monday give-up rate meaning nothing at all.
+ * Under a minute is not a hunt; it is a glance.
+ *
+ * The cap is there because past about three minutes the wait stops protecting the puzzle
+ * and becomes the thing the player quits over -- the exact failure the way out exists to
+ * prevent, arrived at by a longer road.
+ */
+const GIVE_UP_AFTER = 1.5;
+const GIVE_UP_FLOOR_MS = 45 * 1000;
+const GIVE_UP_CAP_MS = 3 * 60 * 1000;
+
+export function giveUpAfterMs(puzzle: Puzzle): number {
+  const rung = RAMP[puzzle.dayOfWeek];
+  const search = expectedSearchMs(puzzle.target.scan ?? rung.scan, puzzle.clutter, puzzle.target.dim);
+  return Math.min(GIVE_UP_CAP_MS, Math.max(GIVE_UP_FLOOR_MS, GIVE_UP_AFTER * search));
+}
+
+/**
  * How long sizing and squaring up should take, in ms: a small fixed cost for settling the
  * zoom, plus the rotation the day actually asks for.
  *

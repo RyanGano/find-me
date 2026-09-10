@@ -38,6 +38,12 @@ export interface BackupEntry {
   ms: number;
   /** Puzzle version, or undefined for a result recorded before versioning. */
   v?: string;
+  /**
+   * The day was given up on rather than solved. Carried because a restored give-up that
+   * came back looking like a solve would repair a streak the give-up broke, and lower a
+   * best time it never earned.
+   */
+  g?: true;
 }
 
 export interface Backup {
@@ -62,7 +68,9 @@ function serialise(backup: Backup): string {
     .filter((e) => e.day >= 0 && Number.isFinite(e.day) && Number.isFinite(e.ms))
     .sort((a, b) => b.day - a.day)
     .slice(0, KEEP)
-    .map((e) => `${enc(e.day)}:${enc(e.ms)}:${e.v ?? '-'}`);
+    // The give-up flag is a fourth field rather than a change to the first three, so a
+    // cookie written here still reads correctly in a build that has never heard of it.
+    .map((e) => `${enc(e.day)}:${enc(e.ms)}:${e.v ?? '-'}${e.g ? ':g' : ''}`);
   return `${head}~${rows.join(',')}`;
 }
 
@@ -72,12 +80,17 @@ function parse(raw: string): Backup | undefined {
   const entries: BackupEntry[] = [];
   for (const row of (rows ?? '').split(',')) {
     if (!row) continue;
-    const [day, ms, v] = row.split(':');
+    const [day, ms, v, flag] = row.split(':');
     const d = dec(day);
     const m = dec(ms);
     // A truncated or mangled cookie costs the entries it damaged, not the whole mirror.
     if (!Number.isFinite(d) || !Number.isFinite(m)) continue;
-    entries.push({ day: d, ms: m, v: v && v !== '-' ? v : undefined });
+    entries.push({
+      day: d,
+      ms: m,
+      v: v && v !== '-' ? v : undefined,
+      g: flag === 'g' ? true : undefined,
+    });
   }
   const p = dec(played);
   const b = dec(best);

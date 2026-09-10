@@ -54,8 +54,13 @@ export interface HuntSession {
   puzzle: Puzzle;
   /** A run banked mid-hunt, handed back with its clock where it was. */
   resume?: ResumableRun;
-  /** A time already recorded for this puzzle: opens as a finished board, not a clock. */
-  prior?: { ms: number; metrics?: RunMetrics };
+  /**
+   * A result already recorded for this puzzle: opens as a finished board, not a clock.
+   * `gaveUp` opens it at the answer instead of at the time -- the day is over either
+   * way, and coming back to one that was given up on should hand back what was being
+   * looked for rather than a fresh clock and a second look at the painting.
+   */
+  prior?: { ms: number; metrics?: RunMetrics; gaveUp?: boolean };
   /** True while a panel is up and the board should not be taking gestures. */
   blocked?: boolean;
   /** The clock has started. Fired once per run; a resumed run has already fired it. */
@@ -107,16 +112,19 @@ export function useHunt(session: HuntSession) {
   // True until the player picks the resumed run back up: the board is theirs from a
   // moment ago, and it should say so rather than looking like a fresh puzzle.
   const [resuming, setResuming] = useState(Boolean(resume));
-  const [solvedMs, setSolvedMs] = useState<number | null>(prior?.ms ?? null);
+  const [solvedMs, setSolvedMs] = useState<number | null>(
+    prior && !prior.gaveUp ? prior.ms : null,
+  );
   /**
    * The clock at the moment the hunter gave up, if they did.
    *
    * It stops the run exactly as a solve does -- no ticking, no more sampling, and the
    * solve can no longer fire -- while leaving the board live, so they can go on looking
-   * at the thing they could not find. The daily game never sets it; only the play-test
-   * bench offers a way out, because only there is quitting a useful answer.
+   * at the thing they could not find. Both callers offer a way out: the bench because a
+   * tester with no way out abandons the round rather than the puzzle, and the daily game
+   * because a player who never learns where it was learns nothing about how to look.
    */
-  const [gaveUpMs, setGaveUpMs] = useState<number | null>(null);
+  const [gaveUpMs, setGaveUpMs] = useState<number | null>(prior?.gaveUp ? prior.ms : null);
   // How the run is being played, for the Find Me Age. The collector rides along with the
   // banked run, so a back-swipe costs nothing; the finished metrics go with the result.
   const tracker = useRef<Tracker>(resume?.k ?? newTracker());
@@ -153,9 +161,12 @@ export function useHunt(session: HuntSession) {
         return;
       }
     }
-    // Fit on first measure, and keep fitting while the board is still untouched.
-    setTransform((prev) => (prev && startedAt !== null ? prev : fit(size)));
-  }, [size, fit, startedAt]);
+    // Fit on first measure, and keep fitting while the board is still untouched -- but
+    // never over a finished board, whose framing is the player's own or the reveal's.
+    setTransform((prev) =>
+      prev && (startedAt !== null || solvedMs !== null || gaveUpMs !== null) ? prev : fit(size),
+    );
+  }, [size, fit, startedAt, solvedMs, gaveUpMs]);
 
   const targetSize = size ? targetDisplaySize(size.w, size.h) : 96;
 
@@ -194,9 +205,12 @@ export function useHunt(session: HuntSession) {
   }, [startedAt, runId]);
 
   const handleInteract = useCallback(() => {
-    if (solvedMs !== null) return;
+    // A finished board takes no clock, however it finished. Without the give-up half of
+    // this, opening a day that was given up on and touching the painting would start a
+    // fresh run on a puzzle whose answer is already on the screen.
+    if (solvedMs !== null || gaveUpMs !== null) return;
     setStartedAt((prev) => prev ?? performance.now());
-  }, [solvedMs]);
+  }, [solvedMs, gaveUpMs]);
 
   const handleGesture = useCallback(
     (delta: GestureDelta) => {
@@ -260,8 +274,11 @@ export function useHunt(session: HuntSession) {
   );
   const stage = useRef<Size | null>(null);
   useEffect(() => {
+    // A run that has been given up on is over, so there is nothing left to bank: without
+    // the `gaveUpMs` half of this, closing the tab afterwards would store the finished
+    // day back as a run in progress and report a `left` on top of the give-up.
     live.current =
-      startedAt !== null && solvedMs === null && transform && size
+      startedAt !== null && solvedMs === null && gaveUpMs === null && transform && size
         ? { startedAt, elapsed, paused, t: transform }
         : null;
     stage.current = size;
@@ -331,6 +348,18 @@ export function useHunt(session: HuntSession) {
       return constrainPan(next, puzzle.width, puzzle.height, size.w, size.h);
     });
   }, [size, targetSize, puzzle.target.size, puzzle.target.cx, puzzle.target.cy, puzzle.width, puzzle.height]);
+
+  /**
+   * A day that was given up on earlier opens where the answer is, once the board has
+   * been measured. Only ever the once: after that the framing belongs to the player,
+   * who is very likely looking around the painting at what they missed.
+   */
+  const revealed = useRef(!prior?.gaveUp);
+  useEffect(() => {
+    if (!size || revealed.current) return;
+    revealed.current = true;
+    reveal();
+  }, [size, reveal]);
 
   /**
    * Stop the clock for good and show them the shape. Returns how long they hunted, which

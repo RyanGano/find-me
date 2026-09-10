@@ -21,6 +21,13 @@ export interface Result {
    * stored, so retuning the estimate re-reads old runs rather than freezing them.
    */
   m?: RunMetrics;
+  /**
+   * The player gave up rather than finding it. Counts as played and closes the day, but
+   * never towards `best` and never as a link in a streak -- a give-up that kept the
+   * streak alive would be strictly better than not playing, which is the wrong thing to
+   * reward. Absent, rather than false, on every result that was actually solved.
+   */
+  gaveUp?: true;
 }
 
 interface Store {
@@ -71,7 +78,7 @@ function read(): Store {
     if (results === store.results) results = { ...results };
     // No `at` and no `m`: the mirror does not carry them. `at` is unused by anything
     // that reads a restored result, and a missing `m` reads its age from the clock.
-    results[key] = { ms: entry.ms, at: '', v: entry.v };
+    results[key] = { ms: entry.ms, at: '', v: entry.v, gaveUp: entry.g };
   }
   return { ...store, results, carried: { played: mirror.played, best: mirror.best } };
 }
@@ -94,11 +101,15 @@ function mirror(store: Store): void {
     .filter((n) => Number.isFinite(n));
   let best: number | null = store.carried?.best ?? null;
   for (const d of days) {
-    const ms = store.results[String(d)].ms;
-    if (best === null || ms < best) best = ms;
+    const result = store.results[String(d)];
+    if (result.gaveUp) continue;
+    if (best === null || result.ms < best) best = result.ms;
   }
   backup.save({
-    entries: days.map((day) => ({ day, ms: store.results[String(day)].ms, v: store.results[String(day)].v })),
+    entries: days.map((day) => {
+      const result = store.results[String(day)];
+      return { day, ms: result.ms, v: result.v, g: result.gaveUp };
+    }),
     played: Math.max(days.length, store.carried?.played ?? 0),
     best,
   });
@@ -157,13 +168,30 @@ export function saveResult(
   version: string,
   metrics?: RunMetrics,
 ): void {
+  record(day, { ms, at: new Date().toISOString(), v: version, m: metrics });
+}
+
+/**
+ * Close a day the player could not finish: how long they hunted before asking to be
+ * shown, and nothing else.
+ *
+ * Written the same way a solve is, and for the same reason -- the day is over, and
+ * coming back to it should hand back the answer rather than a fresh clock and an
+ * unlimited second look at the painting. No metrics: the Find Me Age reads a run that
+ * ended in a solve, and there is nothing honest it could say about one that did not.
+ */
+export function saveGaveUp(day: number, ms: number, version: string): void {
+  record(day, { ms, at: new Date().toISOString(), v: version, gaveUp: true });
+}
+
+function record(day: number, result: Result): void {
   const store = read();
   const key = String(day);
   const existing = store.results[key];
-  // Keep the first solve of a given puzzle, so replaying cannot improve the record --
+  // Keep the first result of a given puzzle, so replaying cannot improve the record --
   // but a result from an older version of the day is superseded, not protected.
-  if (existing && existing.v === version) return;
-  store.results[key] = { ms, at: new Date().toISOString(), v: version, m: metrics };
+  if (existing && existing.v === result.v) return;
+  store.results[key] = result;
   write(store);
 }
 
@@ -183,14 +211,18 @@ export function getStats(today: number): Stats {
 
   let best: number | null = null;
   for (const d of days) {
-    const ms = results[String(d)].ms;
-    if (best === null || ms < best) best = ms;
+    const result = results[String(d)];
+    // A give-up is a played day, not a time: it has no business in a best.
+    if (result.gaveUp) continue;
+    if (best === null || result.ms < best) best = result.ms;
   }
 
-  // Count back from today (or yesterday, if today is not solved yet).
+  // Count back from today (or yesterday, if today is not solved yet). A day that was
+  // given up on stops the count where it stands -- including today's, which is what
+  // makes pressing the button an honest answer rather than a cheap way to bank a day.
   let streak = 0;
   let cursor = results[String(today)] ? today : today - 1;
-  while (results[String(cursor)]) {
+  while (results[String(cursor)] && !results[String(cursor)].gaveUp) {
     streak++;
     cursor--;
   }

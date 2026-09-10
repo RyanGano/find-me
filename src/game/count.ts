@@ -2,13 +2,14 @@
  * The daily tally.
  *
  * Four numbers are worth knowing about a daily puzzle: how many runs were started, how
- * many were solved, how long the solves took, and how long the give-ups lasted before
- * the player walked away. Nothing here is capable of answering anything else -- there is
+ * many were solved, how long the solves took, and how long the ones that ended some
+ * other way lasted first. Nothing here is capable of answering anything else -- there is
  * no account, no cookie, no fingerprint, and no identifier that outlives a single run.
  *
- * A run reports up to three times: once when the clock starts, once whenever the page is
- * left with the run unfinished, and once on the solve. All three carry the same run id,
- * a random number minted at the start of the run and thrown away with it, so the server
+ * A run reports up to four times: once when the clock starts, once if the player reaches
+ * for the way out before it is open, once whenever the page is left with the run
+ * unfinished or given up on, and once on the solve. All of them carry the same run id, a
+ * random number minted at the start of the run and thrown away with it, so the server
  * can collapse them into one row rather than counting a back-swipe as a second player.
  *
  * Everything here fails silently. A blocked request, a missing endpoint, a browser with
@@ -17,8 +18,19 @@
 
 const OPT_OUT = 'find-me:no-count';
 
-/** What a run has come to. Ranked on the server: a solve can never be undone by a leave. */
-export type RunState = 'start' | 'left' | 'solved';
+/**
+ * What a run has come to. The four endings are ranked on the server, so a run only ever
+ * moves up: a solve can never be undone by the page-leave beacon that follows it, and an
+ * explicit `gave-up` is never overwritten by the `left` that comes when the tab closes.
+ *
+ * `stuck` is the odd one out and is not an ending at all. It is reported once, the first
+ * time a player presses the way out before the day has let them have it, and the server
+ * records it alongside whatever the run goes on to become. It is the cheapest honest
+ * reading of "this day is harder than it was priced at" that the tally can take: unlike
+ * a leave it cannot be a phone call, and unlike a give-up it is also sent by the people
+ * who went on to find it.
+ */
+export type RunState = 'start' | 'stuck' | 'left' | 'gave-up' | 'solved';
 
 export interface CountPayload {
   run: string;

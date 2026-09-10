@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Credits } from './components/Credits';
 import { HowTo } from './components/HowTo';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
 import { UpdateNotice } from './components/UpdateNotice';
+import { giveUpAfterMs } from './game/age';
 import { isInAppBrowser } from './game/browser';
 import { count, newRunId } from './game/count';
 import { puzzleNumber, selectPuzzle } from './game/daily';
@@ -18,6 +19,7 @@ import {
   getProgress,
   getStats,
   isPersistent,
+  saveGaveUp,
   saveProgress,
   saveResult,
   touch,
@@ -26,6 +28,20 @@ import {
 import { isDone } from './game/testbedStore';
 import { useHunt, type LeftRun } from './hooks/useHunt';
 import { useUpdateAvailable } from './hooks/useUpdateAvailable';
+
+/**
+ * What to say to somebody who reached for the way out before it opened.
+ *
+ * Deliberately vague about how much longer. A countdown turns the wait into the thing
+ * being watched, and "42 seconds" is an invitation to sit and stare at a number rather
+ * than at the painting -- which is the one thing that can still rescue the run. So this
+ * says only roughly how far off they are, and says it as encouragement.
+ */
+function plead(left: number): string {
+  if (left > 0.6) return 'Not yet — you have hardly begun. Have a proper hunt first.';
+  if (left > 0.25) return 'Not yet. Give it another minute of real looking — it is in there.';
+  return 'Nearly. A few more seconds and it is yours — you are closer than you think.';
+}
 
 const HOWTO_SEEN = 'find-me:howto-seen';
 const BETA_SEEN = 'find-me:beta-seen';
@@ -82,6 +98,12 @@ export default function App() {
   const [stats, setStats] = useState<Stats>(() => getStats(day));
 
   const [showCredits, setShowCredits] = useState(false);
+  // Up between pressing the way out and meaning it. Giving up is not a thing to do by
+  // accident on a phone, and it is the one button here that cannot be taken back.
+  const [confirming, setConfirming] = useState(false);
+  // What was said to someone who reached for the way out too early, and a nonce so that
+  // pressing again re-arms the same words rather than silently changing nothing.
+  const [plea, setPlea] = useState<{ n: number; text: string } | null>(null);
 
   // A new build deployed under a page left open. Refreshing keeps the run: leaving the
   // page banks it, and it is handed straight back on the way in.
@@ -177,6 +199,8 @@ export default function App() {
     [isPractice, day, puzzle.version],
   );
 
+  const gate = useMemo(() => giveUpAfterMs(puzzle), [puzzle]);
+
   const {
     stageRef,
     transform,
@@ -192,19 +216,83 @@ export default function App() {
     paused,
     resuming,
     solvedMs,
+    gaveUpMs,
     metrics,
     togglePause,
     reset,
+    giveUp,
   } = useHunt({
     puzzle,
     resume: saved,
-    prior: prior ? { ms: prior.ms, metrics: prior.m } : undefined,
+    prior: prior ? { ms: prior.ms, metrics: prior.m, gaveUp: prior.gaveUp } : undefined,
     blocked: showHowTo || showCredits,
     runId,
     onStart,
     onSolved,
     onLeave,
   });
+
+  // The run is over however it ended: both close the day, and both open the card.
+  const done = solvedMs ?? gaveUpMs;
+
+  const canGiveUp = startedAt !== null && done === null && clock >= gate;
+
+  /**
+   * Reported once per run, the first time somebody reaches for a way out that is not
+   * open yet.
+   *
+   * It is the reading this game has never had. A leave is ambiguous -- a phone call, a
+   * back-swipe, a flat battery -- and a give-up only ever comes from the players who
+   * stopped; this comes from the ones who carried on and found it too, and it says
+   * plainly that the day was harder than it was priced at.
+   */
+  const reportedStuck = useRef(false);
+
+  const askToGiveUp = useCallback(() => {
+    if (canGiveUp) {
+      setConfirming(true);
+      return;
+    }
+    if (!reportedStuck.current) {
+      reportedStuck.current = true;
+      if (!isPractice) count(runId, day, 'stuck', clock);
+    }
+    setPlea((prev) => ({
+      n: (prev?.n ?? 0) + 1,
+      text: plead(1 - clock / gate),
+    }));
+  }, [canGiveUp, isPractice, runId, day, clock, gate]);
+
+  /**
+   * Stop the clock, show them where it was, and close the day out as played.
+   *
+   * A recorded result rather than nothing at all, because the alternative -- the tab
+   * closed on an unsolved painting -- is the version of this day the player remembers,
+   * and it teaches them nothing about how to look. The streak ends here: a give-up that
+   * kept it would be strictly better than not playing.
+   */
+  const onGiveUp = useCallback(() => {
+    setConfirming(false);
+    setPlea(null);
+    const ms = giveUp();
+    setShowResult(true);
+    setShowRing(true);
+    if (!isPractice) {
+      saveGaveUp(day, ms, puzzle.version);
+      clearProgress();
+      count(runId, day, 'gave-up', ms);
+    }
+    setStats(getStats(day));
+  }, [giveUp, isPractice, day, puzzle.version, runId]);
+
+  // The plea has said its piece; it should not sit on the painting for the rest of the
+  // hunt. It goes the moment the door it was about opens too, but that is decided at
+  // render time rather than here -- it is a thing that is true, not a thing that happens.
+  useEffect(() => {
+    if (!plea) return;
+    const id = setTimeout(() => setPlea(null), 6000);
+    return () => clearTimeout(id);
+  }, [plea]);
 
   const toggleBetaNote = useCallback(() => {
     setFlag(BETA_SEEN);
@@ -300,8 +388,13 @@ export default function App() {
         </button>
         {/* Second door back to the result, for anyone whose eye goes up to their time
             rather than down to the badge. Costs no space: it is the clock either way. */}
-        {solvedMs !== null ? (
-          <button type="button" className="clock is-done" onClick={() => togglePanel('result')} title="Show your result">
+        {done !== null ? (
+          <button
+            type="button"
+            className={`clock is-done${gaveUpMs !== null ? ' is-quiet' : ''}`}
+            onClick={() => togglePanel('result')}
+            title="Show your result"
+          >
             {formatTime(clock)}
           </button>
         ) : (
@@ -310,7 +403,7 @@ export default function App() {
           </p>
         )}
         <div className="topbar-actions">
-          {solvedMs !== null && (
+          {done !== null && (
             <button
               type="button"
               className={`btn btn-icon btn-ring${showRing ? ' is-on' : ''}`}
@@ -325,7 +418,7 @@ export default function App() {
               </svg>
             </button>
           )}
-          {startedAt !== null && solvedMs === null && (
+          {startedAt !== null && done === null && (
             <button
               type="button"
               className="btn btn-icon btn-pause"
@@ -345,6 +438,32 @@ export default function App() {
                   </>
                 )}
               </svg>
+            </button>
+          )}
+          {/* Visible from the moment the clock starts, and shut rather than hidden until
+              the day has had a proper hunt out of the player. A button that appears from
+              nowhere half way through a run is a button nobody knows is coming, and the
+              player it exists for -- the one about to close the tab -- has to be able to
+              see that a way out exists before they need it. Pressing it early is not a
+              mis-tap either: it is somebody saying they are stuck, which is worth
+              hearing, so it answers rather than doing nothing.
+
+              Which is why it carries no disabled state at all, `aria-disabled` included:
+              it is dimmed, but it is a button that works, and a screen reader announcing
+              it as unavailable would be describing a different button. What changes
+              before the gate is what pressing it does, and the label says so. */}
+          {startedAt !== null && done === null && (
+            <button
+              type="button"
+              className={`btn giveup-btn${canGiveUp ? '' : ' is-shut'}`}
+              onClick={askToGiveUp}
+              title={
+                canGiveUp
+                  ? 'Stop the clock and show me where it is'
+                  : 'Not yet — keep looking a little longer'
+              }
+            >
+              give up
             </button>
           )}
           <button type="button" className="btn btn-icon" onClick={reset} title="Reset view">
@@ -434,8 +553,8 @@ export default function App() {
           puzzle={puzzle}
           transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
           fitScale={fitScale}
-          showRing={solvedMs !== null && showRing}
-          blurred={paused || (startedAt === null && solvedMs === null)}
+          showRing={done !== null && showRing}
+          blurred={paused || (startedAt === null && done === null)}
           paused={paused}
           resumed={resuming}
           onReady={onReady}
@@ -449,13 +568,52 @@ export default function App() {
           </p>
         )}
 
+        {plea && !confirming && !canGiveUp && (
+          <p className="giveup-note is-plea" role="status" key={plea.n}>
+            {plea.text}
+          </p>
+        )}
+
+        {/* Gone the instant the run ends, including by the player finding the thing
+            while the question is still on the screen -- which happens, because the board
+            stays live behind it. */}
+        {confirming && done === null && (
+          <div className="giveup-note" role="dialog" aria-label="Give up?">
+            <span>
+              Show you where it is? The day counts as played, but it ends your streak.
+            </span>
+            <button type="button" className="btn giveup-yes" onClick={onGiveUp}>
+              show me
+            </button>
+            <button type="button" className="btn giveup-no" onClick={() => setConfirming(false)}>
+              keep looking
+            </button>
+          </div>
+        )}
+
+        {/* After a give-up the run is over, but the board is not: the shape is framed
+            for them and they are free to look around the painting at what they walked
+            past. Nothing they do from here is recorded. */}
+        {gaveUpMs !== null && !showResult && (
+          <p className="reveal-note">
+            <span>
+              There it is. Nothing more is recorded today — have a look around, and come
+              back tomorrow.
+            </span>
+          </p>
+        )}
+
         {!ready && <p className="loading">Loading today&rsquo;s painting…</p>}
 
+        {/* After a give-up the run is over but the board is not, so the badge still has
+            to go green when they frame the shape they were shown -- left on amber it
+            reads as a board that will not let them finish. Nothing is recorded either
+            way; the time that counts is when they gave up. */}
         <ReferenceCard
           puzzle={puzzle}
           targetSize={targetSize}
           match={match}
-          solvedMs={solvedMs}
+          solvedMs={solvedMs ?? (gaveUpMs !== null && match?.solved ? gaveUpMs : null)}
           onReopen={() => togglePanel('result')}
         />
 
@@ -471,13 +629,14 @@ export default function App() {
             click keeps the scrim there to absorb it. */}
         {anyPanel && <div className="scrim" onClick={dismissPanels} />}
 
-        {showResult && solvedMs !== null && (
+        {showResult && done !== null && (
           <ResultCard
             day={puzzleNumber(day)}
             puzzle={puzzle}
-            ms={solvedMs}
+            ms={done}
             stats={stats}
             isPractice={isPractice}
+            gaveUp={gaveUpMs !== null}
             metrics={metrics}
             onReplay={replay}
           />

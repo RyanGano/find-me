@@ -36,6 +36,23 @@ export function buildShareText(
 }
 
 /**
+ * A result line for a day that beat the player.
+ *
+ * Separate from `buildShareText` and deliberately unlike it: no speed bar and no age.
+ * Both of those say how well a hunt went, and a hunt that ended in being shown the
+ * answer did not go well -- dressing it up as a score would be the one thing a give-up
+ * must not be. What is left is honest and still postable, and still says nothing about
+ * where the shape was.
+ */
+export function buildGaveUpText(day: number, puzzle: Puzzle, ms: number): string {
+  return [
+    `Find Me #${day} ${puzzle.emoji}`,
+    `Didn't find it — gave up after ${formatTime(ms)} 🏳️`,
+    SITE_URL,
+  ].join('\n');
+}
+
+/**
  * Everything a retune of the age estimate needs from one run, as pasteable text.
  *
  * Separate from `buildShareText` on purpose. That one is what a player posts in public

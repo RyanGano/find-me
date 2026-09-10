@@ -124,6 +124,13 @@ body,
   border-color: var(--ok);
 }
 
+/* Done, but not won. Green is the colour this game uses for landing the match, and a
+   clock left green over a day nobody solved says the opposite of what happened. */
+.clock.is-done.is-quiet {
+  color: var(--muted);
+  border-color: var(--line);
+}
+
 /* Once the run is over the clock is a button back to the result. Same pill either way:
    the element does not move, grow, or restyle, it just becomes pressable. */
 button.clock {
@@ -689,6 +696,14 @@ button.reference:focus-visible {
   color: var(--ok);
 }
 
+/* How long they hunted, on a day they did not finish. Still the biggest thing on the
+   card, because it is what happened -- but not in the colour of a solve, and not bold
+   enough to be mistaken for one. */
+.result-time.is-quiet {
+  font-weight: 500;
+  color: var(--muted);
+}
+
 .result-bar {
   margin: 0 0 10px;
   letter-spacing: 2px;
@@ -1150,4 +1165,87 @@ button.reference:focus-visible {
 .testbed-giveup:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/*
+ * The way out of a hunt, in the daily game.
+ *
+ * A text button, quiet enough not to compete with the pause and the reset -- it is the
+ * one control here that ends the day, and a control that ends the day should not be the
+ * loudest thing in the bar. `is-shut` is the state before the day has let them have it:
+ * dimmed like a disabled button, but still live, because pressing it early is somebody
+ * saying they are stuck and that is worth hearing rather than swallowing.
+ */
+.giveup-btn {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.giveup-btn:hover {
+  color: var(--text);
+}
+
+.giveup-btn.is-shut {
+  opacity: 0.4;
+}
+
+/*
+ * What comes back: either the confirmation, or a word of encouragement to somebody who
+ * asked too early. Same place and same shape as the reveal note, because they are the
+ * same conversation at different points in it.
+ */
+.giveup-note {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+  width: min(460px, calc(100% - 24px));
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.giveup-note span {
+  flex: 1 1 200px;
+}
+
+/* Nothing but the words: a plea is not asking for a decision, so it offers no buttons
+   and takes itself away again after a few seconds. */
+.giveup-note.is-plea {
+  justify-content: flex-start;
+  color: var(--muted);
+}
+
+.giveup-yes,
+.giveup-no {
+  flex: none;
+  padding: 6px 10px;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+/* The one that ends the day is the quieter of the two. Carrying on is the default. */
+.giveup-yes {
+  color: var(--muted);
+}
+
+/* What replaces the speed bar on a result nobody wants to compare. */
+.result-gaveup {
+  margin: 0 0 14px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--muted);
 }
