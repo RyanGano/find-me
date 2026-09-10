@@ -6,6 +6,10 @@
   --muted: #a39a8d;
   --accent: #e8b647;
   --ok: #6fca7a;
+  /* The reveal ring, and the toggle that shows it. Deliberately colourless: see
+     `.stage-ring`. */
+  --reveal: #f7f4ee;
+  --reveal-casing: rgba(0, 0, 0, 0.72);
   --shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
   --radius: 14px;
 
@@ -436,8 +440,8 @@ button.clock:focus-visible {
 }
 
 .btn-ring.is-on {
-  color: var(--ok);
-  border-color: var(--ok);
+  color: var(--reveal);
+  border-color: var(--reveal);
 }
 
 /* Pause borrows the ring toggle's icon sizing; the play triangle is solid. */
@@ -527,11 +531,28 @@ button.clock:focus-visible {
   filter: blur(calc(var(--shape-blur, 0px) / var(--stage-zoom, 1)));
 }
 
+/*
+ * The ring that shows where the day was hiding, once it no longer matters.
+ *
+ * It lies directly on the painting, so it is drawn as a pale core between two dark
+ * casings rather than in a colour. A single stroke can only be read against paint it
+ * happens to differ from, and a mid-green one on a yellow canvas is very nearly
+ * invisible -- it is also the exact hue pair the amber "nearly" badge uses, which is
+ * the common form of colour blindness. Light-on-dark-on-light has no hue to lose: one
+ * of the three edges contrasts with whatever is underneath, on any painting in the
+ * rotation and for any eyes.
+ *
+ * All three widths are set by `Stage` in screen pixels, divided back out of the zoom,
+ * so the ring is the same weight framed as it is fitted.
+ */
 .stage-ring {
   position: absolute;
   border-style: solid;
-  border-color: var(--ok);
+  border-color: var(--reveal);
   border-radius: 50%;
+  box-shadow:
+    0 0 0 var(--ring-casing) var(--reveal-casing),
+    inset 0 0 0 var(--ring-casing) var(--reveal-casing);
   pointer-events: none;
   animation: ring-in 0.4s ease-out;
 }

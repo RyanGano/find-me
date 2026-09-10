@@ -39,8 +39,11 @@ export function Stage({
   const css = `translate(${transform.x}px, ${transform.y}px) rotate(${transform.rot * DEG}deg) scale(${transform.scale})`;
 
   // Keep the reveal ring a constant thickness on screen however far we are zoomed in.
+  // Three strokes, not one: a pale core with a dark casing either side of it, so the
+  // ring is legible on any paint without depending on a colour. See `.stage-ring`.
   const ringSize = target.size * 2.2;
   const ringWidth = 3 / transform.scale;
+  const ringCasing = 1.5 / transform.scale;
 
   // How far past the fitted view we are, which the shape's edge softening is divided by.
   //
@@ -116,7 +119,8 @@ export function Stage({
               width: ringSize,
               height: ringSize,
               borderWidth: ringWidth,
-            }}
+              '--ring-casing': `${ringCasing}px`,
+            } as React.CSSProperties}
           />
         )}
       </div>

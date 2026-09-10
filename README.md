@@ -558,6 +558,30 @@ Before that, live size and angle gauges ran along the bottom. They worked, but t
 you dial in a perfect match before finding anything and then simply sweep the painting,
 which turned a seek game into a scan.
 
+#### The reveal ring has no colour
+
+The ring drawn round the answer -- after a solve, or after a give-up -- is a pale core
+between two dark casings, and not a colour. It was `--ok` green for a long time, which is
+the game's colour for a finished thing everywhere else, and on the dark chrome it reads
+perfectly. On a painting it does not: a single stroke is only legible against paint it
+happens to differ from, and a mid-green one laid over light warm paint all but disappears
+at the exact moment it is supposed to be saying "here it was". A player who has just
+solved a day, or given up on one, is owed an unmissable answer.
+
+Light-on-dark-on-light has nothing to lose. Whatever is underneath, at least one of the
+three edges is far from it, so the ring holds on every painting in the rotation without
+anyone having to tune it per day -- and per-day tuning of a chrome element is exactly the
+kind of maintenance the rest of the file avoids. It also drops the one hue pair the
+running feedback should not lean on: the badge's "nearly" is amber and its solve was
+green, and amber against green is the common form of colour blindness. The badge still
+uses both, but it says the same thing three more ways -- the label changes from `nearly`
+to the finished time, the card comes up, and the ring appears -- so no part of finishing a
+day rests on telling those two apart. The ring, which had no second cue at all, no longer
+depends on it.
+
+All three widths are screen-constant: `Stage` divides them out of the zoom the same way it
+does the shape's edge softening, so the ring is the same weight framed as it is fitted.
+
 ### Giving up
 
 Every estimate in `difficulty.ts` is a **median**, so by construction a large slice of
