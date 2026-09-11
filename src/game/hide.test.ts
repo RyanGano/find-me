@@ -125,9 +125,14 @@ describe('friend hides', () => {
   const flat = (r: number, g: number, b: number) => paintStats(Array.from({ length: 64 }, () => [r, g, b, 255]).flat());
 
   it('refuses a color that blends into the paint however solid it is', () => {
-    // Gold on yellow: the case that was nearly impossible to see.
-    expect(minOpacityFor('#d9b36c', flat(243, 185, 58))).toBeNull();
+    // Cream on cream, and a yellow a shade off the yellow it sits on.
     expect(minOpacityFor('#f4ecd8', flat(251, 238, 202))).toBeNull();
+    expect(minOpacityFor('#f0bc40', flat(243, 185, 58))).toBeNull();
+  });
+
+  it('allows a hard color that can still be found', () => {
+    // Gold on yellow is a hard hide, not an impossible one.
+    expect(minOpacityFor('#d9b36c', flat(243, 185, 58))).not.toBeNull();
   });
 
   it('never lets a findable color go under the opacity floor', () => {

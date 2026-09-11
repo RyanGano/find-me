@@ -1096,7 +1096,8 @@ anyone.
   textured paint a shape is picked out by being lighter or darker -- the first cut
   measured plain RGB with a 0.45 floor, and a gold shape on yellow paint passed it while
   being all but invisible. A color that cannot clear the floor even at full strength
-  cannot be shared. Until the setter chooses a color, the shape takes the paint's own
+  cannot be shared. The floor marks *impossible*, not *easy*: a first setting that asked
+  for a comfortably visible shape blocked hides that were only hard, and hard is allowed. Until the setter chooses a color, the shape takes the paint's own
   color there, pushed lighter or darker just far enough to clear it; **Auto** in the
   color row goes back to that after a color has been picked. The numbers were
   set by eye on the served paintings, not measured against play. A link is held to the

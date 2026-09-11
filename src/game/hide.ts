@@ -287,12 +287,13 @@ function rgb(hex: string): [number, number, number] {
 }
 
 /**
- * How far a shape has to stand off the paint to be findable at all: an absolute floor,
- * and a multiple of the paint's own texture, since the same step that shows on a calm
- * glaze disappears into streaky brushwork. Chosen by eye on the served paintings, not
- * measured against play the way the daily ramp is.
+ * The least a shape has to stand off the paint to be findable at all: an absolute floor,
+ * and the paint's own texture, since the same step that shows on a calm glaze disappears
+ * into streaky brushwork. Set at the edge of *impossible*, not of *easy*: a hide may be
+ * very hard, but zoomed right in on it the shape has to be there to see. Chosen by eye
+ * on the served paintings, not measured against play the way the daily ramp is.
  */
-export const HIDE_CONTRAST = { floor: 20, texture: 1.6 } as const;
+export const HIDE_CONTRAST = { floor: 12, texture: 1 } as const;
 
 /**
  * The least opacity at which `fill` can be told from this paint -- never under
