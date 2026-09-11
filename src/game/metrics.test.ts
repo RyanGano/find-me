@@ -295,6 +295,26 @@ describe('the hunt trace', () => {
     expect(finish(t, 54000).trace).toBe('vvpvppf');
   });
 
+  it('counts the shape going by anywhere on screen at a scanning zoom', () => {
+    // A quarter of its final size, near an edge: not found, but there to be seen.
+    const edge = look({ displaySize: TARGET * 0.3, screen: { x: 30, y: 370 } });
+    const t = run([[0, far], [5000, edge], [5300, far], [20000, amber]]);
+    expect(t.m.passes).toBe(0);
+    expect(finish(t, 21000).trace).toBe('vf');
+  });
+
+  it('does not count a shape too small to have been seen', () => {
+    const speck = look({ displaySize: TARGET * 0.2 });
+    const t = run([[0, far], [5000, speck], [7000, far], [20000, amber]]);
+    expect(finish(t, 21000).trace).toBe('f');
+  });
+
+  it('does not count a shape only partly on screen', () => {
+    const cut = look({ displaySize: TARGET * 0.7, onScreen: false });
+    const t = run([[0, far], [5000, cut], [7000, far], [20000, amber]]);
+    expect(finish(t, 21000).trace).toBe('f');
+  });
+
   it('carries no time: a slow clean find and a fast one read the same', () => {
     const slow = finish(run([[0, far], [290000, amber]]), 300000);
     const fast = finish(run([[0, far], [4000, amber]]), 5000);
@@ -367,6 +387,7 @@ describe('the hunt trace', () => {
     delete old.m.trace;
     delete old.near;
     delete old.lostAt;
+    delete old.seen;
     delete old.leftAt;
     delete old.lit;
     expect(isTracker(old)).toBe(true);

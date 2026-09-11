@@ -592,15 +592,24 @@ Find Me #212 🎨
 🔍🔍🟨🔍🟨🟨🟩  1:42.0
 ```
 
-- 🔍 **moved past it**: the shape was in view and close up (the hot zone, below), and the
-  player moved off it without the badge ever lighting.
+- 🔍 **moved past it**: the whole shape was on screen, anywhere, drawn at a quarter or more
+  of its final size, and the player moved off it without the badge ever lighting.
 - 🟨 **nearly**: the badge went amber and then went off again.
 - 🟩 **got it**, or 🏳️ on a give-up.
 
 One mark per encounter, the closer of the two: an encounter that lit the badge is a 🟨 and
 not a 🔍 as well. A loss only counts once it has lasted a second, because squaring up at
-the edge of the near band flickers the badge, and zooming at the edge of the hot zone's
-size range flickers that, and both are aiming rather than losing the shape. The result card
+the edge of the near band flickers the badge, and slipping off the edge of the screen and
+straight back is the same look at it, not two.
+
+**"In view" is its own rule** (`inView` in `metrics.ts`), not the age's hot zone. The hot
+zone asks whether the player has *found* the shape, so it wants it close to its final size
+and near the middle. The trace asks whether it was there to be seen and they went past it:
+a quarter of its final size is about 15-22px across, 3-6x zoom on a phone, and a normal
+scanning zoom. The first cut used the hot zone, which on a phone needs about 7x zoom and the
+middle of the screen, and a tester who scanned past the shape several times got two 🔍. A
+quarter is still above anything the fitted view draws (4-19% of final size across the
+shipped puzzles), so a glance at the whole painting never counts. The result card
 shows the line with a one-line key under it; the share text is the line alone.
 
 **Events, not time.** The first version mixed the two: 🔍 was fifteen seconds of searching,

@@ -113,9 +113,11 @@ export interface Tracker {
   near?: boolean;
   /** When the badge last went off, while it has not yet stayed off long enough to count. */
   lostAt?: number | null;
-  /** When the hot zone was last left, while it has not yet stayed left long enough. */
+  /** Whether the shape was in view, by the trace's rule (`inView`), at the last sample. */
+  seen?: boolean;
+  /** When the shape last went out of view, while it has not yet stayed out long enough. */
   leftAt?: number | null;
-  /** Whether the badge has lit during the current stay in the hot zone. */
+  /** Whether the badge has lit during the current time the shape has been in view. */
   lit?: boolean;
 }
 
@@ -154,14 +156,30 @@ export function newTracker(): Tracker {
     lastAt: 0,
     near: false,
     lostAt: null,
+    seen: false,
     leftAt: null,
     lit: false,
   };
 }
 
 /**
+ * The share of its final size the shape must be drawn at, whole on screen, to count as
+ * in view for the trace -- about 15-22px across, and 3-6x zoom on a phone. Well below the
+ * hot zone's floor, and with no need to be in the middle: the hot zone asks whether the
+ * player has *found* the shape, and the trace's 🔍 asks whether it was there to be seen
+ * and they went past it. Above anything the fitted view draws (4-19% across the shipped
+ * puzzles), so a glance at the whole painting never counts.
+ */
+const IN_VIEW_SIZE = 0.25;
+
+/** Whether the shape is in view for the trace's "moved past it". */
+export function inView(match: MatchState, targetSize: number): boolean {
+  return match.onScreen && match.displaySize / targetSize >= IN_VIEW_SIZE;
+}
+
+/**
  * Write down any loss that has now lasted long enough to be real: the badge going off
- * (`p`), then the hot zone being left without the badge having lit in it (`v`). `force`
+ * (`p`), then the shape going out of view without the badge having lit (`v`). `force`
  * writes them however recent, for a give-up. Mutates `next` and `m`, the caller's copies.
  */
 function settle(tracker: Tracker, next: Tracker, m: RunMetrics, at: number, force = false): void {
@@ -207,6 +225,7 @@ export function isTracker(value: unknown): value is Tracker {
     typeof t.lastAt === 'number' &&
     (t.near === undefined || typeof t.near === 'boolean') &&
     (t.lostAt === undefined || t.lostAt === null || typeof t.lostAt === 'number') &&
+    (t.seen === undefined || typeof t.seen === 'boolean') &&
     (t.leftAt === undefined || t.leftAt === null || typeof t.leftAt === 'number') &&
     (t.lit === undefined || typeof t.lit === 'boolean')
   );
@@ -297,9 +316,11 @@ export function sample(
   // straight back is one encounter, not two.
   if (match.near && !tracker.near) next.lostAt = null;
   if (!match.near && tracker.near) next.lostAt = at;
+  const seen = inView(match, targetSize);
   if (match.near) next.lit = true;
-  if (hot && !tracker.hot) next.leftAt = null;
-  if (!hot && tracker.hot) next.leftAt = at;
+  if (seen && !tracker.seen) next.leftAt = null;
+  if (!seen && tracker.seen) next.leftAt = at;
+  next.seen = seen;
   next.near = match.near;
 
   // Only judge the fine adjustments once the shape is actually in front of the player.
