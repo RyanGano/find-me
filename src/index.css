@@ -1615,6 +1615,7 @@ button.reference:focus-visible {
 .hide-swatches {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
@@ -1638,8 +1639,8 @@ button.reference:focus-visible {
 }
 
 .hide-swatch {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 2px solid var(--line);
   border-radius: 50%;
@@ -1651,8 +1652,8 @@ button.reference:focus-visible {
 }
 
 .hide-swatches input[type='color'] {
-  width: 36px;
-  height: 28px;
+  width: 30px;
+  height: 24px;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -1694,4 +1695,27 @@ button.reference:focus-visible {
 
 .hide-controls[hidden] {
   display: none;
+}
+
+.hide-warning {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--accent);
+}
+
+.hide-auto {
+  font: inherit;
+  font-size: 0.78rem;
+  height: 24px;
+  padding: 0 8px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.hide-auto.is-on {
+  color: var(--accent);
+  border-color: var(--accent);
 }

@@ -7,10 +7,13 @@ import {
   HIDE_OPACITY,
   HIDE_SIZE,
   hideLink,
+  minOpacityFor,
+  paintStats,
   hidePuzzle,
   servedPaintings,
   type Hide,
   type Painting,
+  type PaintStats,
 } from './game/hide';
 import { shareResult, SITE_URL } from './game/share';
 import { SHAPES } from './game/shapes';
@@ -61,17 +64,31 @@ export default function HideMaker() {
   const [size, setSize] = useState(56);
   const [angle, setAngle] = useState(0);
   const [opacity, setOpacity] = useState(0.8);
-  const [fill, setFill] = useState(SWATCHES[0]);
-  // Until the setter picks a colour, each tap offers the painting's own colour there.
-  const [fillChosen, setFillChosen] = useState(false);
+  const [chosenFill, setChosenFill] = useState(SWATCHES[0]);
+  // Auto until the setter picks a colour, and again whenever they ask for it back: the
+  // colour then follows the paint under the shape as it moves and grows.
+  const [auto, setAuto] = useState(true);
   const [showHelp, setShowHelp] = useState(() => !seen());
   const [status, setStatus] = useState<string | null>(null);
   // At the whole-painting view a hidden shape is a few pixels across, so the setter is
   // shown a ring round it -- and can put the ring away to judge how well it hides.
   const [showRing, setShowRing] = useState(true);
 
+  // The paint under the shape, once the painting has been read -- which is what says
+  // how strong a given color has to be to be findable there at all.
+  const [samplerReady, setSamplerReady] = useState<string | null>(null);
+  const [paint, setPaint] = useState<PaintStats | null>(null);
+  const fill = auto && paint ? colourFor(paint) : chosenFill;
+  const least = paint ? minOpacityFor(fill, paint) : HIDE_OPACITY.min;
+  // A color this close to the paint cannot be found however solid it is drawn.
+  const blends = least === null;
+  const strength = Math.max(opacity, least ?? HIDE_OPACITY.max);
+
   const hide: Hide | null = spot
-    ? clampHide({ image: painting.image, shape, cx: spot.cx, cy: spot.cy, size, angle, fill, opacity }, painting)
+    ? clampHide(
+        { image: painting.image, shape, cx: spot.cx, cy: spot.cy, size, angle, fill, opacity: strength },
+        painting,
+      )
     : null;
 
   // Before the first tap the stage still needs a target to draw, so it gets an invisible one.
@@ -137,6 +154,7 @@ export default function HideMaker() {
       if (!ctx) return;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       sampler.current = { image: painting.image, ctx, k: canvas.width / painting.width };
+      setSamplerReady(painting.image);
     };
     img.src = painting.src;
     return () => {
@@ -144,25 +162,15 @@ export default function HideMaker() {
     };
   }, [painting]);
 
-  const sampleColour = useCallback(
-    (cx: number, cy: number, r: number): string | null => {
+  const samplePaint = useCallback(
+    (cx: number, cy: number, r: number): PaintStats | null => {
       const s = sampler.current;
       if (!s || s.image !== painting.image) return null;
       const rad = Math.max(1, Math.round(r * s.k));
       const x = Math.max(0, Math.round(cx * s.k) - rad);
       const y = Math.max(0, Math.round(cy * s.k) - rad);
       try {
-        const { data } = s.ctx.getImageData(x, y, rad * 2, rad * 2);
-        let rs = 0;
-        let gs = 0;
-        let bs = 0;
-        const n = data.length / 4;
-        for (let i = 0; i < data.length; i += 4) {
-          rs += data[i];
-          gs += data[i + 1];
-          bs += data[i + 2];
-        }
-        return colourFor(rs / n, gs / n, bs / n);
+        return paintStats(s.ctx.getImageData(x, y, rad * 2, rad * 2).data);
       } catch {
         return null;
       }
@@ -170,9 +178,15 @@ export default function HideMaker() {
     [painting.image],
   );
 
-  const latest = useRef({ transform, fillChosen, size, showHelp, sampleColour });
+  // Re-read whenever the shape moves or grows, since either changes the paint it covers.
   useEffect(() => {
-    latest.current = { transform, fillChosen, size, showHelp, sampleColour };
+    // oxlint-disable-next-line react/set-state-in-effect
+    setPaint(spot && samplerReady === painting.image ? samplePaint(spot.cx, spot.cy, size / 2) : null);
+  }, [spot, size, samplerReady, painting.image, samplePaint]);
+
+  const latest = useRef({ transform, showHelp });
+  useEffect(() => {
+    latest.current = { transform, showHelp };
   });
 
   useEffect(() => {
@@ -197,10 +211,6 @@ export default function HideMaker() {
       if (at.x < 0 || at.y < 0 || at.x > painting.width || at.y > painting.height) return;
       setSpot({ cx: at.x, cy: at.y });
       setStatus(null);
-      if (!latest.current.fillChosen) {
-        const colour = latest.current.sampleColour(at.x, at.y, latest.current.size / 2);
-        if (colour) setFill(colour);
-      }
     };
     const cancel = () => {
       fingers = 0;
@@ -228,8 +238,8 @@ export default function HideMaker() {
   );
 
   const chooseFill = useCallback((colour: string) => {
-    setFill(colour);
-    setFillChosen(true);
+    setChosenFill(colour);
+    setAuto(false);
   }, []);
 
   const closeHelp = useCallback(() => {
@@ -312,9 +322,9 @@ export default function HideMaker() {
                 <li>Pick a painting — any one Find Me has already had on the calendar.</li>
                 <li>Pick a shape, then tap the painting where you want it. Tap again to move it.</li>
                 <li>
-                  Set its color, size, angle and strength. It starts out in the color of the
-                  paint you tapped. Pinch or scroll to zoom in, and turn the ring off to see how
-                  well it hides.
+                  Set its color, size, angle and strength. <strong>Auto</strong> picks a color
+                  from the paint underneath. Pinch or scroll to zoom in, and turn the ring off to
+                  see how well it hides. A color that blends into the paint can&rsquo;t be shared.
                 </li>
                 <li>Press share and send the link. They hunt for it just like the daily puzzle.</li>
               </ul>
@@ -363,11 +373,20 @@ export default function HideMaker() {
         <div className="hide-row">
           <span>Color</span>
           <div className="hide-swatches">
+            <button
+              type="button"
+              className={`hide-auto${auto ? ' is-on' : ''}`}
+              onClick={() => setAuto(true)}
+              aria-pressed={auto}
+              title="Pick a color from the paint under the shape"
+            >
+              Auto
+            </button>
             {SWATCHES.map((c) => (
               <button
                 key={c}
                 type="button"
-                className={`hide-swatch${fill === c ? ' is-on' : ''}`}
+                className={`hide-swatch${!auto && chosenFill === c ? ' is-on' : ''}`}
                 style={{ background: c }}
                 onClick={() => chooseFill(c)}
                 aria-label={`Color ${c}`}
@@ -408,15 +427,22 @@ export default function HideMaker() {
           <span>Strength</span>
           <input
             type="range"
-            min={HIDE_OPACITY.min * 100}
+            min={Math.round((least ?? HIDE_OPACITY.max) * 100)}
             max={HIDE_OPACITY.max * 100}
-            value={Math.round(opacity * 100)}
+            value={Math.round(strength * 100)}
+            disabled={blends}
             onChange={(e) => setOpacity(Number(e.target.value) / 100)}
           />
         </label>
 
+        {blends && (
+          <p className="hide-warning" role="status">
+            This color blends into the paint here. Pick one that stands out more, or move it.
+          </p>
+        )}
+
         <div className="hide-share">
-          <button type="button" className="btn btn-primary" onClick={share} disabled={!hide}>
+          <button type="button" className="btn btn-primary" onClick={share} disabled={!hide || blends}>
             Share the link
           </button>
           {status && <span className="hide-status">{status}</span>}

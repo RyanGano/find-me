@@ -40,7 +40,7 @@ export const HIDE_VERSION = 1;
  * still has to be looked for.
  */
 export const HIDE_SIZE = { min: 30, max: 110 } as const;
-export const HIDE_OPACITY = { min: 0.45, max: 1 } as const;
+export const HIDE_OPACITY = { min: 0.7, max: 1 } as const;
 
 /** Softening, as every shipped day carries -- a razor vector edge gives itself away. */
 const HIDE_BLUR = 0.5;
@@ -226,14 +226,115 @@ export function hidePuzzle(h: Hide, painting: Painting): Puzzle {
   };
 }
 
+/** The paint under a hide, as far as telling a shape from it goes. */
+export interface PaintStats {
+  /** Mean color, 0--255 per channel. */
+  mean: [number, number, number];
+  /** RMS difference of the paint from its own mean, in CIE Lab: its busyness. */
+  texture: number;
+}
+
 /**
- * A default paint for a spot: the painting's own colour there, pushed a little lighter
- * on dark paint and a little darker on light. The exact colour of the paint would be
- * a shape that is not there at all.
+ * sRGB to CIE Lab (D65). Differences are measured here rather than in RGB because RGB
+ * counts a step in blue as heavily as one in green, and the eye does not: a cream shape
+ * on yellow paint is a long way off in RGB and barely there to look at.
  */
-export function colourFor(r: number, g: number, b: number): string {
+function lab([r, g, b]: readonly number[]): [number, number, number] {
+  const lin = (c: number) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  const [lr, lg, lb] = [lin(r), lin(g), lin(b)];
+  const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116);
+  const x = f((0.4124 * lr + 0.3576 * lg + 0.1805 * lb) / 0.95047);
+  const y = f(0.2126 * lr + 0.7152 * lg + 0.0722 * lb);
+  const z = f((0.0193 * lr + 0.1192 * lg + 0.9505 * lb) / 1.08883);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+
+const CHROMA_WEIGHT = 0.5;
+
+function distance(a: readonly number[], b: readonly number[]): number {
+  const [la, aa, ba] = lab(a);
+  const [lb, ab, bb] = lab(b);
+  // Hue counts for half: in textured paint a shape is picked out by being lighter or
+  // darker, and one that differs only in hue -- cream on yellow -- all but vanishes.
+  return Math.hypot(la - lb, (aa - ab) * CHROMA_WEIGHT, (ba - bb) * CHROMA_WEIGHT);
+}
+
+/** Mean and texture of a block of RGBA pixels. */
+export function paintStats(data: ArrayLike<number>): PaintStats {
+  const n = Math.max(1, Math.floor(data.length / 4));
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  for (let i = 0; i < n * 4; i += 4) {
+    r += data[i];
+    g += data[i + 1];
+    b += data[i + 2];
+  }
+  const mean: [number, number, number] = [r / n, g / n, b / n];
+  let sq = 0;
+  for (let i = 0; i < n * 4; i += 4) {
+    sq += distance([data[i], data[i + 1], data[i + 2]], mean) ** 2;
+  }
+  return { mean, texture: Math.sqrt(sq / n) };
+}
+
+function rgb(hex: string): [number, number, number] {
+  const v = parseInt(hex.replace(/^#/, ''), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+
+/**
+ * How far a shape has to stand off the paint to be findable at all: an absolute floor,
+ * and a multiple of the paint's own texture, since the same step that shows on a calm
+ * glaze disappears into streaky brushwork. Chosen by eye on the served paintings, not
+ * measured against play the way the daily ramp is.
+ */
+export const HIDE_CONTRAST = { floor: 20, texture: 1.6 } as const;
+
+/**
+ * The least opacity at which `fill` can be told from this paint -- never under
+ * `HIDE_OPACITY.min` -- or `null` when not even full strength is enough, which is the
+ * yellow-on-yellow case: a color that close to the paint cannot be found however solid
+ * it is drawn.
+ *
+ * A translucent fill moves the paint toward itself by `opacity` of the way; the least
+ * opacity is found by bisection, since Lab is not linear in that mix.
+ */
+export function minOpacityFor(fill: string, paint: PaintStats): number | null {
+  const need = Math.max(HIDE_CONTRAST.floor, HIDE_CONTRAST.texture * paint.texture);
+  // Translucent paint mixes in RGB, so the shown color is found there and then compared.
+  const f = rgb(fill);
+  const shown = (o: number) => paint.mean.map((m, i) => m + (f[i] - m) * o);
+  if (distance(shown(HIDE_OPACITY.max), paint.mean) < need) return null;
+  let lo = 0;
+  let hi: number = HIDE_OPACITY.max;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    if (distance(shown(mid), paint.mean) >= need) hi = mid;
+    else lo = mid;
+  }
+  const least = hi;
+  return Math.ceil(Math.max(HIDE_OPACITY.min, least) * 100) / 100;
+}
+
+/**
+ * A default paint for a spot: the painting's own color there, pushed lighter on dark
+ * paint and darker on light, by as little as leaves it findable at `opacity`. The
+ * exact color of the paint would be a shape that is not there at all.
+ */
+export function colourFor(paint: PaintStats, opacity = 0.8): string {
+  const [r, g, b] = paint.mean;
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  const shift = lum < 0.5 ? 0.28 : -0.28;
-  const push = (c: number) => Math.round(clamp(shift > 0 ? c + (255 - c) * shift : c * (1 + shift), 0, 255));
-  return `#${[r, g, b].map((c) => push(c).toString(16).padStart(2, '0')).join('')}`;
+  let best = '';
+  for (let step = 0.25; step <= 1.0001; step += 0.05) {
+    const shift = lum < 0.5 ? step : -step;
+    const push = (c: number) => Math.round(clamp(shift > 0 ? c + (255 - c) * shift : c * (1 + shift), 0, 255));
+    best = `#${[r, g, b].map((c) => push(c).toString(16).padStart(2, '0')).join('')}`;
+    const least = minOpacityFor(best, paint);
+    if (least !== null && least <= opacity) break;
+  }
+  return best;
 }

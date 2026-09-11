@@ -11,6 +11,8 @@ import {
   hideFromHash,
   hideLink,
   hidePuzzle,
+  minOpacityFor,
+  paintStats,
   servedPaintings,
   type Hide,
 } from './hide';
@@ -119,12 +121,45 @@ describe('friend hides', () => {
     expect(p.target.symmetry).toBe(SHAPES.star.symmetry);
   });
 
-  it('never defaults to the exact colour of the paint', () => {
-    for (const [r, g, b] of [[0, 0, 0], [255, 255, 255], [120, 80, 40], [200, 190, 170]]) {
-      const hex = colourFor(r, g, b);
+  // A flat block of one color, as the paint under a hide.
+  const flat = (r: number, g: number, b: number) => paintStats(Array.from({ length: 64 }, () => [r, g, b, 255]).flat());
+
+  it('refuses a color that blends into the paint however solid it is', () => {
+    // Gold on yellow: the case that was nearly impossible to see.
+    expect(minOpacityFor('#d9b36c', flat(243, 185, 58))).toBeNull();
+    expect(minOpacityFor('#f4ecd8', flat(251, 238, 202))).toBeNull();
+  });
+
+  it('never lets a findable color go under the opacity floor', () => {
+    expect(minOpacityFor('#101010', flat(240, 240, 240))).toBe(HIDE_OPACITY.min);
+  });
+
+  it('asks more of a color that only differs in hue', () => {
+    // Same lightness step either way; the hue-only one must be drawn stronger.
+    const light = minOpacityFor('#f4ecd8', flat(243, 185, 58));
+    const dark = minOpacityFor('#7a5a10', flat(243, 185, 58));
+    expect(light).not.toBeNull();
+    expect(dark).not.toBeNull();
+    expect(light!).toBeGreaterThanOrEqual(dark!);
+  });
+
+  it('asks more on busy paint than on calm', () => {
+    const calm = paintStats(Array.from({ length: 64 }, () => [150, 150, 150, 255]).flat());
+    const busy = paintStats(Array.from({ length: 64 }, (_, i) => (i % 2 ? [110, 110, 110, 255] : [190, 190, 190, 255])).flat());
+    expect(busy.texture).toBeGreaterThan(calm.texture);
+    const onCalm = minOpacityFor('#606060', calm) ?? 2;
+    const onBusy = minOpacityFor('#606060', busy) ?? 2;
+    expect(onBusy).toBeGreaterThan(onCalm);
+  });
+
+  it('defaults to a color findable at the default strength, never the paint itself', () => {
+    for (const [r, g, b] of [[0, 0, 0], [255, 255, 255], [120, 80, 40], [200, 190, 170], [243, 185, 58]]) {
+      const paint = flat(r, g, b);
+      const hex = colourFor(paint);
       expect(hex).toMatch(/^#[0-9a-f]{6}$/);
-      const exact = `#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
-      expect(hex).not.toBe(exact);
+      const least = minOpacityFor(hex, paint);
+      expect(least, hex).not.toBeNull();
+      expect(least!).toBeLessThanOrEqual(0.8);
     }
   });
 
