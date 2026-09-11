@@ -7,6 +7,7 @@ import {
   buildAgeDataText,
   buildGaveUpText,
   buildShareText,
+  huntTrace,
   speedBar,
   tallyLine,
 } from './share';
@@ -87,6 +88,47 @@ describe('buildShareText', () => {
   it('adds the streak only once it is worth bragging about', () => {
     expect(buildShareText(1, PUZZLES[0], 1000, 1, 20)).not.toContain('streak');
     expect(buildShareText(1, PUZZLES[0], 1000, 4, 20)).toContain('🔥 4 day streak');
+  });
+});
+
+describe('huntTrace', () => {
+  const base: RunMetrics = {
+    searchMs: 1,
+    adjustMs: 1,
+    passes: 2,
+    overshoots: 0,
+    reversals: 0,
+    idleMs: 0,
+  };
+
+  it('turns the run into a line of emoji, in order', () => {
+    expect(huntTrace({ ...base, trace: 'sspspf' })).toBe('🔍🔍🟨🔍🟨🟩');
+    expect(huntTrace({ ...base, trace: 'ssg' })).toBe('🔍🔍🏳️');
+  });
+
+  it('is empty for a run with no trace', () => {
+    expect(huntTrace(base)).toBe('');
+    expect(huntTrace(null)).toBe('');
+  });
+
+  it('puts the trace on the line with the time, in place of the speed bar', () => {
+    const lines = buildShareText(12, PUZZLES[0], 102000, 1, 41, { ...base, trace: 'sspf' })
+      .split('\n');
+    expect(lines[1]).toBe('🔍🔍🟨🟩  1:42.0');
+    expect(lines[1]).not.toContain('⬜');
+  });
+
+  it('shares a run without a trace exactly as before', () => {
+    expect(buildShareText(12, PUZZLES[0], 83400, 4, 41, base)).toBe(
+      buildShareText(12, PUZZLES[0], 83400, 4, 41),
+    );
+  });
+
+  it('ends a give-up in the flag, still with no speed bar and no age', () => {
+    const text = buildGaveUpText(12, PUZZLES[0], 240000, { ...base, trace: 'sspsg' });
+    expect(text.split('\n')[1]).toMatch(/^🔍🔍🟨🔍🏳️ {2}Didn't find it/);
+    expect(text).not.toContain('🟩');
+    expect(text).not.toContain('Find Me Age');
   });
 });
 

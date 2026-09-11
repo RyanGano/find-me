@@ -45,6 +45,44 @@ export interface RunMetrics {
    * concentrated in frozen pauses.
    */
   idleMs: number;
+  /**
+   * The run's events in the order they happened, one character each, for the hunt trace
+   * in the share text: `s` for each slice of time spent searching, `p` for a pass, and a
+   * closing `f` for the find or `g` for a give-up. Never a place -- it records *that* the
+   * shape was had and lost, not where. Capped at `TRACE_MAX` by squeezing long stretches
+   * of searching, so the end, which is the payoff, always survives.
+   *
+   * Absent on runs recorded, or banked, before it existed; those share as they always did.
+   */
+  trace?: string;
+}
+
+/** One `s` per slice of searching, so the trace's length tracks effort. */
+export const TRACE_SLICE_MS = 15000;
+/** The longest a trace may get, ending included: one line on a phone's share sheet. */
+export const TRACE_MAX = 12;
+
+/**
+ * Bring a trace down to `max` characters without losing its shape: first shorten the
+ * longest runs of searching (never below one, so a stretch of hunting between two passes
+ * still shows), then drop lone search marks from the start, and only then drop the
+ * earliest events outright. The last character is never touched.
+ */
+export function compressTrace(trace: string, max = TRACE_MAX): string {
+  let t = trace;
+  while (t.length > max) {
+    const runs = [...t.matchAll(/s{2,}/g)];
+    if (runs.length > 0) {
+      const longest = runs.reduce((a, b) => (b[0].length > a[0].length ? b : a));
+      t = t.slice(0, longest.index) + t.slice(longest.index + 1);
+    } else if (t.slice(0, -1).includes('s')) {
+      const at = t.indexOf('s');
+      t = t.slice(0, at) + t.slice(at + 1);
+    } else {
+      t = t.slice(1);
+    }
+  }
+  return t;
 }
 
 /**
@@ -65,6 +103,11 @@ export interface Tracker {
   zoomRef: number | null;
   /** Run-clock time of the last sample, for measuring idle gaps. */
   lastAt: number;
+  /**
+   * How many trace slices the run clock has entered. Absent on a tracker banked before
+   * the trace existed, whose run then simply has no trace.
+   */
+  slices?: number;
 }
 
 /**
@@ -84,7 +127,15 @@ const ZOOM_DEADBAND = 0.02;
 
 export function newTracker(): Tracker {
   return {
-    m: { searchMs: null, adjustMs: null, passes: 0, overshoots: 0, reversals: 0, idleMs: 0 },
+    m: {
+      searchMs: null,
+      adjustMs: null,
+      passes: 0,
+      overshoots: 0,
+      reversals: 0,
+      idleMs: 0,
+      trace: '',
+    },
     hot: false,
     hotAt: null,
     sizeSign: 0,
@@ -92,7 +143,21 @@ export function newTracker(): Tracker {
     zoomDir: 0,
     zoomRef: null,
     lastAt: 0,
+    slices: 0,
   };
+}
+
+/**
+ * Add a search mark for every slice the clock has entered since the last look, if the
+ * player spent it searching rather than working on the shape.
+ */
+function tick(tracker: Tracker, m: RunMetrics, at: number): number | undefined {
+  if (typeof m.trace !== 'string' || typeof tracker.slices !== 'number') return tracker.slices;
+  const slices = Math.floor(Math.max(0, at) / TRACE_SLICE_MS) + 1;
+  if (slices > tracker.slices && !tracker.hot) {
+    m.trace = compressTrace(m.trace + 's'.repeat(slices - tracker.slices));
+  }
+  return Math.max(slices, tracker.slices);
 }
 
 export function isRunMetrics(value: unknown): value is RunMetrics {
@@ -104,7 +169,8 @@ export function isRunMetrics(value: unknown): value is RunMetrics {
     typeof m.passes === 'number' &&
     typeof m.overshoots === 'number' &&
     typeof m.reversals === 'number' &&
-    typeof m.idleMs === 'number'
+    typeof m.idleMs === 'number' &&
+    (m.trace === undefined || (typeof m.trace === 'string' && /^[spfg]*$/.test(m.trace)))
   );
 }
 
@@ -119,7 +185,8 @@ export function isTracker(value: unknown): value is Tracker {
     typeof t.angleSign === 'number' &&
     typeof t.zoomDir === 'number' &&
     (t.zoomRef === null || typeof t.zoomRef === 'number') &&
-    typeof t.lastAt === 'number'
+    typeof t.lastAt === 'number' &&
+    (t.slices === undefined || typeof t.slices === 'number')
   );
 }
 
@@ -181,9 +248,14 @@ export function sample(
     }
   }
 
+  next.slices = tick(tracker, m, at);
+
   const hot = isHot(match, viewport, targetSize);
   if (hot && !tracker.hot) next.hotAt = at;
-  if (!hot && tracker.hot) m.passes += 1;
+  if (!hot && tracker.hot) {
+    m.passes += 1;
+    if (typeof m.trace === 'string') m.trace = compressTrace(m.trace + 'p');
+  }
   next.hot = hot;
 
   // Only judge the fine adjustments once the shape is actually in front of the player.
@@ -208,11 +280,20 @@ export function sample(
  * Close the run out. The split is taken at the *last* entry into the hot zone: if the
  * player found the shape, lost it, and found it again, the time in between was more
  * hunting, and only the final approach counts as adjusting.
+ *
+ * `end` closes the trace: a find, or a give-up, which is otherwise the same close-out.
  */
-export function finish(tracker: Tracker, solvedAt: number): RunMetrics {
+export function finish(
+  tracker: Tracker,
+  solvedAt: number,
+  end: 'found' | 'gaveUp' = 'found',
+): RunMetrics {
   const searchMs = Math.min(tracker.hotAt ?? solvedAt, solvedAt);
+  const m = { ...tracker.m };
+  tick(tracker, m, solvedAt);
+  if (typeof m.trace === 'string') m.trace = compressTrace(m.trace + (end === 'found' ? 'f' : 'g'));
   return {
-    ...tracker.m,
+    ...m,
     // A gap running right up to the solve is only seen now.
     idleMs: tracker.m.idleMs + (solvedAt - tracker.lastAt > IDLE_MS ? solvedAt - tracker.lastAt : 0),
     searchMs: Math.max(0, searchMs),

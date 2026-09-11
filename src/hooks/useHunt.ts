@@ -375,6 +375,8 @@ export function useHunt(session: HuntSession) {
     const ms = paused ? elapsed : performance.now() - startedAt;
     setGaveUpMs(ms);
     setElapsed(ms);
+    // For the hunt trace only: a give-up has no age, and callers store no metrics for it.
+    setMetrics(finish(tracker.current, ms, 'gaveUp'));
     setPaused(false);
     setResuming(false);
     reveal();
