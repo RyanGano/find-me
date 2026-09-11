@@ -772,6 +772,13 @@ button.reference:focus-visible {
   letter-spacing: 2px;
 }
 
+/* What the trace's squares mean, on the card only: the share text stays the line. */
+.result-trace-key {
+  margin: -6px 0 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* The second reading of the same result, so it sits with the clock rather than down
    with the stats. Quieter than the time: it is a flourish, not the score. */
 .result-age-block {

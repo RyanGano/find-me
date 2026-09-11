@@ -102,8 +102,13 @@ describe('huntTrace', () => {
   };
 
   it('turns the run into a line of emoji, in order', () => {
-    expect(huntTrace({ ...base, trace: 'sspspf' })).toBe('🔍🔍🟨🔍🟨🟩');
-    expect(huntTrace({ ...base, trace: 'ssg' })).toBe('🔍🔍🏳️');
+    expect(huntTrace({ ...base, trace: 'vvpvppf' })).toBe('🔍🔍🟨🔍🟨🟨🟩');
+    expect(huntTrace({ ...base, trace: 'vg' })).toBe('🔍🏳️');
+  });
+
+  it('draws no time from a trace kept by the first version', () => {
+    // `s` was a slice of search time; the clock says that now.
+    expect(huntTrace({ ...base, trace: 'sspsf' })).toBe('🟨🟩');
   });
 
   it('is empty for a run with no trace', () => {
@@ -112,7 +117,7 @@ describe('huntTrace', () => {
   });
 
   it('puts the trace on the line with the time, in place of the speed bar', () => {
-    const lines = buildShareText(12, PUZZLES[0], 102000, 1, 41, { ...base, trace: 'sspf' })
+    const lines = buildShareText(12, PUZZLES[0], 102000, 1, 41, { ...base, trace: 'vvpf' })
       .split('\n');
     expect(lines[1]).toBe('🔍🔍🟨🟩  1:42.0');
     expect(lines[1]).not.toContain('⬜');
@@ -125,7 +130,7 @@ describe('huntTrace', () => {
   });
 
   it('ends a give-up in the flag, still with no speed bar and no age', () => {
-    const text = buildGaveUpText(12, PUZZLES[0], 240000, { ...base, trace: 'sspsg' });
+    const text = buildGaveUpText(12, PUZZLES[0], 240000, { ...base, trace: 'vvpvg' });
     expect(text.split('\n')[1]).toMatch(/^🔍🔍🟨🔍🏳️ {2}Didn't find it/);
     expect(text).not.toContain('🟩');
     expect(text).not.toContain('Find Me Age');

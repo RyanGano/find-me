@@ -270,83 +270,85 @@ describe('isTracker', () => {
 
 describe('the hunt trace', () => {
   const far = look({ displaySize: 8 });
-  // The badge amber: right size and angle, but off to one side, so never "hot".
-  const amber = look({ near: true, screen: { x: 60, y: 60 }, displaySize: TARGET * 0.5 });
+  // In view and close, in the middle, without the badge lit.
+  const inView = look({ displaySize: TARGET * 0.7 });
+  // The badge amber, off to one side.
+  const amber = look({ near: true, screen: { x: 60, y: 60 }, displaySize: TARGET * 0.97 });
 
-  it('records searching, each lost badge and the find in the order they happened', () => {
+  it('records each encounter in order, the closer of the two, then the find', () => {
     const t = run([
       [0, far],
-      [31000, amber],
-      [33000, far],
-      [47000, amber],
-    ]);
-    // Two whole slices of searching, the badge lost, one more slice, the find.
-    expect(finish(t, 48000).trace).toBe('sspsf');
-  });
-
-  it('follows the badge, wherever on screen it lit', () => {
-    // Three amber flashes in 31.8s, none of them central: three losses, two slices.
-    const t = run([
-      [0, far],
-      [5000, amber],
-      [6000, far],
-      [12000, amber],
-      [13000, far],
+      [5000, inView],
+      [6000, far], // moved past it
+      [12000, inView],
+      [13000, far], // and again
       [20000, amber],
-      [21500, far],
-      [31000, amber],
+      [21500, far], // nearly
+      [30000, inView],
+      [31000, far], // moved past it
+      [40000, amber],
+      [41500, far], // nearly
+      [50000, amber],
+      [51500, inView], // nearly, still close
+      [53000, amber],
     ]);
-    const m = finish(t, 31800);
-    expect(m.passes).toBe(3);
-    expect(m.trace).toBe('ppspsf');
+    expect(finish(t, 54000).trace).toBe('vvpvppf');
   });
 
-  it('counts only whole slices of searching', () => {
-    const t = run([[0, far], [31000, amber]]);
-    expect(finish(t, 31800).trace).toBe('ssf');
+  it('carries no time: a slow clean find and a fast one read the same', () => {
+    const slow = finish(run([[0, far], [290000, amber]]), 300000);
+    const fast = finish(run([[0, far], [4000, amber]]), 5000);
+    expect(slow.trace).toBe('f');
+    expect(fast.trace).toBe('f');
   });
 
-  it('opens on one search mark even for a quick find', () => {
-    const t = run([[0, far], [4000, amber]]);
-    expect(finish(t, 4500).trace).toBe('sf');
+  it('writes one mark for an encounter that lit the badge, not two', () => {
+    const t = run([
+      [0, far],
+      [5000, inView],
+      [6000, amber],
+      [8000, far],
+      [20000, amber],
+    ]);
+    expect(finish(t, 21000).trace).toBe('pf');
   });
 
   it('does not count the badge flickering while squaring up', () => {
     const t = run([
       [0, far],
       [3000, amber],
-      [3300, far],
+      [3300, inView],
       [3600, amber],
-      [3900, far],
+      [3900, inView],
       [4200, amber],
     ]);
-    expect(finish(t, 5000).trace).toBe('sf');
+    expect(finish(t, 5000).trace).toBe('f');
   });
 
-  it('marks a slice spent with the badge lit as nothing', () => {
-    const t = run([[0, amber], [40000, amber]]);
-    expect(finish(t, 41000).trace).toBe('sf');
-  });
-
-  it('ends a give-up with its own mark rather than a find', () => {
-    const t = run([[0, far]]);
-    expect(finish(t, 5000, 'gaveUp').trace).toBe('sg');
-  });
-
-  it('counts a badge lost just before giving up', () => {
-    const t = run([[0, far], [3000, amber], [3500, far]]);
-    expect(finish(t, 3800, 'gaveUp').trace).toBe('spg');
-  });
-
-  it('keeps a ten-minute hunt to one line, ending included', () => {
+  it('does not count slipping out of view and straight back', () => {
     const t = run([
       [0, far],
-      [300000, amber],
-      [301000, far],
-      [599000, amber],
+      [3000, inView],
+      [3400, far],
+      [3800, inView],
+      [9000, amber],
     ]);
-    const trace = finish(t, 600000).trace ?? '';
+    expect(finish(t, 10000).trace).toBe('f');
+  });
+
+  it('ends a give-up with its own mark, counting what it last let go of', () => {
+    expect(finish(run([[0, far]]), 5000, 'gaveUp').trace).toBe('g');
+    const t = run([[0, far], [3000, amber], [3500, far]]);
+    expect(finish(t, 3800, 'gaveUp').trace).toBe('pg');
+  });
+
+  it('keeps a long hunt to one line, every kind of event and the ending included', () => {
+    const steps: [number, MatchState][] = [[0, far]];
+    for (let i = 1; i <= 20; i++) steps.push([i * 10000, inView], [i * 10000 + 2000, far]);
+    steps.push([300000, amber], [302000, far], [400000, amber]);
+    const trace = finish(run(steps), 401000).trace ?? '';
     expect(trace.length).toBeLessThanOrEqual(TRACE_MAX);
+    expect(trace).toContain('v');
     expect(trace).toContain('p');
     expect(trace.endsWith('f')).toBe(true);
   });
@@ -357,15 +359,16 @@ describe('the hunt trace', () => {
       [9000, amber],
       [9500, far],
     ]);
-    expect(finish(t, 70000).trace).toMatch(/^[spfg]+$/);
+    expect(finish(t, 70000).trace).toMatch(/^[vpfg]+$/);
   });
 
   it('leaves a run banked before the trace existed without one', () => {
     const old = newTracker();
     delete old.m.trace;
-    delete old.slices;
     delete old.near;
     delete old.lostAt;
+    delete old.leftAt;
+    delete old.lit;
     expect(isTracker(old)).toBe(true);
     const t = run([[0, far], [30000, amber], [31500, far]], old);
     expect(finish(t, 40000).trace).toBeUndefined();
@@ -373,15 +376,15 @@ describe('the hunt trace', () => {
 });
 
 describe('compressTrace', () => {
-  it('shortens the longest stretch of searching first', () => {
-    expect(compressTrace('sssspssf', 7)).toBe('ssspssf');
+  it('shortens the longest run of one mark first', () => {
+    expect(compressTrace('vvvvpvvf', 7)).toBe('vvvpvvf');
   });
 
-  it('never shortens a stretch below one mark while another is longer', () => {
-    expect(compressTrace('spsssssf', 5)).toBe('spssf');
+  it('keeps every kind of event while it can', () => {
+    expect(compressTrace('vpppppf', 5)).toBe('vpppf');
   });
 
   it('keeps the ending when it has to drop events outright', () => {
-    expect(compressTrace('pppppf', 3)).toBe('ppf');
+    expect(compressTrace('vpvpvf', 3)).toBe('pvf');
   });
 });

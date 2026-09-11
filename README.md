@@ -584,44 +584,55 @@ does the shape's edge softening, so the ring is the same weight framed as it is 
 
 ### The hunt trace
 
-The share text carries one line of emoji built from the run's own events in order: 🔍 for
-each whole fifteen seconds spent searching (and always at least one), 🟨 for each time the
-badge went amber and then went off again for more than a second, and 🟩 for the find.
-
-🟨 follows the **badge**, not the age's *pass*. The first version of the trace used the
-pass, which then needed the shape in the middle of the screen as well as close, and a
-tester who had watched the badge go amber three times off-centre got a line with no 🟨 in
-it at all. The trace is read by the player, so it counts what the player saw.
-
-That tester had found a worse bug than the trace. The Find Me Age's hot zone (`isHot` in
-`metrics.ts`) could only be entered in the middle of the stage, so a player who sized and
-squared up the shape anywhere else -- up beside the badge, to compare the two -- never
-entered it: their framing time read as zero and their near misses and overshoots went
-uncounted, and the same run read three to seven years younger than it did framed in the
-middle, while dragging a found shape up to the badge counted as losing it. The zone is now
-entered in the middle *or* by lighting the badge, and once entered it holds anywhere on
-screen at roughly the right size. The middle stays one way in because at the fitted zoom a
-shape sitting unnoticed at the edge of the screen has not been found. The second of grace is
-because squaring up at the edge of the near band flickers the badge, and that is aiming,
-not losing it.
+The share text carries one line of emoji: every time the player had the shape and let it
+go, in order, then how it ended.
 
 ```
 Find Me #212 🎨
-🔍🔍🔍🟨🔍🟨🟨🟩  1:42.0
+🔍🔍🟨🔍🟨🟨🟩  1:42.0
 ```
 
-It replaced a five-block speed bar that was a function of the time alone, so two players
-on the same clock posted identical lines however differently they had played. The trace is
-a sequence in **time**, never a place: it records *that* a player came close, never where,
-so a trace from any day says nothing about where that day hides. It is never sent
-anywhere; it lives in the run's metrics (`trace` in `metrics.ts`) and is only ever posted
-by the player.
+- 🔍 **moved past it**: the shape was in view and close up (the hot zone, below), and the
+  player moved off it without the badge ever lighting.
+- 🟨 **nearly**: the badge went amber and then went off again.
+- 🟩 **got it**, or 🏳️ on a give-up.
 
-It is capped at twelve glyphs so it stays on one line in a share sheet. Long stretches of
-searching are squeezed first, the longest run of 🔍 losing a mark at a time
-(`compressTrace`), so the end of the hunt -- the payoff -- always survives. Runs recorded
-before the trace existed, and runs banked mid-hunt across the deploy, have none, and share
-with the speed bar exactly as they did.
+One mark per encounter, the closer of the two: an encounter that lit the badge is a 🟨 and
+not a 🔍 as well. A loss only counts once it has lasted a second, because squaring up at
+the edge of the near band flickers the badge, and zooming at the edge of the hot zone's
+size range flickers that, and both are aiming rather than losing the shape. The result card
+shows the line with a one-line key under it; the share text is the line alone.
+
+**Events, not time.** The first version mixed the two: 🔍 was fifteen seconds of searching,
+while 🟨 and 🟩 were events. Nobody could read it -- a tester took `🔍🔍🟨🔍🟨🟨🟩` for three
+stretches of looking and two of positioning. Wordle's grid works because every square is
+the same unit. The clock already says how long; what a player can learn from a trace,
+theirs or a friend's, is how often the shape was had and let go. Getting better at this
+game is panning past the shape less, not just being faster. Stored traces from that first
+version keep their `s` marks, which are simply not drawn.
+
+**It follows the badge.** The first version's 🟨 used the Find Me Age's *pass*, which then
+needed the shape in the middle of the screen, and a tester who had watched the badge go
+amber three times off-centre got a line with no 🟨 in it at all. That turned up a worse bug:
+the age's hot zone (`isHot` in `metrics.ts`) could only be *entered* in the middle, so a
+player who sized and squared up the shape anywhere else -- up beside the badge, to compare
+the two -- never entered it. Their framing time read as zero, their near misses and
+overshoots went uncounted, and the same run read three to seven years younger than it did
+framed in the middle; dragging a found shape up to the badge counted as losing it. The zone
+is now entered in the middle *or* by lighting the badge, and once entered it holds anywhere
+on screen at roughly the right size. The middle stays one way in because at the fitted zoom
+a shape sitting unnoticed at the edge of the screen has not been found.
+
+The trace replaced a five-block speed bar that was a function of the time alone, so two
+players on the same clock posted identical lines however differently they had played. It
+records *that* a player had the shape, never where, so a trace from any day says nothing
+about where that day hides. It is never sent anywhere; it lives in the run's metrics
+(`trace` in `metrics.ts`) and is only ever posted by the player.
+
+It is capped at twelve glyphs so it stays on one line in a share sheet: the longest run of
+one mark loses a glyph at a time (`compressTrace`), so every kind of event stays in the
+line and the ending always survives. Runs recorded before the trace existed, and runs
+banked mid-hunt across that deploy, have none, and share with the speed bar as they did.
 
 ### Giving up
 

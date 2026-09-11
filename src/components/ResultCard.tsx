@@ -12,6 +12,7 @@ import {
   shareResult,
   speedBar,
   tallyLine,
+  TRACE_KEY,
 } from '../game/share';
 import type { Stats } from '../game/storage';
 import type { Puzzle } from '../game/types';
@@ -149,7 +150,10 @@ export function ResultCard({
       {/* The hunt trace, exactly as the share text will carry it, so the player sees
           what they are about to post. A run from before the trace keeps its speed bar. */}
       {trace ? (
-        <p className="result-bar" aria-label="How the hunt went">{trace}</p>
+        <>
+          <p className="result-bar" aria-label="How the hunt went">{trace}</p>
+          <p className="result-trace-key">{TRACE_KEY}</p>
+        </>
       ) : (
         !gaveUp && <p className="result-bar">{speedBar(ms)}</p>
       )}
