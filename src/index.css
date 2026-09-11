@@ -1547,8 +1547,15 @@ button.reference:focus-visible {
   box-shadow: var(--shadow);
 }
 
+/* Every question here is the words on their own line and one row of answers under them,
+   left-aligned. Text beside some buttons and above others read as a wall with the
+   answers scattered round it. */
+.giveup-note[role='dialog'] {
+  justify-content: flex-start;
+}
+
 .giveup-note span {
-  flex: 1 1 200px;
+  flex: 1 1 100%;
 }
 
 /* Nothing but the words: a plea is not asking for a decision, so it offers no buttons
@@ -1571,12 +1578,8 @@ button.reference:focus-visible {
   color: var(--muted);
 }
 
-/* Give up, with the hint still on offer: the question on its own line, and one row of
-   answers under it -- the hint bright, carrying on plain, giving up quiet and last. */
-.giveup-note.is-choice span {
-  flex-basis: 100%;
-}
-
+/* Give up, with the hint still on offer: the hint bright, carrying on plain, giving up
+   quiet and last. */
 .giveup-hint {
   flex: none;
   padding: 6px 12px;

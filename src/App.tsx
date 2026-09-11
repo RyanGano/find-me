@@ -721,11 +721,7 @@ export default function App() {
             while the question is still on the screen -- which happens, because the board
             stays live behind it. */}
         {confirming && done === null && (
-          <div
-            className={`giveup-note${canHint ? ' is-choice' : ''}`}
-            role="dialog"
-            aria-label="Give up?"
-          >
+          <div className="giveup-note" role="dialog" aria-label="Give up?">
             {/* Offered first to anyone who has not taken it: a hint keeps the streak and
                 leaves the find to them, which is almost always what a stuck player wants.
                 So it is the one bright button, and giving up is the quiet one at the end. */}
