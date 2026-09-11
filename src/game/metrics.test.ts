@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { NEAR_ANGLE_TOLERANCE_DEG, NEAR_SIZE_TOLERANCE, type MatchState } from './match';
-import { crossing, finish, isTracker, newTracker, sample, type Tracker } from './metrics';
+import {
+  compressTrace,
+  crossing,
+  finish,
+  isTracker,
+  newTracker,
+  sample,
+  TRACE_MAX,
+  type Tracker,
+} from './metrics';
 
 const VIEW = { w: 400, h: 400 };
 const TARGET = 80;
@@ -211,5 +220,78 @@ describe('isTracker', () => {
     expect(isTracker(undefined)).toBe(false);
     expect(isTracker({})).toBe(false);
     expect(isTracker({ ...newTracker(), m: { passes: 1 } })).toBe(false);
+  });
+});
+
+describe('the hunt trace', () => {
+  const far = look({ displaySize: 8 });
+
+  it('records searching, passes and the find in the order they happened', () => {
+    const t = run([
+      [0, far],
+      [20000, look()],
+      [21000, far],
+      [40000, look()],
+    ]);
+    // Two slices of searching, a pass, one more slice of searching, the find.
+    expect(finish(t, 42000).trace).toBe('sspsf');
+  });
+
+  it('marks a slice spent working on the shape as nothing', () => {
+    // The first slice is entered before the first look, which is always searching.
+    const t = run([
+      [0, look()],
+      [40000, look()],
+    ]);
+    expect(finish(t, 41000).trace).toBe('sf');
+  });
+
+  it('ends a give-up with its own mark rather than a find', () => {
+    const t = run([[0, far]]);
+    expect(finish(t, 5000, 'gaveUp').trace).toBe('sg');
+  });
+
+  it('keeps a ten-minute hunt to one line, ending included', () => {
+    const t = run([
+      [0, far],
+      [300000, look()],
+      [301000, far],
+    ]);
+    const trace = finish(t, 600000).trace ?? '';
+    expect(trace.length).toBeLessThanOrEqual(TRACE_MAX);
+    expect(trace).toContain('p');
+    expect(trace.endsWith('f')).toBe(true);
+  });
+
+  it('holds only the event alphabet, never a place', () => {
+    const t = run([
+      [0, look({ screen: { x: 123, y: 321 }, displaySize: 8 })],
+      [9000, look()],
+      [9500, far],
+    ]);
+    expect(finish(t, 70000).trace).toMatch(/^[spfg]+$/);
+  });
+
+  it('leaves a run banked before the trace existed without one', () => {
+    const old = newTracker();
+    delete old.m.trace;
+    delete old.slices;
+    expect(isTracker(old)).toBe(true);
+    const t = run([[0, far], [30000, look()], [31000, far]], old);
+    expect(finish(t, 40000).trace).toBeUndefined();
+  });
+});
+
+describe('compressTrace', () => {
+  it('shortens the longest stretch of searching first', () => {
+    expect(compressTrace('sssspssf', 7)).toBe('ssspssf');
+  });
+
+  it('never shortens a stretch below one mark while another is longer', () => {
+    expect(compressTrace('spsssssf', 5)).toBe('spssf');
+  });
+
+  it('keeps the ending when it has to drop events outright', () => {
+    expect(compressTrace('pppppf', 3)).toBe('ppf');
   });
 });

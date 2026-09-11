@@ -17,16 +17,38 @@ export function speedBar(ms: number): string {
   return '🟩'.repeat(filled) + '⬜'.repeat(5 - filled);
 }
 
+/**
+ * Each event in a run's trace, as the glyph it is posted as. All four are single, widely
+ * supported emoji that render one cell wide on every share target, so a full trace of
+ * `TRACE_MAX` stays on one line.
+ */
+const TRACE_GLYPHS: Record<string, string> = { s: '🔍', p: '🟨', f: '🟩', g: '🏳️' };
+
+/**
+ * How the hunt went, as one line of emoji: searching, each time the shape was had and
+ * lost again, and the ending. A sequence in time and nothing else, so it is spoiler-free
+ * by construction. Empty for a run that has no trace -- one recorded before it existed.
+ */
+export function huntTrace(metrics: RunMetrics | null | undefined): string {
+  const trace = metrics?.trace;
+  if (!trace) return '';
+  return [...trace].map((c) => TRACE_GLYPHS[c] ?? '').join('');
+}
+
 export function buildShareText(
   day: number,
   puzzle: Puzzle,
   ms: number,
   streak: number,
   age: number | null,
+  metrics?: RunMetrics | null,
 ): string {
+  // The trace replaces the speed bar when there is one: the bar is the time again, and
+  // the trace is how the time was spent.
+  const trace = huntTrace(metrics);
   const lines = [
     `Find Me #${day} ${puzzle.emoji}`,
-    `${formatTime(ms)}  ${speedBar(ms)}`,
+    trace ? `${trace}  ${formatTime(ms)}` : `${formatTime(ms)}  ${speedBar(ms)}`,
   ];
   // Sits directly under the clock, because it is the same result read a second way:
   // the time says how fast, the age says how it was played.
@@ -59,12 +81,21 @@ export function tallyLine({ played, solved, medianMs }: DayTally): string {
  * Both of those say how well a hunt went, and a hunt that ended in being shown the
  * answer did not go well -- dressing it up as a score would be the one thing a give-up
  * must not be. What is left is honest and still postable, and still says nothing about
- * where the shape was.
+ * where the shape was. The hunt trace is allowed, because it is not a score: it ends in
+ * the flag, and says only how the looking went.
  */
-export function buildGaveUpText(day: number, puzzle: Puzzle, ms: number): string {
+export function buildGaveUpText(
+  day: number,
+  puzzle: Puzzle,
+  ms: number,
+  metrics?: RunMetrics | null,
+): string {
+  const trace = huntTrace(metrics);
   return [
     `Find Me #${day} ${puzzle.emoji}`,
-    `Didn't find it — gave up after ${formatTime(ms)} 🏳️`,
+    trace
+      ? `${trace}  Didn't find it — gave up after ${formatTime(ms)}`
+      : `Didn't find it — gave up after ${formatTime(ms)} 🏳️`,
     SITE_URL,
   ].join('\n');
 }

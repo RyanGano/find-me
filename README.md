@@ -582,6 +582,31 @@ depends on it.
 All three widths are screen-constant: `Stage` divides them out of the zoom the same way it
 does the shape's edge softening, so the ring is the same weight framed as it is fitted.
 
+### The hunt trace
+
+The share text carries one line of emoji built from the run's own events in order: 🔍 for
+each fifteen seconds spent searching, 🟨 for each time the shape was in front of the player
+and they moved off it (a *pass*, the same event the Find Me Age counts), and 🟩 for the
+find.
+
+```
+Find Me #212 🎨
+🔍🔍🔍🟨🔍🟨🟨🟩  1:42.0
+```
+
+It replaced a five-block speed bar that was a function of the time alone, so two players
+on the same clock posted identical lines however differently they had played. The trace is
+a sequence in **time**, never a place: it records *that* a player came close, never where,
+so a trace from any day says nothing about where that day hides. It is never sent
+anywhere; it lives in the run's metrics (`trace` in `metrics.ts`) and is only ever posted
+by the player.
+
+It is capped at twelve glyphs so it stays on one line in a share sheet. Long stretches of
+searching are squeezed first, the longest run of 🔍 losing a mark at a time
+(`compressTrace`), so the end of the hunt -- the payoff -- always survives. Runs recorded
+before the trace existed, and runs banked mid-hunt across the deploy, have none, and share
+with the speed bar exactly as they did.
+
 ### Giving up
 
 Every estimate in `difficulty.ts` is a **median**, so by construction a large slice of
@@ -605,7 +630,8 @@ give-up that kept the streak alive would be strictly better than not playing at 
 is exactly the wrong thing to reward. The share text says plainly that it was not found
 and carries no speed bar and no Find Me Age -- both of those say how well a hunt went, and
 a hunt that ended in being shown the answer did not go well. Dressing it as a score is the
-one thing this must not do.
+one thing this must not do. It may carry the hunt trace (see "The hunt trace"), ending in
+🏳️ rather than 🟩, because a trace says how the looking went and not how well.
 
 **The wait before it opens** is 1.5x the day's own `expectedSearchMs`, floored at
 forty-five seconds and capped at three minutes (`giveUpAfterMs` in `age.ts`). A multiple

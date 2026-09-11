@@ -8,6 +8,7 @@ import {
   buildAgeDataText,
   buildGaveUpText,
   buildShareText,
+  huntTrace,
   shareResult,
   speedBar,
   tallyLine,
@@ -66,10 +67,12 @@ export function ResultCard({
     [gaveUp, puzzle, ms, metrics],
   );
 
+  const trace = huntTrace(metrics);
+
   const share = async () => {
     const text = gaveUp
-      ? buildGaveUpText(day, puzzle, ms)
-      : buildShareText(day, puzzle, ms, stats.streak, age);
+      ? buildGaveUpText(day, puzzle, ms, metrics)
+      : buildShareText(day, puzzle, ms, stats.streak, age, metrics);
     const result = await shareResult(text);
     setStatus(result);
     if (result !== 'failed') onShared();
@@ -143,13 +146,18 @@ export function ResultCard({
           and this one did not go well. What replaces them is the one thing the player
           came back for -- where it was -- which is already framed on the board behind
           this card. */}
-      {gaveUp ? (
+      {/* The hunt trace, exactly as the share text will carry it, so the player sees
+          what they are about to post. A run from before the trace keeps its speed bar. */}
+      {trace ? (
+        <p className="result-bar" aria-label="How the hunt went">{trace}</p>
+      ) : (
+        !gaveUp && <p className="result-bar">{speedBar(ms)}</p>
+      )}
+      {gaveUp && (
         <p className="result-gaveup">
           hunted, then shown. It is framed on the board behind this card &mdash; have a
           look at what you walked past.
         </p>
-      ) : (
-        <p className="result-bar">{speedBar(ms)}</p>
       )}
 
       {!gaveUp && age !== null && (
