@@ -598,7 +598,7 @@ Find Me #212 🎨
 - 🟩 **got it**, or 🏳️ on a give-up.
 
 One mark per encounter, the closer of the two: an encounter that lit the badge is a 🟨 and
-not a 🔍 as well. A loss only counts once it has lasted a second, because squaring up at
+not a 🔍 as well. A loss only counts once it has lasted half a second, because squaring up at
 the edge of the near band flickers the badge, and slipping off the edge of the screen and
 straight back is the same look at it, not two.
 

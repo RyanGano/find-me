@@ -345,6 +345,17 @@ describe('the hunt trace', () => {
     expect(finish(t, 5000).trace).toBe('f');
   });
 
+  it('counts a badge lost for barely more than half a second, on a quick run', () => {
+    // One second of grace would have hidden this on a six-second solve.
+    const t = run([
+      [0, far],
+      [2000, amber],
+      [2500, inView],
+      [3100, amber],
+    ]);
+    expect(finish(t, 6000).trace).toBe('pf');
+  });
+
   it('does not count slipping out of view and straight back', () => {
     const t = run([
       [0, far],

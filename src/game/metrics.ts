@@ -70,7 +70,7 @@ export const TRACE_MAX = 12;
  * the near band flickers the badge, and zooming at the edge of the hot zone's size range
  * flickers that; both are aiming, not losing the shape.
  */
-export const TRACE_LOST_MS = 1000;
+export const TRACE_LOST_MS = 500;
 
 /**
  * Bring a trace down to `max` characters: shorten the longest run of one mark, which
