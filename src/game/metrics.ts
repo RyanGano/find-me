@@ -48,8 +48,9 @@ export interface RunMetrics {
   /**
    * What happened to the shape, in order, one character per encounter, for the hunt trace
    * in the share text: `v` for having it in view and moving off it, `p` for lighting the
-   * badge and losing it again, and a closing `f` for the find or `g` for a give-up. An
-   * encounter that lit the badge is a `p` and not a `v` as well: the closer of the two.
+   * badge and losing it again, `h` where the player took a hint, and a closing `f` for the
+   * find or `g` for a give-up. An encounter that lit the badge is a `p` and not a `v` as
+   * well: the closer of the two.
    *
    * Events, not time: the clock sits beside the trace in the share text, and what a player
    * can learn from a trace -- theirs or a friend's -- is how often the shape was had and
@@ -75,7 +76,8 @@ export const TRACE_LOST_MS = 500;
 /**
  * Bring a trace down to `max` characters: shorten the longest run of one mark, which
  * keeps every kind of event in the line, and only then drop the earliest events. The last
- * character -- the ending -- is never touched.
+ * character -- the ending -- is never touched, and nor is a hint: whether one was taken
+ * is the one thing about a run the trace must never lose.
  */
 export function compressTrace(trace: string, max = TRACE_MAX): string {
   let t = trace;
@@ -85,7 +87,9 @@ export function compressTrace(trace: string, max = TRACE_MAX): string {
       const longest = runs.reduce((a, b) => (b[0].length > a[0].length ? b : a));
       t = t.slice(0, longest.index) + t.slice(longest.index + 1);
     } else {
-      t = t.slice(1);
+      const drop = [...t.slice(0, -1)].findIndex((c) => c !== 'h');
+      if (drop < 0) break;
+      t = t.slice(0, drop) + t.slice(drop + 1);
     }
   }
   return t;
@@ -207,7 +211,7 @@ export function isRunMetrics(value: unknown): value is RunMetrics {
     typeof m.overshoots === 'number' &&
     typeof m.reversals === 'number' &&
     typeof m.idleMs === 'number' &&
-    (m.trace === undefined || (typeof m.trace === 'string' && /^[svpfg]*$/.test(m.trace)))
+    (m.trace === undefined || (typeof m.trace === 'string' && /^[svpfgh]*$/.test(m.trace)))
   );
 }
 
@@ -339,6 +343,23 @@ export function sample(
   }
 
   return next;
+}
+
+/**
+ * Note in the trace that a hint was taken, at the point in the hunt it was. Whatever loss
+ * was still pending is written down first, so the 💡 lands after the looks that led to it.
+ */
+export function hint(tracker: Tracker, at: number): Tracker {
+  const m = { ...tracker.m };
+  const next = { ...tracker, m };
+  settle(tracker, next, m, at, true);
+  if (typeof m.trace === 'string') m.trace = compressTrace(m.trace + 'h');
+  return next;
+}
+
+/** Whether a hint was taken on this run. */
+export function tookHint(m: RunMetrics | null | undefined): boolean {
+  return typeof m?.trace === 'string' && m.trace.includes('h');
 }
 
 /**

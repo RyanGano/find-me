@@ -12,7 +12,7 @@ import {
   shareResult,
   speedBar,
   tallyLine,
-  TRACE_KEY,
+  traceKey,
 } from '../game/share';
 import type { Stats } from '../game/storage';
 import type { Puzzle } from '../game/types';
@@ -152,7 +152,7 @@ export function ResultCard({
       {trace ? (
         <>
           <p className="result-bar" aria-label="How the hunt went">{trace}</p>
-          <p className="result-trace-key">{TRACE_KEY}</p>
+          <p className="result-trace-key">{traceKey(metrics)}</p>
         </>
       ) : (
         !gaveUp && <p className="result-bar">{speedBar(ms)}</p>

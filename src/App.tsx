@@ -6,7 +6,8 @@ import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
 import { Stats as StatsPanel } from './components/Stats';
 import { UpdateNotice } from './components/UpdateNotice';
-import { giveUpAfterMs } from './game/age';
+import { giveUpAfterMs, hintAfterMs } from './game/age';
+import { hintCircle } from './game/hint';
 import { isInAppBrowser } from './game/browser';
 import { count, fetchTally, newRunId, type DayTally } from './game/count';
 import { isTestMode } from './game/testMode';
@@ -206,6 +207,10 @@ export default function App() {
   );
 
   const gate = useMemo(() => giveUpAfterMs(puzzle), [puzzle]);
+  const hintGate = useMemo(() => hintAfterMs(puzzle), [puzzle]);
+  const circle = useMemo(() => hintCircle(puzzle), [puzzle]);
+  // Said once, when the hint is taken, and then left to the circle.
+  const [hintNote, setHintNote] = useState(false);
 
   const {
     stageRef,
@@ -227,6 +232,8 @@ export default function App() {
     togglePause,
     reset,
     giveUp,
+    hinted,
+    takeHint,
   } = useHunt({
     puzzle,
     resume: saved,
@@ -242,6 +249,7 @@ export default function App() {
   const done = solvedMs ?? gaveUpMs;
 
   const canGiveUp = startedAt !== null && done === null && clock >= gate;
+  const canHint = startedAt !== null && done === null && !hinted && clock >= hintGate;
 
   // How everyone else did, asked for only once the run is over -- never before or during a
   // hunt, where a solve rate would be a difficulty hint. A practice run is not counted and
@@ -302,6 +310,27 @@ export default function App() {
    * and it teaches them nothing about how to look. The streak ends here: a give-up that
    * kept it would be strictly better than not playing.
    */
+  /**
+   * The hint, or a word of encouragement if it is not open yet -- the same answer the
+   * give-up gives an early press. Unlike the give-up, an early press here is not
+   * reported: `stuck` means the first reach for the give-up, and a second source would
+   * change what that column has always counted.
+   */
+  const askForHint = useCallback(() => {
+    if (canHint) {
+      takeHint();
+      setHintNote(true);
+      return;
+    }
+    setPlea((prev) => ({ n: (prev?.n ?? 0) + 1, text: plead(1 - clock / hintGate) }));
+  }, [canHint, takeHint, clock, hintGate]);
+
+  useEffect(() => {
+    if (!hintNote) return;
+    const id = setTimeout(() => setHintNote(false), 5000);
+    return () => clearTimeout(id);
+  }, [hintNote]);
+
   const onGiveUp = useCallback(() => {
     setConfirming(false);
     setPlea(null);
@@ -611,6 +640,7 @@ export default function App() {
           transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
           fitScale={fitScale}
           showRing={done !== null && showRing}
+          hint={hinted && done === null ? circle : null}
           blurred={paused || (startedAt === null && done === null)}
           paused={paused}
           resumed={resuming}
@@ -650,7 +680,7 @@ export default function App() {
             the bottom. It stands down while that reply is on screen, which is also what
             keeps the two off each other on a narrow phone, where the note is nearly the
             full width of the board. */}
-        {startedAt !== null && done === null && !confirming && !pleading && (
+        {startedAt !== null && done === null && !confirming && !pleading && !hintNote && (
           <button
             type="button"
             className={`giveup-btn${canGiveUp ? '' : ' is-shut'}`}
@@ -663,6 +693,27 @@ export default function App() {
           >
             give up
           </button>
+        )}
+
+        {/* The hint sits in the opposite corner from the give-up, and follows the same
+            rules: there from the moment the clock starts, shut until the day has had a
+            real hunt, and out of the way while a note is up along the bottom. It opens
+            before the give-up does, because it is the gentler of the two. */}
+        {startedAt !== null && done === null && !hinted && !confirming && !pleading && (
+          <button
+            type="button"
+            className={`giveup-btn hint-btn${canHint ? '' : ' is-shut'}`}
+            onClick={askForHint}
+            title={canHint ? 'Show me roughly where to look' : 'Not yet — keep looking a little longer'}
+          >
+            hint
+          </button>
+        )}
+
+        {hintNote && done === null && !confirming && !pleading && (
+          <p className="giveup-note is-plea" role="status">
+            The {puzzle.thing} is somewhere inside the circle.
+          </p>
         )}
 
         {/* Gone the instant the run ends, including by the player finding the thing

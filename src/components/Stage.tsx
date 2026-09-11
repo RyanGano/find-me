@@ -1,4 +1,5 @@
 import { DEG } from '../game/transform';
+import type { HintCircle } from '../game/hint';
 import type { Puzzle, Transform } from '../game/types';
 import { Shape } from './Shape';
 
@@ -10,6 +11,8 @@ interface Props {
   fitScale: number;
   /** Draw the reveal ring. Only ever true once solved, and the player can turn it off. */
   showRing: boolean;
+  /** The hint circle, once the player has taken the hint; null otherwise. */
+  hint?: HintCircle | null;
   /** Hide the detail until the player commits, so nobody can scan for free. */
   blurred: boolean;
   /** Blurred because the player paused, rather than because they have not started. */
@@ -30,6 +33,7 @@ export function Stage({
   transform,
   fitScale,
   showRing,
+  hint,
   blurred,
   paused,
   resumed,
@@ -121,6 +125,21 @@ export function Stage({
             />
           )}
         </div>
+        {/* The hint: a dashed circle, so it never reads as the answer ring. Same casing,
+            same screen-constant widths, so it holds on any paint at any zoom. */}
+        {hint && !showRing && (
+          <div
+            className="stage-hint-circle"
+            style={{
+              left: hint.cx - hint.r,
+              top: hint.cy - hint.r,
+              width: hint.r * 2,
+              height: hint.r * 2,
+              borderWidth: ringWidth,
+              '--ring-casing': `${ringCasing}px`,
+            } as React.CSSProperties}
+          />
+        )}
         {showRing && (
           <div
             className="stage-ring"

@@ -635,6 +635,8 @@ Find Me #212 🎨
 - 🔍 **moved past it**: the whole shape was on screen, anywhere, drawn at a quarter or more
   of its final size, and the player moved off it without the badge ever lighting.
 - 🟨 **nearly**: the badge went amber and then went off again.
+- 💡 **took a hint**, where in the run it was taken. It is never compressed out of a long
+  trace: whether a hint was taken is the one thing about a run the line must not lose.
 - 🟩 **got it**, or 🏳️ on a give-up.
 
 One mark per encounter, the closer of the two: an encounter that lit the badge is a 🟨 and
@@ -682,6 +684,30 @@ It is capped at twelve glyphs so it stays on one line in a share sheet: the long
 one mark loses a glyph at a time (`compressTrace`), so every kind of event stays in the
 line and the ending always survives. Runs recorded before the trace existed, and runs
 banked mid-hunt across that deploy, have none, and share with the speed bar as they did.
+
+### Hints
+
+The give-up used to be the only way out, and it costs the streak, so a walled player had
+two choices: stare on, or lose the streak. A **hint** is the gentler third. It draws a
+dashed circle on the painting that the shape lies wholly inside, and the run carries on:
+same clock, same solve, streak kept. The share shows a 💡 where the hint was taken, and
+the card's key explains it on a run that used one.
+
+- **The circle** (`hint.ts`) has a radius of 16% of the painting's shorter side -- about a
+  fifteenth of a landscape canvas -- and its centre sits 55% of a radius off the shape, in a
+  direction derived from the day's id. Never centred, because players learn to look in the
+  middle of a centred circle within a day; the same for every player, because everything in
+  a day is.
+- **It opens** after the day's own `expectedSearchMs`, on the give-up's 45-second floor and
+  a two-minute cap (`hintAfterMs`), so it always opens before the give-up does. The button
+  follows the give-up's rules: visible and dimmed from the start, answering an early press
+  with encouragement. That early press is *not* reported as `stuck`, which has always meant
+  a reach for the give-up.
+- **It lives in the trace**, so a run banked mid-hunt comes back with its circle drawn.
+- **It is not counted by the tally.** Adding it is a change to what is reported, and goes
+  through "Changing what is reported" in CLAUDE.md.
+- **The bench has no hint button.** `takeHint` is in `useHunt`, but a play-test measures how
+  hard a day is unaided.
 
 ### Giving up
 

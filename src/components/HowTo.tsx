@@ -77,8 +77,13 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         there is no free look.
       </p>
       <p className="howto-note">
-        If it beats you, <strong>give up</strong> in the top bar will show you where it
-        was. It opens once you have hunted for a while, and it ends your streak.
+        Stuck? After a while of hunting, <strong>hint</strong> draws a circle the {thing} is
+        somewhere inside. You still have to find it, your streak is safe, and your share
+        shows a 💡.
+      </p>
+      <p className="howto-note">
+        If it beats you, <strong>give up</strong> will show you where it was. It opens a
+        little after the hint, and it ends your streak.
       </p>
       <p className="howto-note">
         This painting stays all week, with something different to find in it each day and

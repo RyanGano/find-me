@@ -18,15 +18,20 @@ export function speedBar(ms: number): string {
 }
 
 /**
- * Each event in a run's trace, as the glyph it is posted as: moved past it, nearly, got
- * it, gave up. All are single, widely supported emoji, so a full trace of `TRACE_MAX`
+ * Each event in a run's trace, as the glyph it is posted as: moved past it, nearly, took
+ * a hint, got it, gave up. All are single, widely supported emoji, so a full trace of `TRACE_MAX`
  * stays on one line. `s`, a slice of search time from the first version of the trace,
  * is not drawn: time is the clock's job.
  */
-const TRACE_GLYPHS: Record<string, string> = { v: '🔍', p: '🟨', f: '🟩', g: '🏳️' };
+const TRACE_GLYPHS: Record<string, string> = { v: '🔍', p: '🟨', f: '🟩', g: '🏳️', h: '💡' };
 
 /** What each glyph means, for the one place the player is shown a key. */
 export const TRACE_KEY = '🔍 moved past it · 🟨 nearly · 🟩 got it';
+
+/** The key for one run: the hint is only explained on a run that took one. */
+export function traceKey(metrics: RunMetrics | null | undefined): string {
+  return metrics?.trace?.includes('h') ? `${TRACE_KEY} · 💡 took a hint` : TRACE_KEY;
+}
 
 /**
  * How the hunt went, as one line of emoji: each time the shape was had and let go, the

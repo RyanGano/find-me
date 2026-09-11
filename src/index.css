@@ -542,6 +542,18 @@ body,
   animation: ring-in 0.4s ease-out;
 }
 
+.stage-hint-circle {
+  position: absolute;
+  border-style: dashed;
+  border-color: var(--reveal);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 var(--ring-casing) var(--reveal-casing),
+    inset 0 0 0 var(--ring-casing) var(--reveal-casing);
+  pointer-events: none;
+  animation: ring-in 0.4s ease-out;
+}
+
 @keyframes ring-in {
   from {
     transform: scale(1.6);
@@ -928,6 +940,11 @@ button.reference:focus-visible {
   .giveup-btn {
     bottom: 8px;
     left: 8px;
+  }
+
+  .hint-btn {
+    left: auto;
+    right: 8px;
   }
 
   .result-time {
@@ -1481,6 +1498,11 @@ button.reference:focus-visible {
 
 .giveup-btn.is-shut {
   opacity: 0.5;
+}
+
+.hint-btn {
+  left: auto;
+  right: 12px;
 }
 
 /*

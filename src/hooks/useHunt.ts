@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { evaluate, targetDisplaySize } from '../game/match';
-import { finish, newTracker, sample, type RunMetrics, type Tracker } from '../game/metrics';
+import { finish, hint, newTracker, sample, tookHint, type RunMetrics, type Tracker } from '../game/metrics';
 import { compose, constrainPan, fitTransform } from '../game/transform';
 import type { Puzzle, Transform } from '../game/types';
 import type { GestureDelta } from '../game/transform';
@@ -129,6 +129,11 @@ export function useHunt(session: HuntSession) {
   // banked run, so a back-swipe costs nothing; the finished metrics go with the result.
   const tracker = useRef<Tracker>(resume?.k ?? newTracker());
   const [metrics, setMetrics] = useState<RunMetrics | null>(prior?.metrics ?? null);
+  /**
+   * Whether the player has taken the hint on this run. Read back out of the banked trace,
+   * which is where the hint is written down, so a run left and resumed keeps its circle.
+   */
+  const [hinted, setHinted] = useState(() => tookHint(resume?.k?.m));
 
   // Track the stage box; it drives both the fitted view and the target size.
   useEffect(() => {
@@ -397,6 +402,20 @@ export function useHunt(session: HuntSession) {
     return { ms, metrics: done };
   }, [startedAt, solvedMs, gaveUpMs, paused, elapsed, reveal]);
 
+  /**
+   * Draw the hint circle, and write the hint into the trace where it happened.
+   *
+   * The run carries on exactly as before -- same clock, same solve, same streak -- because
+   * a player who takes a hint still has to find the thing. What changes is that the share
+   * says so. When to offer it is the caller's business, as with the give-up.
+   */
+  const takeHint = useCallback(() => {
+    if (startedAt === null || solvedMs !== null || gaveUpMs !== null || hinted) return;
+    const ms = paused ? elapsed : performance.now() - startedAt;
+    tracker.current = hint(tracker.current, ms);
+    setHinted(true);
+  }, [startedAt, solvedMs, gaveUpMs, hinted, paused, elapsed]);
+
   const clock = solvedMs ?? gaveUpMs ?? (startedAt === null ? 0 : elapsed);
 
   const onReady = useCallback(() => setReady(true), []);
@@ -422,5 +441,7 @@ export function useHunt(session: HuntSession) {
     togglePause,
     reset,
     giveUp,
+    hinted,
+    takeHint,
   };
 }
