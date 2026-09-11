@@ -234,6 +234,17 @@ each hold one of those. See "Play-testing" in README.md before changing any of i
 `src/App.tsx` wires the daily game together: the calendar, storage, the streak, the result
 card and the panels.
 
+## US English for everything a player reads
+
+Every word a player can see or hear — JSX text, `aria-label`, `title`, alt text, share
+text, result cards, `index.html` and the web manifest — is US English: *color*, *center*,
+*gray*, *favor*, *behavior*, *organize*, *toward*, *practice* (verb too), and US
+vocabulary and date order. This holds even though identifiers and comments in this
+repository are mostly British (`colourFor`, `GENERAL_COLOURS`); leave those alone, and
+never rename a stored value such as a palette name just to change its spelling. Before
+finishing any change to user-facing copy, grep the strings you touched for `our\b`,
+`tre\b`, `ise\b`, `grey` and `towards`.
+
 ## Working in this repo
 
 - Practice runs, for testing: `?puzzle=starry-wed` or `?day=3`. They are not recorded and

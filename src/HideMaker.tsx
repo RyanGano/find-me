@@ -312,7 +312,7 @@ export default function HideMaker() {
                 <li>Pick a painting — any one Find Me has already had on the calendar.</li>
                 <li>Pick a shape, then tap the painting where you want it. Tap again to move it.</li>
                 <li>
-                  Set its colour, size, angle and strength. It starts out in the colour of the
+                  Set its color, size, angle and strength. It starts out in the color of the
                   paint you tapped. Pinch or scroll to zoom in, and turn the ring off to see how
                   well it hides.
                 </li>
@@ -361,7 +361,7 @@ export default function HideMaker() {
         </div>
 
         <div className="hide-row">
-          <span>Colour</span>
+          <span>Color</span>
           <div className="hide-swatches">
             {SWATCHES.map((c) => (
               <button
@@ -370,14 +370,14 @@ export default function HideMaker() {
                 className={`hide-swatch${fill === c ? ' is-on' : ''}`}
                 style={{ background: c }}
                 onClick={() => chooseFill(c)}
-                aria-label={`Colour ${c}`}
+                aria-label={`Color ${c}`}
               />
             ))}
             <input
               type="color"
               value={fill}
               onChange={(e) => chooseFill(e.target.value)}
-              aria-label="Any colour"
+              aria-label="Any color"
             />
           </div>
         </div>
