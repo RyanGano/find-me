@@ -33,7 +33,10 @@ export interface BuildableWeek {
  * recolouring or replacing the hidden shape does.
  */
 export function fingerprint(image: string, key: string, t: Target): string {
-  const canonical = [image, key, t.shape, t.cx, t.cy, t.size, t.angle, t.fill, t.opacity, t.blend].join('|');
+  // `cover` joins only where a day has one, so every day tuned before it keeps its version.
+  const fields = [image, key, t.shape, t.cx, t.cy, t.size, t.angle, t.fill, t.opacity, t.blend];
+  if (t.cover !== undefined) fields.push(t.cover, t.base);
+  const canonical = fields.join('|');
   let h = 0x811c9dc5;
   for (let i = 0; i < canonical.length; i++) {
     h ^= canonical.charCodeAt(i);

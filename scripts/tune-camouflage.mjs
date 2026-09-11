@@ -24,8 +24,8 @@
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { RAMP, scanTarget, CANVAS_REFERENCE } from '../src/game/difficulty.ts';
-import { paintFor } from './lib/paint.mjs';
+import { RAMP, scanTarget, CANVAS_REFERENCE, COVER_FLOOR } from '../src/game/difficulty.ts';
+import { paintFor, colourAt, hex } from './lib/paint.mjs';
 import { sample } from './lib/sight.mjs';
 import { clutterOf, dimnessOf } from './lib/busy.mjs';
 
@@ -59,7 +59,7 @@ const only = args.filter((a) => !a.startsWith('-'));
 
 /** One line per day in puzzles.ts, read from the source of truth rather than duplicated. */
 const DAY_LINE =
-  /\{ shape: '([\w-]+)', cx: (\d+), cy: (\d+), size: (\d+), angle: (-?\d+), fill: '(#[0-9a-f]+)', opacity: ([\d.]+), blend: '(\w+)', blur: ([\d.]+), ratio: ([\d.]+), scan: ([\d.]+)(?:, dim: ([\d.]+))? \},/g;
+  /\{ shape: '([\w-]+)', cx: (\d+), cy: (\d+), size: (\d+), angle: (-?\d+), fill: '(#[0-9a-f]+)', opacity: ([\d.]+), blend: '(\w+)', blur: ([\d.]+), ratio: ([\d.]+), scan: ([\d.]+)(?:, dim: ([\d.]+))?(?:, cover: ([\d.]+), base: '(#[0-9a-f]+)')? \},/g;
 
 function puzzles(source) {
   const out = [];
@@ -90,6 +90,8 @@ function puzzles(source) {
         ratio: +m[10],
         scan: +m[11],
         dim: m[12] === undefined ? undefined : +m[12],
+        cover: m[13] === undefined ? undefined : +m[13],
+        base: m[14],
       });
       d++;
     }
@@ -231,8 +233,17 @@ function paintAt(p, strength, image) {
   const opaque = RAMP[p.day].opaque;
   const push = opaque ? strength : Math.max(1, strength);
   const opacity = opaque ? 1 : Math.min(1, Math.round(strength * 1000) / 1000);
-  if (!opaque && strength <= 1) return { opacity, fill: p.fill };
-  return { opacity, fill: paintFor(image.data, image.info, p.cx, p.cy, p.size, push).fill };
+  // Every see-through day carries a flat layer of its own paint under the blend, so the
+  // shape has an edge the brushstrokes do not run through. It is a floor, not a knob:
+  // the strength above still solves the day to its rung on top of it. See `COVER_FLOOR`.
+  const solid = opaque ? {} : { cover: COVER_FLOOR, base: baseFor(p, image) };
+  if (!opaque && strength <= 1) return { opacity, fill: p.fill, ...solid };
+  return { opacity, fill: paintFor(image.data, image.info, p.cx, p.cy, p.size, push).fill, ...solid };
+}
+
+/** The paint's own colour over the shape's footprint: what the `cover` layer is filled with. */
+function baseFor(p, image) {
+  return hex(colourAt(image.data, image.info, p.cx, p.cy, p.size));
 }
 
 const source = readFileSync(FILE, 'utf8');
@@ -316,7 +327,7 @@ for (const p of list) {
   const dim = dims.get(p.id);
   const want = fov ? rung.fovScan : scanTarget(rung, clutter, dim);
 
-  let paint = { opacity: p.opacity, fill: p.fill };
+  let paint = { opacity: p.opacity, fill: p.fill, cover: p.cover, base: p.base };
 
   // Solve at the fitted view, because that is where the thing being solved for lives.
   await frame(page, 'fitted', geo);
@@ -402,7 +413,12 @@ for (const p of list) {
       .replace(/opacity: [\d.]+/, `opacity: ${paint.opacity}`)
       .replace(/ratio: [\d.]+/, `ratio: ${Math.round(got.ratio * 100) / 100}`)
       .replace(/scan: [\d.]+/, `scan: ${Math.round(scanned.ratio * 1000) / 1000}`)
-      .replace(/(, dim: [\d.]+)? \},$/, `, dim: ${Math.round(dim * 1000) / 1000} },`);
+      .replace(
+        /(, dim: [\d.]+)?(, cover: [\d.]+, base: '#[0-9a-f]+')? \},$/,
+        `, dim: ${Math.round(dim * 1000) / 1000}` +
+          (paint.cover === undefined ? '' : `, cover: ${paint.cover}, base: '${paint.base}'`) +
+          ' },',
+      );
     out = out.replace(p.line, fixed);
   }
 }

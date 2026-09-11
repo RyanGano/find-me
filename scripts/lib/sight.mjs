@@ -37,6 +37,22 @@ export async function sample(page, paint, targetPx, maskArea, onShape = false, f
     if (p) {
       if (p.opacity !== undefined) svg.style.opacity = String(p.opacity);
       if (p.fill) svg.querySelector('path').setAttribute('fill', p.fill);
+      // The flat `cover` layer under the shape. A day tuned before covers existed renders
+      // without one, so it is made here, the same way `Stage` draws it.
+      let under = el.querySelector('svg.stage-under');
+      if (p.cover !== undefined && p.base) {
+        if (!under) {
+          under = svg.cloneNode(true);
+          under.setAttribute('class', 'stage-under');
+          under.style.mixBlendMode = '';
+          el.appendChild(under);
+        }
+        under.style.opacity = String(p.cover);
+        under.querySelector('path').setAttribute('fill', p.base);
+        under.style.display = '';
+      } else if (under) {
+        under.style.display = 'none';
+      }
     }
     const stage = document.querySelector('.stage').getBoundingClientRect();
     const r = el.getBoundingClientRect();

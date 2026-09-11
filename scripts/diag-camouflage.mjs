@@ -57,6 +57,18 @@ async function applyVariant(v) {
     if (variant.opacity !== undefined) svg.style.opacity = String(variant.opacity);
     if (variant.blend) svg.style.mixBlendMode = variant.blend;
     if (variant.blur !== undefined) svg.style.filter = 'blur(' + variant.blur + 'px)';
+    // The flat layer under the shape (`cover` on a Target), made if the day has none yet.
+    if (variant.cover !== undefined) {
+      let under = targetEl.querySelector('svg.stage-under');
+      if (!under) {
+        under = svg.cloneNode(true);
+        under.setAttribute('class', 'stage-under');
+        under.style.mixBlendMode = '';
+        targetEl.appendChild(under);
+      }
+      under.style.opacity = String(variant.cover);
+      if (variant.base) under.querySelector('path').setAttribute('fill', variant.base);
+    }
 
     const targetPx = Number(document.querySelector('.reference-well svg').getAttribute('width'));
     const angle = Number((svg.style.transform.match(/rotate\((-?[\d.]+)deg\)/) || [0, 0])[1]);
@@ -79,7 +91,7 @@ async function shoot(label) {
 for (const v of variants) {
   const label =
     'size ' + (v.size === undefined ? '-' : v.size) + '  op ' + (v.opacity === undefined ? '-' : v.opacity) +
-    (v.blur === undefined ? '' : '  blur ' + v.blur) + (v.fill ? '  ' + v.fill : '');
+    (v.blur === undefined ? '' : '  blur ' + v.blur) + (v.fill ? '  ' + v.fill : '') + (v.cover === undefined ? '' : '  cover ' + v.cover);
 
   await page.goto(URL + '?puzzle=' + id, { waitUntil: 'networkidle' });
   await page.waitForSelector('.stage-image');

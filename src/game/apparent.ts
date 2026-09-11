@@ -81,6 +81,13 @@ export function measureApparentFill(puzzle: Puzzle, image: CanvasImageSource): s
   // The shape over it, painted the way the stage paints it. Blur is left out on
   // purpose: it softens the edge without moving the colour inside.
   const path = tracePath(target.shape, target.angle);
+  if (target.cover !== undefined && target.base) {
+    shot.save();
+    shot.globalAlpha = target.cover;
+    shot.fillStyle = target.base;
+    shot.fill(path, rule);
+    shot.restore();
+  }
   shot.save();
   shot.globalAlpha = target.opacity ?? 1;
   shot.globalCompositeOperation = (target.blend ?? 'source-over') as GlobalCompositeOperation;

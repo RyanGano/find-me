@@ -100,6 +100,7 @@ export function Stage({
           }
         >
           <Shape
+            className="stage-shape"
             shape={target.shape}
             size={target.size}
             angle={target.angle}
@@ -109,6 +110,16 @@ export function Stage({
             opacity={target.opacity}
             blend={target.blend}
           />
+          {target.cover !== undefined && target.base && (
+            <Shape
+              className="stage-under"
+              shape={target.shape}
+              size={target.size}
+              angle={target.angle}
+              fill={target.base}
+              opacity={target.cover}
+            />
+          )}
         </div>
         {showRing && (
           <div

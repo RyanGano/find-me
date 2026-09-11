@@ -286,6 +286,46 @@ to it. The tuner solves a day with the first and the age scores it with the seco
 two ever drift, the game starts pricing a day differently from the way it built it —
 silently, and only visibly in a play-test months later.
 
+### Solid shapes
+
+**A shape the brushstrokes run straight through has no edge, and a shape with no edge is
+not hidden, it is gone.** The Friday of the third week in the rotation played at a median
+of nine minutes, and it was the first day anyone gave up on: two of the first six runs,
+where every earlier day had none. The days either side of it, on the same painting, were
+found in under a minute.
+
+Nothing the tools measured could tell it apart from them. `scan`, the size-aware
+`--fov` reading, both of those at phone size, a colour-only reading and a reading at
+scanning zoom all put it level with its neighbours. What told it apart was looking at it:
+a pale, see-through lift on brushwork whose strokes were the size of the shape, so the
+strokes carried on through it undisturbed.
+
+That is built into how a shape was painted. `screen` and `multiply` can only lighten or
+darken the paint, and with either one opacity and fill trade for each other exactly -- a
+screened fill `f` at opacity `o` lands at `a + o*f*(1-a)`, which depends on `o*f` alone.
+So every day, however it was dialled, let the painting through, and an **opacity floor
+would have done nothing**: the tuner would have darkened the fill to compensate and drawn
+the same pixels.
+
+So every see-through day now carries a flat layer of the paint's own colour under the
+blended fill, covering at least `COVER_FLOOR` (0.5) of what is beneath (`cover` and `base`
+on a `Target`). The strokes flatten inside the shape and it gets an edge of its own. At the
+whole-painting view it is the painting's own average colour and changes nothing; it only
+shows once a player is close enough to be looking.
+
+The measurements cannot see it either, for the same reason they could not see the
+problem: `scan` and `ratio` average the size of the shift a shape makes, and flattening
+pushes pixels up and down around the blend's lift without moving that average. The tuner
+still solves the blend to the day's rung on top of the cover, so **a covered day plays
+easier than its `scan` says**, by an amount nothing prices. That is the direction a floor
+should err in. The value was chosen by eye with `diag-camouflage.mjs`'s `cover` override:
+below about 0.45 the edge does not appear.
+
+Monday carries none; it is already opaque and hides on colour alone. Days served before
+the rule are exempt by name in `BEFORE_COVER` in `cover.test.ts`, and the last of them
+fails it. `cover` joins a day's `version` only where a day has one, so adding the field
+moved no shipped day.
+
 ### Choosing a painting
 
 Not every painting can hold a week. `npm run rate` measures the texture a canvas offers

@@ -18,6 +18,16 @@ export interface Target {
   opacity?: number;
   blend?: string;
   /**
+   * How much of the paint under the shape is covered by a flat layer of `base`, drawn
+   * beneath the blended fill. `screen` and `multiply` only ever lighten or darken the
+   * paint, so every brushstroke runs straight through a shape painted with them alone and
+   * it has no edge of its own; that is how a see-through day on a busy canvas becomes
+   * a wall. See "Solid shapes" in README.md. Absent on days tuned before it existed.
+   */
+  cover?: number;
+  /** The paint's own colour under the shape, which the `cover` layer is filled with. */
+  base?: string;
+  /**
    * Softens the shape's edges, in image pixels. At the fitted view this is far below a
    * pixel and costs nothing; at the matched zoom the painting is shown above its native
    * resolution, and a razor-sharp vector edge against soft brushwork is a giveaway all

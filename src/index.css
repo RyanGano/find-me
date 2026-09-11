@@ -494,6 +494,17 @@ body,
 .stage-target {
   position: absolute;
   pointer-events: none;
+  display: grid;
+}
+
+/* The flat `cover` layer and the blended shape share one cell, the shape on top so it
+   blends over the cover rather than under it. The shape stays first in the DOM, which
+   is what the browser tools in scripts/ reach for. */
+.stage-target svg {
+  grid-area: 1 / 1;
+}
+.stage-shape {
+  z-index: 1;
 }
 
 /* Edge softening, held at the radius it has when the whole painting is on screen: the

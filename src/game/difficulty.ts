@@ -297,6 +297,29 @@ export const CLUTTER_WEIGHT = 10.34;
  */
 export const DIMNESS_WEIGHT = 1.38;
 
+/**
+ * The least of the paint under a see-through day's shape that is covered by a flat layer
+ * of the paint's own colour (`cover` on a `Target`).
+ *
+ * `screen` and `multiply` can only lighten or darken the paint, and with either one
+ * opacity and fill trade for each other exactly -- a screened fill `f` at opacity `o`
+ * lands at `a + o*f*(1-a)`, a function of `o*f` alone. So however a day was dialled, every
+ * brushstroke ran straight through its shape, and on a canvas whose strokes are the size
+ * of the shape it had no edge left to find. One such day played at a median of nine
+ * minutes, and it was the first day in the rotation anyone gave up on. None of the local
+ * readings -- scan, size-aware scan, a colour-only reading, a reading at scanning zoom --
+ * separated it from the days either side, which found in under a minute; what separated
+ * it was looking at it. A floor on raising opacity would not have helped: for the reason
+ * above it only swaps opacity for fill.
+ *
+ * A cover flattens the strokes inside the shape a little, which is an edge. It is a
+ * floor and not a knob: the blend above it is still solved to the day's rung, and where
+ * the cover alone reads louder than the rung asked for, the day comes out easier than
+ * asked, which is the right direction for a floor to err. Monday carries none -- it is
+ * already opaque and hides on colour alone. See "Solid shapes" in README.md.
+ */
+export const COVER_FLOOR = 0.5;
+
 const clamp = (v: number, [lo, hi]: readonly [number, number]) => Math.min(hi, Math.max(lo, v));
 
 /**

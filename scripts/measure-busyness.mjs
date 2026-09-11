@@ -23,7 +23,7 @@ const write = args.includes('--write');
 const only = args.filter((a) => !a.startsWith('-'));
 
 const DAY_LINE =
-  /\{ shape: '([\w-]+)', cx: (\d+), cy: (\d+), size: (\d+), angle: (-?\d+), fill: '(#[0-9a-f]+)', opacity: ([\d.]+), blend: '(\w+)', blur: ([\d.]+), ratio: ([\d.]+), scan: ([\d.]+)(?:, dim: ([\d.]+))? \},/g;
+  /\{ shape: '([\w-]+)', cx: (\d+), cy: (\d+), size: (\d+), angle: (-?\d+), fill: '(#[0-9a-f]+)', opacity: ([\d.]+), blend: '(\w+)', blur: ([\d.]+), ratio: ([\d.]+), scan: ([\d.]+)(?:, dim: ([\d.]+))?(?:, cover: ([\d.]+), base: '(#[0-9a-f]+)')? \},/g;
 
 let source = readFileSync(FILE, 'utf8');
 const weeks = /image: '(\w+)',([\s\S]*?)days: \[([\s\S]*?)\n    \],/g;
@@ -50,10 +50,12 @@ for (const week of found) {
     const dim = await dimnessOf(week.asset, +m[2], +m[3], +m[4]);
     dims.push(dim);
     const rounded = Math.round(dim * 1000) / 1000;
-    // Group 12 is the optional `dim` this may be re-measuring. Groups 1-11 are the
-    // fields the planner and the tuner own; nothing here touches them.
+    // Group 12 is the optional `dim` this may be re-measuring. Groups 1-11, and the
+    // `cover` after `dim`, are the fields the planner and the tuner own; nothing here
+    // touches them. The tuner always writes `dim` before `cover`, so a line without a
+    // `dim` has no `cover` either.
     const fixed = m[12]
-      ? m[0].replace(/, dim: [\d.]+ \},$/, `, dim: ${rounded} },`)
+      ? m[0].replace(/, dim: [\d.]+/, `, dim: ${rounded}`)
       : m[0].replace(/ \},$/, `, dim: ${rounded} },`);
     out = out.replace(m[0], fixed);
     day++;
