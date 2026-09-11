@@ -1719,3 +1719,27 @@ button.reference:focus-visible {
   color: var(--accent);
   border-color: var(--accent);
 }
+
+/* Until the chosen painting has loaded, the stage would show the previous one stretched
+   to the new one's size; hide it and pulse a placeholder of the right shape instead. */
+.board.is-loading .stage-canvas {
+  visibility: hidden;
+}
+
+.hide-skeleton {
+  position: absolute;
+  z-index: 1;
+  border-radius: 4px;
+  background: var(--bg-raised);
+  pointer-events: none;
+  animation: hide-skeleton 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes hide-skeleton {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}

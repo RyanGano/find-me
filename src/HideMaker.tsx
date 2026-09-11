@@ -184,9 +184,16 @@ export default function HideMaker() {
     setPaint(spot && samplerReady === painting.image ? samplePaint(spot.cx, spot.cy, size / 2) : null);
   }, [spot, size, samplerReady, painting.image, samplePaint]);
 
-  const latest = useRef({ transform, showHelp });
+  // Which painting the stage has actually drawn. Changing `src` leaves the old picture on
+  // screen, stretched to the new one's size, until the new one arrives -- so until the two
+  // agree the canvas is hidden and a placeholder stands in its place.
+  const [shown, setShown] = useState<string | null>(null);
+  const loading = shown !== painting.image;
+  const onReady = useCallback(() => setShown(painting.image), [painting.image]);
+
+  const latest = useRef({ transform, showHelp, loading });
   useEffect(() => {
-    latest.current = { transform, showHelp };
+    latest.current = { transform, showHelp, loading };
   });
 
   useEffect(() => {
@@ -202,8 +209,8 @@ export default function HideMaker() {
       fingers = Math.max(0, fingers - 1);
       const p = press;
       press = null;
-      const { transform: t, showHelp: helping } = latest.current;
-      if (!p || p.id !== e.pointerId || !t || helping) return;
+      const { transform: t, showHelp: helping, loading: waiting } = latest.current;
+      if (!p || p.id !== e.pointerId || !t || helping || waiting) return;
       if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > TAP_SLOP) return;
       if (performance.now() - p.at > TAP_MS) return;
       const r = el.getBoundingClientRect();
@@ -298,7 +305,7 @@ export default function HideMaker() {
         </a>
       </p>
 
-      <main className="board">
+      <main className={`board${loading ? ' is-loading' : ''}`}>
         <Stage
           stageRef={stageRef}
           puzzle={puzzle}
@@ -308,9 +315,23 @@ export default function HideMaker() {
           blurred={false}
           paused={false}
           resumed={false}
-          onReady={() => {}}
+          onReady={onReady}
         />
-        {!spot && !showHelp && <p className="hide-hint">Tap the painting where you want to hide it</p>}
+        {loading && fit && (
+          <div
+            className="hide-skeleton"
+            aria-label="Loading the painting"
+            role="status"
+            style={{
+              left: fit.x,
+              top: fit.y,
+              width: painting.width * fit.scale,
+              height: painting.height * fit.scale,
+            }}
+          />
+        )}
+        {loading && <p className="loading">Loading the painting…</p>}
+        {!spot && !showHelp && !loading && <p className="hide-hint">Tap the painting where you want to hide it</p>}
 
         {showHelp && (
           <>
