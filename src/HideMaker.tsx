@@ -233,6 +233,20 @@ export default function HideMaker() {
     };
   }, [painting.width, painting.height]);
 
+  // A mouse wheel scrolls up and down; over the shape row it should run along it.
+  const shapeRow = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const row = shapeRow.current;
+    if (!row) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || row.scrollWidth <= row.clientWidth) return;
+      e.preventDefault();
+      row.scrollLeft += e.deltaY;
+    };
+    row.addEventListener('wheel', onWheel, { passive: false });
+    return () => row.removeEventListener('wheel', onWheel);
+  }, []);
+
   const choosePainting = useCallback(
     (image: string) => {
       const next = paintings.find((p) => p.image === image);
@@ -374,7 +388,7 @@ export default function HideMaker() {
 
         <div className="hide-row">
           <span>Shape</span>
-          <div className="hide-shapes" role="radiogroup" aria-label="Shape">
+          <div className="hide-shapes" role="radiogroup" aria-label="Shape" ref={shapeRow}>
             {Object.entries(SHAPES).map(([key, def]) => (
               <button
                 key={key}
@@ -382,7 +396,11 @@ export default function HideMaker() {
                 role="radio"
                 aria-checked={shape === key}
                 className={`hide-shape${shape === key ? ' is-on' : ''}`}
-                onClick={() => setShape(key)}
+                onClick={(e) => {
+                  setShape(key);
+                  // Keep the chosen one fully in the row, not half under the faded edge.
+                  e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+                }}
                 title={def.label}
               >
                 <Shape shape={key} size={22} />

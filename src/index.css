@@ -1585,7 +1585,7 @@ button.reference:focus-visible {
 
 .hide-row {
   display: grid;
-  grid-template-columns: 70px 1fr;
+  grid-template-columns: 70px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   font-size: 0.85rem;
@@ -1611,12 +1611,36 @@ button.reference:focus-visible {
   accent-color: var(--accent);
 }
 
-.hide-shapes,
 .hide-swatches {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+
+/* One row the setter swipes along, rather than three rows of buttons: still one tap to
+   switch, and the fade at each end says there is more past it. */
+.hide-shapes {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  padding: 2px 12px;
+  margin: 0 -12px 0 -4px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 20px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 20px), transparent);
+}
+
+.hide-shapes::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-shapes .hide-shape {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
 }
 
 .hide-shape {
