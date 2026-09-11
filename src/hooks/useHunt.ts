@@ -287,6 +287,11 @@ export function useHunt(session: HuntSession) {
   // Leaving the page banks the run. `visibilitychange` is the one event a phone reliably
   // fires when the tab is backgrounded or the browser is swiped away; `pagehide` covers a
   // real navigation, including the accidental back-swipe this exists for.
+  //
+  // It also pauses the run. Banking only helps a page that is reloaded; a phone that is
+  // locked, a tab switched away from, or a page restored from the back/forward cache comes
+  // back to the same live page, and without the pause its clock -- measured from
+  // `startedAt` -- would count every second the player was gone.
   useEffect(() => {
     const bank = () => {
       const run = live.current;
@@ -295,6 +300,12 @@ export function useHunt(session: HuntSession) {
       // Read the clock now, not at the last render: a run banked while it is still live
       // is worth exactly what it reads at the moment the page goes away.
       const ms = run.paused ? run.elapsed : performance.now() - run.startedAt;
+      if (!run.paused) {
+        run.paused = true;
+        run.elapsed = ms;
+        setElapsed(ms);
+        setPaused(true);
+      }
       on.current.onLeave?.({ ms, t: run.t, w: box.w, h: box.h, k: tracker.current }, runId);
     };
     const onVisibility = () => {
