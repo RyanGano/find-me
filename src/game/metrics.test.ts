@@ -225,24 +225,61 @@ describe('isTracker', () => {
 
 describe('the hunt trace', () => {
   const far = look({ displaySize: 8 });
+  // The badge amber: right size and angle, but off to one side, so never "hot".
+  const amber = look({ near: true, screen: { x: 60, y: 60 }, displaySize: TARGET * 0.5 });
 
-  it('records searching, passes and the find in the order they happened', () => {
+  it('records searching, each lost badge and the find in the order they happened', () => {
     const t = run([
       [0, far],
-      [20000, look()],
-      [21000, far],
-      [40000, look()],
+      [31000, amber],
+      [33000, far],
+      [47000, amber],
     ]);
-    // Two slices of searching, a pass, one more slice of searching, the find.
-    expect(finish(t, 42000).trace).toBe('sspsf');
+    // Two whole slices of searching, the badge lost, one more slice, the find.
+    expect(finish(t, 48000).trace).toBe('sspsf');
   });
 
-  it('marks a slice spent working on the shape as nothing', () => {
-    // The first slice is entered before the first look, which is always searching.
+  it('follows the badge, not the central hot zone the age reads', () => {
+    // Three amber flashes in 31.8s, none of them central: three losses, two slices.
     const t = run([
-      [0, look()],
-      [40000, look()],
+      [0, far],
+      [5000, amber],
+      [6000, far],
+      [12000, amber],
+      [13000, far],
+      [20000, amber],
+      [21500, far],
+      [31000, amber],
     ]);
+    const m = finish(t, 31800);
+    expect(m.passes).toBe(0);
+    expect(m.trace).toBe('ppspsf');
+  });
+
+  it('counts only whole slices of searching', () => {
+    const t = run([[0, far], [31000, amber]]);
+    expect(finish(t, 31800).trace).toBe('ssf');
+  });
+
+  it('opens on one search mark even for a quick find', () => {
+    const t = run([[0, far], [4000, amber]]);
+    expect(finish(t, 4500).trace).toBe('sf');
+  });
+
+  it('does not count the badge flickering while squaring up', () => {
+    const t = run([
+      [0, far],
+      [3000, amber],
+      [3300, far],
+      [3600, amber],
+      [3900, far],
+      [4200, amber],
+    ]);
+    expect(finish(t, 5000).trace).toBe('sf');
+  });
+
+  it('marks a slice spent with the badge lit as nothing', () => {
+    const t = run([[0, amber], [40000, amber]]);
     expect(finish(t, 41000).trace).toBe('sf');
   });
 
@@ -251,11 +288,17 @@ describe('the hunt trace', () => {
     expect(finish(t, 5000, 'gaveUp').trace).toBe('sg');
   });
 
+  it('counts a badge lost just before giving up', () => {
+    const t = run([[0, far], [3000, amber], [3500, far]]);
+    expect(finish(t, 3800, 'gaveUp').trace).toBe('spg');
+  });
+
   it('keeps a ten-minute hunt to one line, ending included', () => {
     const t = run([
       [0, far],
-      [300000, look()],
+      [300000, amber],
       [301000, far],
+      [599000, amber],
     ]);
     const trace = finish(t, 600000).trace ?? '';
     expect(trace.length).toBeLessThanOrEqual(TRACE_MAX);
@@ -266,7 +309,7 @@ describe('the hunt trace', () => {
   it('holds only the event alphabet, never a place', () => {
     const t = run([
       [0, look({ screen: { x: 123, y: 321 }, displaySize: 8 })],
-      [9000, look()],
+      [9000, amber],
       [9500, far],
     ]);
     expect(finish(t, 70000).trace).toMatch(/^[spfg]+$/);
@@ -276,8 +319,10 @@ describe('the hunt trace', () => {
     const old = newTracker();
     delete old.m.trace;
     delete old.slices;
+    delete old.near;
+    delete old.lostAt;
     expect(isTracker(old)).toBe(true);
-    const t = run([[0, far], [30000, look()], [31000, far]], old);
+    const t = run([[0, far], [30000, amber], [31500, far]], old);
     expect(finish(t, 40000).trace).toBeUndefined();
   });
 });

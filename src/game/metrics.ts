@@ -47,10 +47,15 @@ export interface RunMetrics {
   idleMs: number;
   /**
    * The run's events in the order they happened, one character each, for the hunt trace
-   * in the share text: `s` for each slice of time spent searching, `p` for a pass, and a
-   * closing `f` for the find or `g` for a give-up. Never a place -- it records *that* the
-   * shape was had and lost, not where. Capped at `TRACE_MAX` by squeezing long stretches
-   * of searching, so the end, which is the payoff, always survives.
+   * in the share text: `s` for each whole slice of time spent searching, `p` for each time
+   * the badge went amber and was lost again, and a closing `f` for the find or `g` for a
+   * give-up. Never a place -- it records *that* the shape was had and lost, not where.
+   * Capped at `TRACE_MAX` by squeezing long stretches of searching, so the end, which is
+   * the payoff, always survives.
+   *
+   * `p` is deliberately not `passes`. That is the age's signal and needs the shape central
+   * as well as close; the trace is read by the player, who knows only what the badge told
+   * them, so it follows the badge.
    *
    * Absent on runs recorded, or banked, before it existed; those share as they always did.
    */
@@ -61,6 +66,11 @@ export interface RunMetrics {
 export const TRACE_SLICE_MS = 15000;
 /** The longest a trace may get, ending included: one line on a phone's share sheet. */
 export const TRACE_MAX = 12;
+/**
+ * How long the badge must stay off before losing it counts. Squaring up at the edge of
+ * the near band flickers it on and off, and that is aiming, not losing the shape.
+ */
+export const TRACE_LOST_MS = 1000;
 
 /**
  * Bring a trace down to `max` characters without losing its shape: first shorten the
@@ -104,10 +114,14 @@ export interface Tracker {
   /** Run-clock time of the last sample, for measuring idle gaps. */
   lastAt: number;
   /**
-   * How many trace slices the run clock has entered. Absent on a tracker banked before
-   * the trace existed, whose run then simply has no trace.
+   * How many whole trace slices the run clock has passed. Absent on a tracker banked
+   * before the trace existed, whose run then simply has no trace.
    */
   slices?: number;
+  /** Whether the badge was amber at the last sample. */
+  near?: boolean;
+  /** When the badge last went off, while it has not yet stayed off long enough to count. */
+  lostAt?: number | null;
 }
 
 /**
@@ -144,20 +158,27 @@ export function newTracker(): Tracker {
     zoomRef: null,
     lastAt: 0,
     slices: 0,
+    near: false,
+    lostAt: null,
   };
 }
 
 /**
- * Add a search mark for every slice the clock has entered since the last look, if the
- * player spent it searching rather than working on the shape.
+ * Bring the trace up to `at`: a loss of the badge that has now lasted long enough, then a
+ * search mark for every whole slice passed since the last look that the player spent
+ * without the badge lit. Mutates `next` and `m`, which are the caller's fresh copies.
  */
-function tick(tracker: Tracker, m: RunMetrics, at: number): number | undefined {
-  if (typeof m.trace !== 'string' || typeof tracker.slices !== 'number') return tracker.slices;
-  const slices = Math.floor(Math.max(0, at) / TRACE_SLICE_MS) + 1;
-  if (slices > tracker.slices && !tracker.hot) {
+function tick(tracker: Tracker, next: Tracker, m: RunMetrics, at: number): void {
+  if (typeof m.trace !== 'string' || typeof tracker.slices !== 'number') return;
+  if (typeof tracker.lostAt === 'number' && at - tracker.lostAt >= TRACE_LOST_MS) {
+    m.trace = compressTrace(m.trace + 'p');
+    next.lostAt = null;
+  }
+  const slices = Math.floor(Math.max(0, at) / TRACE_SLICE_MS);
+  if (slices > tracker.slices && !tracker.near) {
     m.trace = compressTrace(m.trace + 's'.repeat(slices - tracker.slices));
   }
-  return Math.max(slices, tracker.slices);
+  next.slices = Math.max(slices, tracker.slices);
 }
 
 export function isRunMetrics(value: unknown): value is RunMetrics {
@@ -186,7 +207,9 @@ export function isTracker(value: unknown): value is Tracker {
     typeof t.zoomDir === 'number' &&
     (t.zoomRef === null || typeof t.zoomRef === 'number') &&
     typeof t.lastAt === 'number' &&
-    (t.slices === undefined || typeof t.slices === 'number')
+    (t.slices === undefined || typeof t.slices === 'number') &&
+    (t.near === undefined || typeof t.near === 'boolean') &&
+    (t.lostAt === undefined || t.lostAt === null || typeof t.lostAt === 'number')
   );
 }
 
@@ -248,14 +271,14 @@ export function sample(
     }
   }
 
-  next.slices = tick(tracker, m, at);
+  tick(tracker, next, m, at);
+  if (match.near && !tracker.near) next.lostAt = null;
+  if (!match.near && tracker.near) next.lostAt = at;
+  next.near = match.near;
 
   const hot = isHot(match, viewport, targetSize);
   if (hot && !tracker.hot) next.hotAt = at;
-  if (!hot && tracker.hot) {
-    m.passes += 1;
-    if (typeof m.trace === 'string') m.trace = compressTrace(m.trace + 'p');
-  }
+  if (!hot && tracker.hot) m.passes += 1;
   next.hot = hot;
 
   // Only judge the fine adjustments once the shape is actually in front of the player.
@@ -290,8 +313,16 @@ export function finish(
 ): RunMetrics {
   const searchMs = Math.min(tracker.hotAt ?? solvedAt, solvedAt);
   const m = { ...tracker.m };
-  tick(tracker, m, solvedAt);
-  if (typeof m.trace === 'string') m.trace = compressTrace(m.trace + (end === 'found' ? 'f' : 'g'));
+  tick(tracker, { ...tracker }, m, solvedAt);
+  if (typeof m.trace === 'string') {
+    // A give-up after losing the badge has lost it, however recently.
+    if (end === 'gaveUp' && typeof tracker.lostAt === 'number' && !m.trace.endsWith('p')) {
+      m.trace += 'p';
+    }
+    // A quick find still searched: every trace opens on at least one search mark.
+    if (!m.trace.includes('s')) m.trace = 's' + m.trace;
+    m.trace = compressTrace(m.trace + (end === 'found' ? 'f' : 'g'));
+  }
   return {
     ...m,
     // A gap running right up to the solve is only seen now.

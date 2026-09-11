@@ -585,9 +585,15 @@ does the shape's edge softening, so the ring is the same weight framed as it is 
 ### The hunt trace
 
 The share text carries one line of emoji built from the run's own events in order: 🔍 for
-each fifteen seconds spent searching, 🟨 for each time the shape was in front of the player
-and they moved off it (a *pass*, the same event the Find Me Age counts), and 🟩 for the
-find.
+each whole fifteen seconds spent searching (and always at least one), 🟨 for each time the
+badge went amber and then went off again for more than a second, and 🟩 for the find.
+
+🟨 follows the **badge**, not the age's *pass*. A pass needs the shape central as well as
+close, which the player is never shown; the first version of the trace used it, and a
+tester who had watched the badge go amber three times got a line with no 🟨 in it at all.
+The trace is read by the player, so it counts what the player saw. The second of grace is
+because squaring up at the edge of the near band flickers the badge, and that is aiming,
+not losing it.
 
 ```
 Find Me #212 🎨
