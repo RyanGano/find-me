@@ -326,6 +326,29 @@ export default function App() {
     setPlea((prev) => ({ n: (prev?.n ?? 0) + 1, text: plead(1 - clock / hintGate) }));
   }, [canHint, takeHint, clock, hintGate, isPractice, runId, day]);
 
+  /**
+   * The give-up question closes on any tap outside it, or Escape, like every other panel
+   * in the game: a popup opened by mistake should not make the player hunt for its
+   * button. No scrim, because the board stays live behind the question -- a tap outside
+   * closes it and still reaches the painting, so the player carries on in one motion.
+   */
+  const confirmRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!confirming) return;
+    const onDown = (e: PointerEvent) => {
+      if (!confirmRef.current?.contains(e.target as Node)) setConfirming(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setConfirming(false);
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [confirming]);
+
   useEffect(() => {
     if (!hintNote) return;
     const id = setTimeout(() => setHintNote(false), 5000);
@@ -721,7 +744,7 @@ export default function App() {
             while the question is still on the screen -- which happens, because the board
             stays live behind it. */}
         {confirming && done === null && (
-          <div className="giveup-note" role="dialog" aria-label="Give up?">
+          <div ref={confirmRef} className="giveup-note" role="dialog" aria-label="Give up?">
             {/* Offered first to anyone who has not taken it: a hint keeps the streak and
                 leaves the find to them, which is almost always what a stuck player wants.
                 So it is the one bright button, and giving up is the quiet one at the end. */}
