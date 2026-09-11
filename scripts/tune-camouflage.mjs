@@ -43,6 +43,18 @@ const solve = args.includes('--solve');
  * reading could see size at all -- before anything is re-derived.
  */
 const fov = args.includes('--fov');
+/**
+ * Measure on a phone-sized screen instead of the 900x700 window every shipped day was
+ * solved in. Nearly every player is on a phone, where the fitted view draws a shape at
+ * half its size here or less.
+ *
+ * Diagnostic, like `--fov`: the curve that turns a reading into a time was fitted on
+ * phone play against the 900x700 reading, so a day solved under this flag is priced on a
+ * scale nothing was fitted to. On the first fifteen tallied days neither phone reading
+ * (with or without `--fov`) ranked the days' real times any better than the default.
+ */
+const phone = args.includes('--phone');
+const VIEWPORT = phone ? { width: 390, height: 844 } : { width: 900, height: 700 };
 const only = args.filter((a) => !a.startsWith('-'));
 
 /** One line per day in puzzles.ts, read from the source of truth rather than duplicated. */
@@ -260,7 +272,7 @@ const dims = new Map();
 for (const p of list) dims.set(p.id, await dimnessOf(p.asset, p.cx, p.cy, p.size));
 
 const browser = await chromium.launch({ channel: 'chrome', args: ['--force-device-scale-factor=1'] });
-const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
+const page = await browser.newPage({ viewport: VIEWPORT });
 
 console.log(
   solve
