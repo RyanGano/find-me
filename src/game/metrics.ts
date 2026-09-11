@@ -125,9 +125,9 @@ export interface Tracker {
 }
 
 /**
- * The hot zone: the shape is close enough and central enough that the player is
- * plainly working on it rather than still scanning the canvas. Leaving it again is
- * what counts as panning past.
+ * The hot zone: the shape is close enough, and plainly being worked on rather than
+ * scanned past, that the player has found it. Leaving it again is what counts as
+ * panning past. See `isHot` for what "plainly" means.
  */
 /** Fractions of the reference size the shape must be drawn between. */
 const HOT_MIN_SIZE = 0.45;
@@ -213,14 +213,30 @@ export function isTracker(value: unknown): value is Tracker {
   );
 }
 
+/**
+ * Whether the shape is in the hot zone. It always has to be on screen at roughly the
+ * right size; on top of that, it is *entered* by bringing the shape near the middle of
+ * the stage or by lighting the badge, and once in, it is *kept* anywhere on screen.
+ *
+ * The middle alone used to be the whole rule, and it mis-read every player who frames
+ * the shape somewhere else -- up by the badge, say, to compare the two. Such a run never
+ * entered the zone, so its framing time read as zero and its near misses and overshoots
+ * went uncounted, and it scored years younger than the same hands framing in the middle;
+ * dragging a found shape up to the badge, meanwhile, counted as losing it. The middle is
+ * still one way in, because at the fitted zoom a shape sitting unnoticed at the edge of
+ * the screen has not been found. The badge is the other, because it lights only on the
+ * right size and angle, and nobody gets there by accident.
+ */
 export function isHot(
   match: MatchState,
   viewport: { w: number; h: number },
   targetSize: number,
+  wasHot = false,
 ): boolean {
   if (!match.onScreen) return false;
   const zoom = match.displaySize / targetSize;
   if (zoom < HOT_MIN_SIZE || zoom > HOT_MAX_SIZE) return false;
+  if (wasHot || match.near) return true;
   const dx = match.screen.x - viewport.w / 2;
   const dy = match.screen.y - viewport.h / 2;
   return Math.hypot(dx, dy) <= HOT_CENTRE * Math.min(viewport.w, viewport.h);
@@ -276,7 +292,7 @@ export function sample(
   if (!match.near && tracker.near) next.lostAt = at;
   next.near = match.near;
 
-  const hot = isHot(match, viewport, targetSize);
+  const hot = isHot(match, viewport, targetSize, tracker.hot);
   if (hot && !tracker.hot) next.hotAt = at;
   if (!hot && tracker.hot) m.passes += 1;
   next.hot = hot;

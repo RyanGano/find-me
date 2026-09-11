@@ -185,8 +185,8 @@ export function giveUpAfterMs(puzzle: Puzzle): number {
  * The fixed cost was 6000, on the reasoning that getting the zoom onto a 4% window takes
  * about six seconds. It does -- but almost none of that time lands in this signal.
  * `metrics.ts` splits the run at the *last entry into the hot zone*, and the hot zone
- * already requires the shape to be between 0.45x and 2.5x its final size and near the
- * middle of the stage. Nearly all of the zooming is therefore spent while the run is
+ * already requires the shape to be between 0.45x and 2.5x its final size and either near
+ * the middle of the stage or lighting the badge. Nearly all of the zooming is therefore spent while the run is
  * still counted as searching, and what is left here is the last touch of sizing plus the
  * twist. Six real runs on `wave-mon` framed in 0.0, 0.0, 0.4, 0.8, 3.5 and 6.7 seconds
  * against an expectation of 6.5, and three of the six came in so far under it that the

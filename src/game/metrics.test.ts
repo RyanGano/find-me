@@ -70,10 +70,55 @@ describe('passes', () => {
       [0, look()],
       [500, look({ displaySize: 8 })],
       [1000, look()],
-      [1500, look({ screen: { x: 10, y: 10 } })],
+      [1500, look({ onScreen: false })],
       [2000, look()],
     ]);
     expect(t.m.passes).toBe(2);
+  });
+
+  it('does not count moving a found shape away from the middle', () => {
+    // Up beside the badge, to compare the two, is still working on it.
+    const t = run([
+      [0, look({ displaySize: 8 })],
+      [1000, look()],
+      [2000, look({ screen: { x: 200, y: 40 } })],
+      [3000, look({ screen: { x: 200, y: 40 } })],
+    ]);
+    expect(t.hot).toBe(true);
+    expect(t.m.passes).toBe(0);
+  });
+});
+
+describe('framing away from the middle', () => {
+  const top = { x: 200, y: 40 };
+  /** The same run twice: sized and squared up in the middle, or up by the badge. */
+  function framedAt(screen: { x: number; y: number }) {
+    return finish(
+      run([
+        [0, look({ displaySize: 8 })],
+        [20000, look({ screen, displaySize: TARGET * 0.7 })],
+        [22000, look({ screen, displaySize: TARGET * 0.97, near: true })],
+        [23000, look({ screen, displaySize: TARGET * 1.06, near: true })],
+        [24000, look({ screen, displaySize: TARGET * 0.94, near: true })],
+      ]),
+      25000,
+    );
+  }
+
+  it('enters the hot zone on the badge, wherever the shape is', () => {
+    const t = run([[0, look({ screen: top, near: true })]]);
+    expect(t.hot).toBe(true);
+  });
+
+  it('reads exactly like the same run framed in the middle', () => {
+    const middle = framedAt({ x: 200, y: 200 });
+    const byBadge = framedAt(top);
+    expect(byBadge.adjustMs).toBeGreaterThan(0);
+    expect(byBadge.overshoots).toBe(middle.overshoots);
+    expect(byBadge.passes).toBe(middle.passes);
+    // The middle is entered at the first close look, the badge a moment later; the
+    // off-centre run is never read as having framed in no time at all.
+    expect(byBadge.searchMs! - middle.searchMs!).toBeLessThanOrEqual(2000);
   });
 });
 
@@ -239,7 +284,7 @@ describe('the hunt trace', () => {
     expect(finish(t, 48000).trace).toBe('sspsf');
   });
 
-  it('follows the badge, not the central hot zone the age reads', () => {
+  it('follows the badge, wherever on screen it lit', () => {
     // Three amber flashes in 31.8s, none of them central: three losses, two slices.
     const t = run([
       [0, far],
@@ -252,7 +297,7 @@ describe('the hunt trace', () => {
       [31000, amber],
     ]);
     const m = finish(t, 31800);
-    expect(m.passes).toBe(0);
+    expect(m.passes).toBe(3);
     expect(m.trace).toBe('ppspsf');
   });
 

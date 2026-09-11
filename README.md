@@ -588,10 +588,20 @@ The share text carries one line of emoji built from the run's own events in orde
 each whole fifteen seconds spent searching (and always at least one), 🟨 for each time the
 badge went amber and then went off again for more than a second, and 🟩 for the find.
 
-🟨 follows the **badge**, not the age's *pass*. A pass needs the shape central as well as
-close, which the player is never shown; the first version of the trace used it, and a
-tester who had watched the badge go amber three times got a line with no 🟨 in it at all.
-The trace is read by the player, so it counts what the player saw. The second of grace is
+🟨 follows the **badge**, not the age's *pass*. The first version of the trace used the
+pass, which then needed the shape in the middle of the screen as well as close, and a
+tester who had watched the badge go amber three times off-centre got a line with no 🟨 in
+it at all. The trace is read by the player, so it counts what the player saw.
+
+That tester had found a worse bug than the trace. The Find Me Age's hot zone (`isHot` in
+`metrics.ts`) could only be entered in the middle of the stage, so a player who sized and
+squared up the shape anywhere else -- up beside the badge, to compare the two -- never
+entered it: their framing time read as zero and their near misses and overshoots went
+uncounted, and the same run read three to seven years younger than it did framed in the
+middle, while dragging a found shape up to the badge counted as losing it. The zone is now
+entered in the middle *or* by lighting the badge, and once entered it holds anywhere on
+screen at roughly the right size. The middle stays one way in because at the fitted zoom a
+shape sitting unnoticed at the edge of the screen has not been found. The second of grace is
 because squaring up at the edge of the near band flickers the badge, and that is aiming,
 not losing it.
 
