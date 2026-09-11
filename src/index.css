@@ -1531,3 +1531,167 @@ button.reference:focus-visible {
   line-height: 1.5;
   color: var(--muted);
 }
+
+/* ---------- hide one for a friend ---------- */
+
+.btn-hide {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.btn-hide svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.hide-maker .topbar-actions {
+  margin-left: auto;
+}
+
+.hide-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: rgba(18, 16, 14, 0.8);
+  border-radius: 999px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.hide-controls {
+  flex: 0 0 auto;
+  max-height: 44dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--bg-raised);
+  touch-action: pan-y;
+}
+
+.hide-row {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.hide-row select,
+.hide-row input[type='range'] {
+  width: 100%;
+  min-width: 0;
+}
+
+.hide-row select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.hide-row input[type='range'] {
+  accent-color: var(--accent);
+}
+
+.hide-shapes,
+.hide-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hide-shape {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.hide-shape.is-on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.hide-swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.hide-swatch.is-on {
+  border-color: var(--accent);
+}
+
+.hide-swatches input[type='color'] {
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: none;
+}
+
+.hide-share {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hide-share .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.hide-status {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.hide-trace {
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+}
+
+.hide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hide-actions a.btn {
+  text-decoration: none;
+}
+
+.hide-controls[hidden] {
+  display: none;
+}

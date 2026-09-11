@@ -1071,6 +1071,33 @@ The client half is `src/game/count.ts`, and it posts to whatever `VITE_COUNT_URL
 build was given, and reads from the same address. Everything on the other end of that URL -- where the rows go, and how to
 read them -- is deliberately not in this repository.
 
+A hide from a friend (below) is never counted: nothing about making one or playing one
+reaches `count.ts`.
+
+## Hide one for a friend
+
+A player picks a painting, taps where a shape goes, sets its colour, size, angle and
+strength, and gets a link. Whoever opens the link hunts for that shape with the same
+`useHunt` the daily game runs on. Making one is behind `?test&hide` for now (the puzzle
+piece in the test-mode top bar); the links it makes point at the real site and play for
+anyone.
+
+- **The link is the puzzle.** `src/game/hide.ts` packs the hide into base64 in the URL
+  fragment (`#h=`), which is never sent to the host or a referrer. It is not secret, only
+  not readable at a glance. A link from a newer build, a cut-short one, or one naming a
+  painting this page does not know gets a friendly card rather than a broken board.
+- **Only paintings already served.** The painting list is every week the calendar has
+  reached, worked out the way `daily.ts` maps it, so the maker cannot show a painting
+  early.
+- **No tuner behind it.** Size and strength are held to `HIDE_SIZE` and `HIDE_OPACITY`,
+  picked by eye and well clear of the hardest shipped days, and the decoder holds a link
+  to them too, so an edited link cannot make an impossible puzzle. Until the setter
+  chooses a colour, each tap offers the paint's own colour there, pushed lighter or
+  darker so the shape is never exactly the paint.
+- **Nothing recorded, nothing counted.** A friend hunt never touches `find-me:v1`, the
+  backup cookie or the tally; `hide.test.ts` fails the build if the hide files import any
+  of them.
+
 ## Play-testing
 
 Every difficulty lever in this game was set by measurement, and measurement can only say
