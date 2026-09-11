@@ -31,8 +31,9 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         <p className="howto-note">
           The only thing this site records is that a run happened, how it ended — solved,
           given up on, or left — how long it took, how far in you first pressed give up if
-          you did so before it opened, whether the result was shared, and whether you looked
-          at your stats. Nothing that identifies you.
+          you did so before it opened, how far in you took a hint if you did, whether the
+          result was shared, and whether you looked at your stats. Nothing that identifies
+          you.
         </p>
         <p className="howto-note">
           To show how everyone else did, the game asks for the totals of days you have

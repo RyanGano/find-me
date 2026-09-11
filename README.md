@@ -704,8 +704,8 @@ the card's key explains it on a run that used one.
   with encouragement. That early press is *not* reported as `stuck`, which has always meant
   a reach for the give-up.
 - **It lives in the trace**, so a run banked mid-hunt comes back with its circle drawn.
-- **It is not counted by the tally.** Adding it is a change to what is reported, and goes
-  through "Changing what is reported" in CLAUDE.md.
+- **It is counted.** A `hint` report carries the run clock when it was taken, and is kept
+  beside however the run ended; see "Counting".
 - **The bench has no hint button.** `takeHint` is in `useHunt`, but a play-test measures how
   hard a day is unaided.
 
@@ -1099,7 +1099,8 @@ has to match the domain.
 
 The site keeps an anonymous tally: how many runs are started each day, how many are
 solved, how many end in a give-up, how many simply walk away, how long each of those
-took, and how far into a hunt somebody first reached for the way out. One row per run, keyed by a random id the page mints when
+took, how far into a hunt somebody first reached for the way out, and how far in they took
+a hint. One row per run, keyed by a random id the page mints when
 the clock starts and forgets when the run ends -- no account, no cookie, and nothing that
 outlives a single run, so the rows cannot be grouped by person even in principle. Practice
 runs are never counted.
@@ -1112,6 +1113,11 @@ the note tells them so.
 It also records, as a flag on a run it already has, whether the share button was pressed
 -- the clearest sign the result card is worth reading, and so the thing to watch when the
 card changes. A share never creates a run and never counts as a play.
+
+Taking the hint is recorded once per run, with the run clock at that moment, beside
+whatever the run goes on to become -- so a day can say how many people took a hint, how
+far in, and how many of them then found the shape. Like the other flags it never counts
+as a play.
 
 Opening the stats panel is recorded once per page load. With a run on record it is a flag
 on that run, so it can be read against the run's own time -- is the panel reached for more

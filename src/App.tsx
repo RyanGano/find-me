@@ -320,10 +320,11 @@ export default function App() {
     if (canHint) {
       takeHint();
       setHintNote(true);
+      if (!isPractice) count(runId, day, 'hint', clock);
       return;
     }
     setPlea((prev) => ({ n: (prev?.n ?? 0) + 1, text: plead(1 - clock / hintGate) }));
-  }, [canHint, takeHint, clock, hintGate]);
+  }, [canHint, takeHint, clock, hintGate, isPractice, runId, day]);
 
   useEffect(() => {
     if (!hintNote) return;

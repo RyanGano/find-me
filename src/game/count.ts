@@ -40,8 +40,12 @@ const OPT_OUT = 'find-me:no-count';
  * server already has it is a flag like a share; with no run behind it -- the panel opened
  * before the clock starts, or on a board reopened after a reload -- the server counts the
  * open on its own. Either way it never counts as a play.
+ *
+ * `hint` is sent once, when the player takes the hint, with the run clock at that moment.
+ * Like `stuck` it is kept beside whatever the run goes on to become, so a day's page can
+ * say how many people took a hint and how many of them then found the shape.
  */
-export type RunState = 'start' | 'stuck' | 'left' | 'gave-up' | 'solved' | 'shared' | 'stats';
+export type RunState = 'start' | 'stuck' | 'left' | 'gave-up' | 'solved' | 'shared' | 'stats' | 'hint';
 
 export interface CountPayload {
   run: string;

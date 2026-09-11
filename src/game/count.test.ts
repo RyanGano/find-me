@@ -92,6 +92,11 @@ describe('count', () => {
     expect(posts[0].body).toEqual({ run: 'run-1', day: 42, state: 'stuck', ms: 30000 });
   });
 
+  it('posts a hint, with how far into the hunt it was taken', () => {
+    count('run-1', 42, 'hint', 125000);
+    expect(posts[0].body).toEqual({ run: 'run-1', day: 42, state: 'hint', ms: 125000 });
+  });
+
   it('posts a share, with no time on it', () => {
     count('run-1', 42, 'shared');
     expect(posts[0].body).toEqual({ run: 'run-1', day: 42, state: 'shared' });
