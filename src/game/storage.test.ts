@@ -156,6 +156,20 @@ describe('giving up', () => {
     expect(getCurrentResult(3, V1)?.gaveUp).toBe(true);
   });
 
+  it('keeps the hunt trace, so sharing after coming back still shows it', () => {
+    const m: RunMetrics = {
+      searchMs: 240000,
+      adjustMs: 0,
+      passes: 0,
+      overshoots: 0,
+      reversals: 0,
+      idleMs: 0,
+      trace: 'vvpvg',
+    };
+    saveGaveUp(3, 240000, V1, m);
+    expect(getCurrentResult(3, V1)?.m?.trace).toBe('vvpvg');
+  });
+
   it('counts as played', () => {
     saveGaveUp(3, 240000, V1);
     expect(getStats(3).played).toBe(1);

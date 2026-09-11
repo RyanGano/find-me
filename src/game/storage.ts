@@ -188,11 +188,13 @@ export function saveResult(
  *
  * Written the same way a solve is, and for the same reason -- the day is over, and
  * coming back to it should hand back the answer rather than a fresh clock and an
- * unlimited second look at the painting. No metrics: the Find Me Age reads a run that
- * ended in a solve, and there is nothing honest it could say about one that did not.
+ * unlimited second look at the painting. The metrics are kept for the hunt trace alone,
+ * so a give-up shared after coming back still shows how the looking went; the Find Me
+ * Age is never read off them, since there is nothing honest it could say about a run
+ * that did not end in a find.
  */
-export function saveGaveUp(day: number, ms: number, version: string): void {
-  record(day, { ms, at: new Date().toISOString(), v: version, gaveUp: true });
+export function saveGaveUp(day: number, ms: number, version: string, metrics?: RunMetrics): void {
+  record(day, { ms, at: new Date().toISOString(), v: version, m: metrics, gaveUp: true });
 }
 
 function record(day: number, result: Result): void {

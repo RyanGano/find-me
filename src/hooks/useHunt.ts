@@ -373,7 +373,8 @@ export function useHunt(session: HuntSession) {
   }, [size, reveal]);
 
   /**
-   * Stop the clock for good and show them the shape. Returns how long they hunted, which
+   * Stop the clock for good and show them the shape. Returns how long they hunted, and the run's
+   * trace with it. How long is the number worth keeping, which
    * is the number worth keeping: how long somebody looked before deciding a day was
    * hopeless says more about that day than any rating from the people who finished.
    */
@@ -382,16 +383,18 @@ export function useHunt(session: HuntSession) {
     // board yet has not tried, and an answer from them is not about the puzzle. The
     // caller is expected to keep the way out closed until the clock is running; this is
     // the backstop, not the rule.
-    if (startedAt === null || solvedMs !== null || gaveUpMs !== null) return 0;
+    if (startedAt === null || solvedMs !== null || gaveUpMs !== null) return { ms: 0, metrics: null };
     const ms = paused ? elapsed : performance.now() - startedAt;
     setGaveUpMs(ms);
     setElapsed(ms);
-    // For the hunt trace only: a give-up has no age, and callers store no metrics for it.
-    setMetrics(finish(tracker.current, ms, 'gaveUp'));
+    // For the hunt trace only: a give-up has no age. Handed back so the caller can store
+    // it, or coming back to the day later shares a bare flag.
+    const done = finish(tracker.current, ms, 'gaveUp');
+    setMetrics(done);
     setPaused(false);
     setResuming(false);
     reveal();
-    return ms;
+    return { ms, metrics: done };
   }, [startedAt, solvedMs, gaveUpMs, paused, elapsed, reveal]);
 
   const clock = solvedMs ?? gaveUpMs ?? (startedAt === null ? 0 : elapsed);

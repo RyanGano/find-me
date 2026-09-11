@@ -305,11 +305,11 @@ export default function App() {
   const onGiveUp = useCallback(() => {
     setConfirming(false);
     setPlea(null);
-    const ms = giveUp();
+    const { ms, metrics: m } = giveUp();
     setShowResult(true);
     setShowRing(true);
     if (!isPractice) {
-      saveGaveUp(day, ms, puzzle.version);
+      saveGaveUp(day, ms, puzzle.version, m ?? undefined);
       clearProgress();
       count(runId, day, 'gave-up', ms);
     }
