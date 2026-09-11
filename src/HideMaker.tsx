@@ -120,9 +120,10 @@ export default function HideMaker() {
   );
 
   // A new painting starts from the whole canvas. A new board size does not: the board
-  // resizes whenever the controls under it grow or shrink -- the blends-in warning
-  // coming and going, for one -- and snapping back to the whole painting then threw
-  // away wherever the setter had panned and zoomed to. The view is only kept on screen.
+  // resizes whenever the controls under it grow or shrink -- a message under the share
+  // button wrapping, or a phone turning -- and snapping back to the whole painting then
+  // threw away wherever the setter had panned and zoomed to. The view is only kept on
+  // screen.
   const fitted = useRef<string | null>(null);
   useEffect(() => {
     if (!fit || !box) return;
@@ -483,17 +484,19 @@ export default function HideMaker() {
           />
         </label>
 
-        {blends && (
-          <p className="hide-warning" role="status">
-            This color blends into the paint here. Pick one that stands out more, or move it.
-          </p>
-        )}
-
+        {/* The warning sits beside the button rather than above it, so the controls keep
+            their height whether it shows or not and the board above them never resizes. */}
         <div className="hide-share">
           <button type="button" className="btn btn-primary" onClick={share} disabled={!hide || blends}>
-            Share the link
+            Share
           </button>
-          {status && <span className="hide-status">{status}</span>}
+          {blends ? (
+            <span className="hide-warning" role="status">
+              This color blends into the paint here. Pick one that stands out more, or move it.
+            </span>
+          ) : (
+            status && <span className="hide-status">{status}</span>
+          )}
         </div>
       </section>
     </div>
