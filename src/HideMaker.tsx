@@ -119,11 +119,20 @@ export default function HideMaker() {
     [box, painting.width, painting.height],
   );
 
-  // A new painting or a new board size starts from the whole canvas.
+  // A new painting starts from the whole canvas. A new board size does not: the board
+  // resizes whenever the controls under it grow or shrink -- the blends-in warning
+  // coming and going, for one -- and snapping back to the whole painting then threw
+  // away wherever the setter had panned and zoomed to. The view is only kept on screen.
+  const fitted = useRef<string | null>(null);
   useEffect(() => {
+    if (!fit || !box) return;
+    const fresh = fitted.current !== painting.image;
+    fitted.current = painting.image;
     // oxlint-disable-next-line react/set-state-in-effect
-    setTransform(fit);
-  }, [fit]);
+    setTransform((prev) =>
+      fresh || !prev ? fit : constrainPan(prev, painting.width, painting.height, box.w, box.h),
+    );
+  }, [fit, box, painting.image, painting.width, painting.height]);
 
   const onGesture = useCallback(
     (delta: GestureDelta) => {
