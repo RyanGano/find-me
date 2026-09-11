@@ -721,37 +721,47 @@ export default function App() {
             while the question is still on the screen -- which happens, because the board
             stays live behind it. */}
         {confirming && done === null && (
-          <div className="giveup-note" role="dialog" aria-label="Give up?">
+          <div
+            className={`giveup-note${canHint ? ' is-choice' : ''}`}
+            role="dialog"
+            aria-label="Give up?"
+          >
             {/* Offered first to anyone who has not taken it: a hint keeps the streak and
-                leaves the find to them, which is almost always what a stuck player wants. */}
+                leaves the find to them, which is almost always what a stuck player wants.
+                So it is the one bright button, and giving up is the quiet one at the end. */}
             {canHint ? (
-              <span>
-                Want a hint instead? It shows roughly where to look, and your streak is safe.
-                Giving up shows you where it is, but ends your streak.
-              </span>
+              <>
+                <span>Try a hint instead? It keeps your streak. Giving up ends it.</span>
+                <button
+                  type="button"
+                  className="btn btn-primary giveup-hint"
+                  onClick={() => {
+                    setConfirming(false);
+                    askForHint();
+                  }}
+                >
+                  give me a hint
+                </button>
+                <button type="button" className="btn giveup-no" onClick={() => setConfirming(false)}>
+                  keep looking
+                </button>
+                <button type="button" className="btn giveup-yes" onClick={onGiveUp}>
+                  give up
+                </button>
+              </>
             ) : (
-              <span>
-                Show you where it is? The day counts as played, but it ends your streak.
-              </span>
+              <>
+                <span>
+                  Show you where it is? The day counts as played, but it ends your streak.
+                </span>
+                <button type="button" className="btn giveup-yes" onClick={onGiveUp}>
+                  show me
+                </button>
+                <button type="button" className="btn giveup-no" onClick={() => setConfirming(false)}>
+                  keep looking
+                </button>
+              </>
             )}
-            {canHint && (
-              <button
-                type="button"
-                className="btn giveup-yes"
-                onClick={() => {
-                  setConfirming(false);
-                  askForHint();
-                }}
-              >
-                give me a hint
-              </button>
-            )}
-            <button type="button" className={`btn ${canHint ? 'giveup-no' : 'giveup-yes'}`} onClick={onGiveUp}>
-              show me
-            </button>
-            <button type="button" className="btn giveup-no" onClick={() => setConfirming(false)}>
-              keep looking
-            </button>
           </div>
         )}
 

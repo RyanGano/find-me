@@ -1571,6 +1571,19 @@ button.reference:focus-visible {
   color: var(--muted);
 }
 
+/* Give up, with the hint still on offer: the question on its own line, and one row of
+   answers under it -- the hint bright, carrying on plain, giving up quiet and last. */
+.giveup-note.is-choice span {
+  flex-basis: 100%;
+}
+
+.giveup-hint {
+  flex: none;
+  padding: 6px 12px;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
 /* What replaces the speed bar on a result nobody wants to compare. */
 .result-gaveup {
   margin: 0 0 14px;
