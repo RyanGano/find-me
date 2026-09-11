@@ -1538,7 +1538,7 @@ button.reference:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 70%, var(--text));
   text-decoration: none;
 }
 
