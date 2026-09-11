@@ -698,11 +698,16 @@ the card's key explains it on a run that used one.
   direction derived from the day's id. Never centred, because players learn to look in the
   middle of a centred circle within a day; the same for every player, because everything in
   a day is.
-- **It opens** after the day's own `expectedSearchMs`, on the give-up's 45-second floor and
-  a two-minute cap (`hintAfterMs`), so it always opens before the give-up does. The button
-  follows the give-up's rules: visible and dimmed from the start, answering an early press
-  with encouragement. That early press is *not* reported as `stuck`, which has always meant
-  a reach for the give-up.
+- **It opens** after the day's own `expectedSearchMs`, on a 30-second floor and a
+  two-minute cap (`hintAfterMs`), so it always opens strictly before the give-up. It first
+  shared the give-up's 45-second floor, and on a gentle day the two opened in the same
+  instant. The button follows the give-up's rules: visible and dimmed from the start,
+  answering an early press with encouragement. That early press is *not* reported as
+  `stuck`, which has always meant a reach for the give-up.
+- **It speaks up when the give-up opens.** A few pulses, then still: a player about to
+  reach for the harsher way out should see the gentler one first. And pressing give up
+  without having taken the hint asks whether they want a hint instead, before it asks
+  whether to end the streak.
 - **It lives in the trace**, so a run banked mid-hunt comes back with its circle drawn.
 - **It is counted.** A `hint` report carries the run clock when it was taken, and is kept
   beside however the run ended; see "Counting".

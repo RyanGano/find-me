@@ -181,18 +181,20 @@ export function giveUpAfterMs(puzzle: Puzzle): number {
 /**
  * How long a hunt has to have run before a hint is on offer.
  *
- * The day's own expected search time, on the same floor as the give-up and a lower cap,
- * so the hint always opens first: it is the gentler way out, and a player who takes it
- * still gets to find the thing themselves. Past two minutes a walled player is deciding
- * whether to close the tab, which is who the hint is for.
+ * The day's own expected search time, on a lower floor and a lower cap than the give-up,
+ * so the hint always opens strictly first: it is the gentler way out, and a player who
+ * takes it still gets to find the thing themselves. It used to share the give-up's floor,
+ * and on a gentle day the two opened in the same instant. Past two minutes a walled player
+ * is deciding whether to close the tab, which is who the hint is for.
  */
 const HINT_AFTER = 1;
+const HINT_FLOOR_MS = 30 * 1000;
 const HINT_CAP_MS = 2 * 60 * 1000;
 
 export function hintAfterMs(puzzle: Puzzle): number {
   const rung = RAMP[puzzle.dayOfWeek];
   const search = expectedSearchMs(puzzle.target.scan ?? rung.scan, puzzle.clutter, puzzle.target.dim);
-  return Math.min(HINT_CAP_MS, Math.max(GIVE_UP_FLOOR_MS, HINT_AFTER * search));
+  return Math.min(HINT_CAP_MS, Math.max(HINT_FLOOR_MS, HINT_AFTER * search));
 }
 
 /**

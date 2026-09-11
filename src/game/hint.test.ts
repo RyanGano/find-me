@@ -32,9 +32,9 @@ describe('the hint circle', () => {
 
 describe('when the hint opens', () => {
   for (const puzzle of PUZZLES) {
-    it(`${puzzle.id} offers the hint no later than the give-up`, () => {
-      expect(hintAfterMs(puzzle)).toBeLessThanOrEqual(giveUpAfterMs(puzzle));
-      expect(hintAfterMs(puzzle)).toBeGreaterThanOrEqual(45_000);
+    it(`${puzzle.id} offers the hint before the give-up`, () => {
+      expect(hintAfterMs(puzzle)).toBeLessThan(giveUpAfterMs(puzzle));
+      expect(hintAfterMs(puzzle)).toBeGreaterThanOrEqual(30_000);
       expect(hintAfterMs(puzzle)).toBeLessThanOrEqual(120_000);
     });
   }

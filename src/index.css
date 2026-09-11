@@ -1505,6 +1505,20 @@ button.reference:focus-visible {
   right: 12px;
 }
 
+/* The moment the give-up opens, the hint says it is still there: a player about to reach
+   for the harsher way out should see the gentler one first. A few pulses, then still. */
+.hint-btn.is-nudge {
+  animation: hint-nudge 0.9s ease-in-out 3;
+}
+
+@keyframes hint-nudge {
+  50% {
+    color: var(--text);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(233, 178, 60, 0.45), var(--shadow);
+  }
+}
+
 /*
  * What comes back: either the confirmation, or a word of encouragement to somebody who
  * asked too early. Same place and same shape as the reveal note, because they are the
