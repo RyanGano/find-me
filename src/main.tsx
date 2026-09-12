@@ -6,7 +6,6 @@ import { Diagnostics } from './components/Diagnostics';
 import FriendHunt from './FriendHunt';
 import { hideFromHash } from './game/hide';
 import { parseRestore } from './game/restore';
-import { isTestMode } from './game/testMode';
 import { Restore } from './Restore';
 import HideMaker from './HideMaker';
 import './index.css';
@@ -40,9 +39,10 @@ window.addEventListener('hashchange', () => {
   if (hideFromHash(window.location.hash) !== hide) window.location.reload();
 });
 
-// `?test&hide` makes one. Behind test mode for now, so the only people setting hides are
-// the ones who asked to; the links they make point at the real site.
-const making = params.has('hide') && isTestMode();
+// `?hide` makes one. The daily board offers it once the day's puzzle is over -- never
+// during a hunt -- but the address works on its own, and the links it makes point at the
+// real site and play for anyone.
+const making = params.has('hide');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

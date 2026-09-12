@@ -40,6 +40,13 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
           finished. That request is not recorded. With counting off it is not made, so you
           won&rsquo;t see how everyone else did.
         </p>
+        <p className="howto-note">
+          For <em>hide one for a friend</em> it records five counts, to see whether anyone
+          uses it: that the maker was opened, that a hide was shared, that a hide was
+          opened, that one was found, and that a finder shared their result back. Which
+          painting, which shape and where it was hidden are not recorded and never leave
+          the link.
+        </p>
         <div className="howto-foot">
           <button type="button" className="btn btn-primary" onClick={() => setShowPrivacy(false)}>
             Back

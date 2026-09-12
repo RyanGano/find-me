@@ -5,10 +5,12 @@ import {
   fetchTally,
   isCounted,
   MAX_TALLY_DAYS,
+  countHide,
   newRunId,
   setCounted,
   TALLY_FLOOR,
   type CountPayload,
+  type HidePayload,
 } from './count';
 
 const URL = 'https://example.invalid/api/count';
@@ -245,5 +247,43 @@ describe('newRunId', () => {
   it('mints a different id every time', () => {
     const ids = new Set(Array.from({ length: 50 }, newRunId));
     expect(ids.size).toBe(50);
+  });
+});
+
+describe('countHide', () => {
+  const hides = () => posts.map((p) => p.body as unknown as HidePayload);
+
+  it('reports the feature, and nothing about the hide', () => {
+    countHide('opened');
+    const [body] = hides();
+    expect(body.kind).toBe('hide');
+    expect(body.event).toBe('opened');
+    // No day, no puzzle, no painting, no shape, no position -- there is nothing here that
+    // could say which hide it was, and that is the whole design.
+    expect(Object.keys(body).sort()).toEqual(['event', 'kind', 'page']);
+    expect(posts[0].url).toBe(URL);
+  });
+
+  it('carries one page id across the events of a page load', () => {
+    countHide('opened');
+    countHide('made');
+    const [first, second] = hides();
+    expect(second.page).toBe(first.page);
+    expect(first.page).toMatch(/\S/);
+  });
+
+  it('never sends a beacon: none of it happens as the page goes away', () => {
+    for (const event of ['opened', 'made', 'hunted', 'found', 'told'] as const) countHide(event);
+    expect(hides().map((h) => h.event)).toEqual(['opened', 'made', 'hunted', 'found', 'told']);
+    expect(beacons).toHaveLength(0);
+  });
+
+  it('says nothing once the player has opted out, or with no endpoint', () => {
+    setCounted(false);
+    countHide('opened');
+    setCounted(true);
+    vi.stubEnv('VITE_COUNT_URL', '');
+    countHide('opened');
+    expect(posts).toHaveLength(0);
   });
 });

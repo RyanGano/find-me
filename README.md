@@ -1201,16 +1201,30 @@ The client half is `src/game/count.ts`, and it posts to whatever `VITE_COUNT_URL
 build was given, and reads from the same address. Everything on the other end of that URL -- where the rows go, and how to
 read them -- is deliberately not in this repository.
 
-A hide from a friend (below) is never counted: nothing about making one or playing one
-reaches `count.ts`.
+A hide from a friend (below) is counted as a *feature* and never as a puzzle. Five
+counters say whether anybody uses the thing at all: the maker was opened, a hide was
+shared, a hide was opened, one was found, and a finder shared their result back. That is
+the whole of it -- a hide row carries no day, no painting, no shape and no position, so
+nothing here can say which hide it was, and none of it can ever count as a play. The first
+two come from the setter and the last three from whoever they sent the link to, so the
+step that matters is the one between them: whether the links get opened. Each is written
+once per page load, keyed by a random id minted on that load and never kept, which is why
+a double-tap on share is one share and why nothing joins the two ends of a hide together.
+`countHide` in `src/game/count.ts` is all of it, and it is switched off by the same opt-out
+as everything else.
 
 ## Hide one for a friend
 
 A player picks a painting, taps where a shape goes, sets its colour, size, angle and
 strength, and gets a link. Whoever opens the link hunts for that shape with the same
-`useHunt` the daily game runs on. Making one is behind `?test&hide` for now (the puzzle
-piece in the test-mode top bar); the links it makes point at the real site and play for
+`useHunt` the daily game runs on. The links it makes point at the real site and play for
 anyone.
+
+The way in is the puzzle piece in the top bar, and it appears **only once the day's own
+puzzle is over** -- solved or given up on. Before that it would be a door out of a hunt in
+progress, and the maker's painting list is every week the calendar has reached, which is a
+thing a player in the middle of today's hunt has no business reading. The address is
+`?hide` and works on its own; `?test&hide` is the same thing inside test mode.
 
 - **The link is the puzzle.** `src/game/hide.ts` packs the hide into base64 in the URL
   fragment (`#h=`), which is never sent to the host or a referrer. It is not secret, only
@@ -1233,9 +1247,16 @@ anyone.
   set by eye on the served paintings, not measured against play. A link is held to the
   size and opacity limits when it is opened; the contrast rule needs the painting's
   pixels, so it lives in the maker.
-- **Nothing recorded, nothing counted.** A friend hunt never touches `find-me:v1`, the
-  backup cookie or the tally; `hide.test.ts` fails the build if the hide files import any
-  of them.
+- **Nothing recorded; the feature is counted, the hide is not.** A friend hunt never
+  touches `find-me:v1`, the backup cookie or a streak, and `hide.test.ts` fails the build
+  if the hide files import any of them. The five counters under "Counting" above are the
+  one exception, and they are the reason the test now checks *what* is imported from the
+  tally rather than banning it outright: `countHide` and nothing else, so a later edit that
+  reached for `count` -- which would write a row keyed to a puzzle day, the one thing a
+  hide is not -- fails there.
+- **Sharing back sends the hide, not the front door.** The result card at the end of a
+  friend hunt shares the link that was opened, so the person who was sent a hide can pass
+  the same hunt on rather than a link to today's puzzle.
 
 ## Play-testing
 

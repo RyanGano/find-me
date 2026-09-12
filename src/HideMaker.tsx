@@ -15,6 +15,8 @@ import {
   type Painting,
   type PaintStats,
 } from './game/hide';
+import { countHide } from './game/count';
+import { isTestMode } from './game/testMode';
 import { shareResult, SITE_URL } from './game/share';
 import { SHAPES } from './game/shapes';
 import { compose, constrainPan, fitTransform, invert, type GestureDelta } from './game/transform';
@@ -48,13 +50,13 @@ function markSeen(): void {
 
 /**
  * Hide one for a friend: pick a painting the calendar has already served, tap where the
- * shape goes, set it, and send the link.
+ * shape goes, set it, and send the link. Reached from the daily board (`?hide`) once the
+ * day's puzzle is over, so it is never a way out of a hunt in progress.
  *
- * Behind test mode for now (`?test&hide`), so the only people making hides are the ones
- * who asked to. The links it makes point at the real site and play for anyone.
- *
- * It writes nothing but a flag saying the help has been read, and sends nothing at all:
- * no storage, no tally.
+ * It writes nothing but a flag saying the help has been read, and the only thing it sends
+ * is two of the five hide counters -- the maker was opened, and a link was shared. Those
+ * say nothing about the hide: not the painting, not the shape, not where. No storage, and
+ * nothing that reaches the run tally.
  */
 export default function HideMaker() {
   const paintings = useMemo(() => servedPaintings(), []);
@@ -70,9 +72,16 @@ export default function HideMaker() {
   const [auto, setAuto] = useState(true);
   const [showHelp, setShowHelp] = useState(() => !seen());
   const [status, setStatus] = useState<string | null>(null);
-  // At the whole-painting view a hidden shape is a few pixels across, so the setter is
-  // shown a ring round it -- and can put the ring away to judge how well it hides.
-  const [showRing, setShowRing] = useState(true);
+  // At the whole-painting view a hidden shape is a few pixels across, so the setter can
+  // put a ring round it to see where it went. Off to begin with: the point of the thing is
+  // how the shape sits in the painting, and a ring is the one view that cannot show that.
+  const [showRing, setShowRing] = useState(false);
+
+  // One of the five hide counters: somebody opened the maker. Once per page load, before
+  // anything has been set, so it is the top of the funnel and not a measure of finishing.
+  useEffect(() => {
+    countHide('opened');
+  }, []);
 
   // The paint under the shape, once the painting has been read -- which is what says
   // how strong a given color has to be to be findable there at all.
@@ -282,6 +291,10 @@ export default function HideMaker() {
     if (!hide) return;
     const link = hideLink(hide, SITE_URL);
     const text = `I hid a ${SHAPES[hide.shape].emoji} in ${painting.title}. Can you find it?\n${link}`;
+    // Counted on the press, like a share of a daily result: what is being asked is
+    // whether people reach for it, and a share sheet that is dismissed never comes back
+    // to say so.
+    countHide('made');
     const result = await shareResult(text);
     setStatus(result === 'copied' ? 'Link copied' : result === 'failed' ? link : 'Shared');
   }, [hide, painting.title]);
@@ -320,14 +333,20 @@ export default function HideMaker() {
         </div>
       </header>
 
-      <p className="test-banner">
-        <span className="test-banner-what">
-          test mode <span>— making a hide</span>
-        </span>
-        <a className="test-banner-exit" href="./?test">
-          back to the game
-        </a>
-      </p>
+      {isTestMode() ? (
+        <p className="test-banner">
+          <span className="test-banner-what">
+            test mode <span>— making a hide</span>
+          </span>
+          <a className="test-banner-exit" href="./?test">
+            back to the game
+          </a>
+        </p>
+      ) : (
+        <p className="practice-note">
+          <a href="./">back to today&rsquo;s puzzle</a>
+        </p>
+      )}
 
       <main className={`board${loading ? ' is-loading' : ''}`}>
         <Stage
@@ -369,12 +388,14 @@ export default function HideMaker() {
                 <li>
                   Set its color, size, angle and strength. <strong>Auto</strong> picks a color
                   from the paint underneath. Pinch or scroll to zoom in, and turn the ring off to
-                  see how well it hides. A color that blends into the paint can&rsquo;t be shared.
+                  see how well it hides. There <em>are</em> guards in place to keep you from
+                  sharing an impossible puzzle.
                 </li>
                 <li>Press share and send the link. They hunt for it just like the daily puzzle.</li>
               </ul>
               <p className="howto-note">
-                Nothing about a hide is saved or sent anywhere — the whole puzzle lives in the link.
+                The hide itself is saved and sent nowhere — the whole puzzle lives in the link.
+                All the site counts is that somebody made one.
               </p>
               <button type="button" className="btn btn-primary" onClick={closeHelp}>
                 Got it

@@ -601,10 +601,15 @@ export default function App() {
           <button type="button" className="btn btn-icon" onClick={reset} title="Reset view">
             ⟲
           </button>
-          {/* Hide one for a friend. Test mode only while it finds its feet; the links it
-              makes work for everyone. */}
-          {isTest && (
-            <a className="btn btn-icon btn-hide" href="./?test&hide" title="Hide one for a friend">
+          {/* Hide one for a friend, offered only once today's hunt is over: before that
+              it is a door out of a run in progress, and it would give away that every
+              painting on its list is one the calendar has already served. */}
+          {done !== null && (
+            <a
+              className="btn btn-icon btn-hide"
+              href={isTest ? './?test&hide' : './?hide'}
+              title="Hide one for a friend"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M5 7h4a2.5 2.5 0 1 1 5 0h4v4a2.5 2.5 0 1 1 0 5v4h-4a2.5 2.5 0 1 0-5 0H5v-4a2.5 2.5 0 1 0 0-5z" />
               </svg>

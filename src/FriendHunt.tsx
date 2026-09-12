@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ReferenceCard } from './components/ReferenceCard';
 import { Stage } from './components/Stage';
+import { countHide } from './game/count';
 import { formatTime } from './game/format';
-import { decodeHide, hidePuzzle, type Decoded } from './game/hide';
+import { decodeHide, hideLink, hidePuzzle, type Decoded } from './game/hide';
 import { huntTrace, shareResult, SITE_URL } from './game/share';
 import type { Puzzle } from './game/types';
 import { useHunt } from './hooks/useHunt';
@@ -11,14 +12,28 @@ import { useHunt } from './hooks/useHunt';
  * A hide a friend set, opened from the link it travels in.
  *
  * The same hunt as the daily game -- `useHunt`, down to the gestures and the solve --
- * with the keeping score taken off. Nothing here is recorded and nothing is counted: it
- * never imports storage or the tally, and `hide.test.ts` holds it to that. It works for
- * anyone with the link, test mode or not, because the link is the puzzle.
+ * with the keeping score taken off. Nothing about the hide is recorded: it never touches
+ * the player's store, their streak or the run tally, and `hide.test.ts` holds it to that.
+ * Three of the five hide counters are sent from here -- a hide was opened, it was found,
+ * the finder told the setter -- and none of them carries the hide, the painting or the
+ * shape. It works for anyone with the link, test mode or not, because the link is the
+ * puzzle.
  */
 export default function FriendHunt({ code }: { code: string }) {
   const decoded = useMemo<Decoded>(() => decodeHide(code), [code]);
+  // Counted only once the link has turned out to be playable, so a cut-short link is not
+  // a hunt somebody opened.
+  const opened = decoded.ok;
+  useEffect(() => {
+    if (opened) countHide('hunted');
+  }, [opened]);
   if (!decoded.ok) return <BadLink reason={decoded.reason} />;
-  return <Hunt puzzle={hidePuzzle(decoded.hide, decoded.painting)} />;
+  return (
+    <Hunt
+      puzzle={hidePuzzle(decoded.hide, decoded.painting)}
+      link={hideLink(decoded.hide, SITE_URL)}
+    />
+  );
 }
 
 function BadLink({ reason }: { reason: 'malformed' | 'future' | 'painting' }) {
@@ -41,11 +56,14 @@ function BadLink({ reason }: { reason: 'malformed' | 'future' | 'painting' }) {
   );
 }
 
-function Hunt({ puzzle }: { puzzle: Puzzle }) {
+function Hunt({ puzzle, link }: { puzzle: Puzzle; link: string }) {
   const [showCard, setShowCard] = useState(false);
   const [shared, setShared] = useState<string | null>(null);
 
-  const onSolved = useCallback(() => setShowCard(true), []);
+  const onSolved = useCallback(() => {
+    countHide('found');
+    setShowCard(true);
+  }, []);
 
   const {
     stageRef,
@@ -83,11 +101,14 @@ function Hunt({ puzzle }: { puzzle: Puzzle }) {
         : `Found your ${puzzle.emoji} in ${formatTime(done)}`,
       ...(trace ? [trace] : []),
       `Find Me · ${puzzle.title}`,
-      SITE_URL,
+      // The hide itself, not the front door: whoever this goes to can hunt the same
+      // shape, which is most of the point of telling them about it.
+      link,
     ];
+    countHide('told');
     const result = await shareResult(lines.join('\n'));
     setShared(result === 'copied' ? 'Copied' : result === 'failed' ? 'Could not share' : 'Shared');
-  }, [done, gaveUpMs, metrics, puzzle.emoji, puzzle.title]);
+  }, [done, gaveUpMs, link, metrics, puzzle.emoji, puzzle.title]);
 
   return (
     <div className="app">

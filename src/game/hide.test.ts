@@ -168,14 +168,30 @@ describe('friend hides', () => {
     }
   });
 
-  it('cannot record or count anything', () => {
+  const HIDE_FILES = ['src/FriendHunt.tsx', 'src/HideMaker.tsx', 'src/game/hide.ts'];
+
+  it('cannot record anything', () => {
     // A friend hide is not a day: it may never reach the player's store, the backup
-    // cookie, the tally or the bench's answers. Checked on the imports, so a later edit
-    // that reached for one would fail here rather than in someone's streak.
-    for (const file of ['src/FriendHunt.tsx', 'src/HideMaker.tsx', 'src/game/hide.ts']) {
+    // cookie or the bench's answers. Checked on the imports, so a later edit that reached
+    // for one would fail here rather than in someone's streak.
+    for (const file of HIDE_FILES) {
       const source = readFileSync(file, 'utf8');
-      for (const banned of ['/count', '/storage', '/backup', '/review', '/testbedStore']) {
+      for (const banned of ['/storage', '/backup', '/review', '/testbedStore']) {
         expect(source, `${file} imports ${banned}`).not.toMatch(new RegExp(`from '[^']*${banned}'`));
+      }
+    }
+  });
+
+  it('counts the feature and never a run', () => {
+    // The five hide counters say whether anyone uses the thing. Nothing here may reach the
+    // run tally: `count` would write a row keyed to a puzzle day, which is exactly what a
+    // hide is not, and `fetchTally` would put somebody else's numbers on a hide that has
+    // none. `countHide` is the only thing these files may take from the tally module.
+    for (const file of HIDE_FILES) {
+      const source = readFileSync(file, 'utf8');
+      for (const imported of source.matchAll(/import \{([^}]*)\} from '[^']*\/count'/g)) {
+        const names = imported[1].split(',').map((n) => n.trim()).filter(Boolean);
+        expect(names, `${file} imports more than countHide from the tally`).toEqual(['countHide']);
       }
     }
   });

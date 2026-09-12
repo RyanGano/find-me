@@ -104,6 +104,9 @@ async function zoomTo(want) {
 await zoomTo(scale * 1.07);
 check('blur lifts on the first move', await page.$('.stage-viewport.is-blurred') === null);
 check('clock starts on the first move', await page.$('.clock.is-running') !== null);
+// Mid-hunt is exactly when `hide one for a friend` must not be on offer: it is a door out
+// of a run in progress, and its painting list is every week the calendar has reached.
+check('no way out to hiding one mid-hunt', await page.$('.btn-hide') === null);
 await page.screenshot({ path: `${OUT}/3-zoomed.png` });
 
 // Rotate with shift+wheel until upright, again easing off as it closes in.
@@ -179,6 +182,13 @@ check(
   await page.$('.clock') === null && await page.$('.btn-stats') !== null,
 );
 check('the badge turns green on the solve', await page.$('.reference.is-solved') !== null);
+
+// `hide one for a friend` is offered only once the day is over, so the way in appears
+// here and nowhere earlier -- the run above already checked it was absent at the start.
+check(
+  'the way in to hiding one opens once the day is done',
+  (await page.getAttribute('.btn-hide', 'href'))?.includes('hide'),
+);
 
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForSelector('.result');

@@ -12,6 +12,10 @@
  * random number minted at the start of the run and thrown away with it, so the server
  * can collapse them into one row rather than counting a back-swipe as a second player.
  *
+ * `countHide` at the foot is the one thing here that is not about a day: five counters
+ * saying whether anyone uses `hide one for a friend` at all. It carries no day, no
+ * puzzle and no hide -- see the note above it.
+ *
  * Everything here fails silently. A blocked request, a missing endpoint, a browser with
  * no `sendBeacon` -- none of it is allowed to cost the player their run.
  */
@@ -233,4 +237,54 @@ function readTally(body: unknown): DayTally | null {
   if (!whole(played) || !whole(solved) || !whole(medianMs)) return null;
   if (solved < TALLY_FLOOR || solved > played) return null;
   return { played, solved, medianMs };
+}
+
+/**
+ * What somebody did with `hide one for a friend`, as a feature rather than as a puzzle.
+ *
+ * The five readings are a funnel: the maker was opened, a hide was shared, a hide was
+ * opened, it was found, and the finder told the setter. What is wanted from them is
+ * whether anyone uses the thing at all -- so nothing here says *which* painting, *which*
+ * shape or *which* hide, and there is nothing to say it with: a hide has no day and no
+ * calendar slot, and none of this travels near the run tally. A hide is still never a
+ * play.
+ */
+export type HideEvent = 'opened' | 'made' | 'hunted' | 'found' | 'told';
+
+export interface HidePayload {
+  kind: 'hide';
+  event: HideEvent;
+  /**
+   * A random id minted on this page load and never kept, so the server can write each
+   * event once rather than counting a double-tap on share as two. It groups the events of
+   * one page load and nothing else: the maker and the hunt are different page loads and
+   * carry different ids, and nothing survives a reload.
+   */
+  page: string;
+  /** A `?test` walk-through rather than a person, exactly as on a run. */
+  dry?: true;
+}
+
+let pageId: string | null = null;
+
+/** Report one thing somebody did with the hide feature. Silent on every failure. */
+export function countHide(event: HideEvent): void {
+  const url = endpoint();
+  if (!url || !isCounted()) return;
+
+  pageId ??= newRunId();
+  const payload: HidePayload = { kind: 'hide', event, page: pageId };
+  if (isTestMode()) payload.dry = true;
+
+  try {
+    void fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      keepalive: true,
+      mode: 'cors',
+    }).catch(() => {});
+  } catch {
+    // Blocked, offline, or refused. Nothing the setter or finder is doing is affected.
+  }
 }
