@@ -354,7 +354,25 @@ export function getProgress(day: number, version: string): Progress | undefined 
 
 export function saveProgress(progress: Omit<Progress, 'at'>): void {
   const store = read();
-  store.progress = { ...progress, at: new Date().toISOString() };
+  const held = store.progress;
+  /**
+   * A run's clock only ever moves forward.
+   *
+   * Banking happens when a page is hidden, and a phone can have more than one page of the
+   * same day alive at once -- a second tab, or one the browser froze and handed back. Such
+   * a page knows only what it last saw, so when it is hidden *after* the page the player
+   * has been playing on, it used to write its older clock straight over the newer run: the
+   * player came back to the run as it stood at whatever moment that other page last looked
+   * at it, however long they had played since, and every return handed back the same stale
+   * time. The fuller run is the truer one, so it stands.
+   *
+   * Only within one run, which is what the day and version being equal means -- a shorter
+   * run on another day, or on a re-defined puzzle, is a different run and simply replaces
+   * this one.
+   */
+  const stale =
+    held !== undefined && held.day === progress.day && held.v === progress.v && held.ms > progress.ms;
+  store.progress = { ...(stale ? held : progress), at: new Date().toISOString() };
   write(store);
 }
 

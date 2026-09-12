@@ -102,6 +102,20 @@ describe('a bench hunt left half-finished', () => {
     expect(getBenchProgress('r1', 'cafe-fri')).toBeUndefined();
   });
 
+  // As in the daily game: a second page of the same hunt, hidden after the one being
+  // played, must not bank its older clock over the newer run.
+  it('is not shortened by a stale page banking what it last saw', () => {
+    saveBenchProgress('r1', { puzzle: 'cafe-fri', ms: 300000, t, w: 390, h: 700 });
+    saveBenchProgress('r1', { puzzle: 'cafe-fri', ms: 180000, t, w: 390, h: 700 });
+    expect(getBenchProgress('r1', 'cafe-fri')?.ms).toBe(300000);
+  });
+
+  it('still takes a shorter run on another bench day, which is another hunt', () => {
+    saveBenchProgress('r1', { puzzle: 'cafe-fri', ms: 300000, t, w: 390, h: 700 });
+    saveBenchProgress('r1', { puzzle: 'cafe-sat', ms: 1000, t, w: 390, h: 700 });
+    expect(getBenchProgress('r1', 'cafe-sat')?.ms).toBe(1000);
+  });
+
   it('is not resumed a day later', () => {
     saveBenchProgress('r1', { puzzle: 'cafe-fri', ms: 12000, t, w: 390, h: 700 });
     const stale = JSON.parse(data.get(BENCH_KEY)!);

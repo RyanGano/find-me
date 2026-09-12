@@ -142,6 +142,11 @@ export function saveBenchProgress(round: string, progress: Omit<BenchProgress, '
   const store = read();
   const state = stateOf(store, round);
   if (state.done) return;
-  store.rounds[round] = { ...state, progress: { ...progress, at: new Date().toISOString() } };
+  // The clock only moves forward, for the reason `saveProgress` in `storage.ts` gives at
+  // length: a second page of the same hunt, hidden after the one actually being played,
+  // must not bank its older clock over the newer run. A tester is on a phone too.
+  const held = state.progress;
+  const keep = held && held.puzzle === progress.puzzle && held.ms > progress.ms ? held : progress;
+  store.rounds[round] = { ...state, progress: { ...keep, at: new Date().toISOString() } };
   write(store);
 }

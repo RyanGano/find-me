@@ -290,6 +290,32 @@ describe('progress', () => {
     expect(getProgress(3, V1)?.ms).toBe(20000);
   });
 
+  // A second page of the same day -- another tab, or one the phone froze and handed back --
+  // banks what it last saw when it is hidden, which can be long after the run moved on.
+  it('refuses a clock that runs backwards, so a stale page cannot shorten the run', () => {
+    saveProgress({ ...RUN, ms: 300000 });
+    saveProgress({ ...RUN, ms: 180000 });
+    expect(getProgress(3, V1)?.ms).toBe(300000);
+  });
+
+  it("keeps the fuller run's view along with its clock", () => {
+    saveProgress({ ...RUN, ms: 300000 });
+    saveProgress({ ...RUN, ms: 180000, t: { x: 1, y: 2, scale: 1, rot: 0 } });
+    expect(getProgress(3, V1)?.t).toEqual(RUN.t);
+  });
+
+  it('takes a shorter run on another day, which is another run', () => {
+    saveProgress({ ...RUN, ms: 300000 });
+    saveProgress({ ...RUN, day: 4, ms: 1000 });
+    expect(getProgress(4, V1)?.ms).toBe(1000);
+  });
+
+  it('takes a shorter run on a re-defined puzzle, which is also another run', () => {
+    saveProgress({ ...RUN, ms: 300000 });
+    saveProgress({ ...RUN, v: V2, ms: 1000 });
+    expect(getProgress(3, V2)?.ms).toBe(1000);
+  });
+
   it('clears on request, leaving recorded results alone', () => {
     saveResult(3, 12345, V1);
     saveProgress(RUN);
