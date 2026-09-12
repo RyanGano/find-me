@@ -386,7 +386,7 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
     <div className="app testbed">
       <header className="topbar">
         <h1 className="title">
-          <span className="title-btn">Find Me</span>{' '}
+          Find Me{' '}
           <span className="title-day">
             {step}/{of}
           </span>

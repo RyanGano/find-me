@@ -378,7 +378,7 @@ export default function HideMaker() {
     <div className="app hide-maker">
       <header className="topbar">
         <h1 className="title">
-          <span className="title-btn">Find Me</span> <span className="title-day">hide one</span>
+          Find Me <span className="title-day">hide one</span>
         </h1>
         <div className="topbar-actions">
           {spot && (

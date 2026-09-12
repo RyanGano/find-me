@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Credits } from './components/Credits';
 import { ReferenceCard } from './components/ReferenceCard';
 import { Stage } from './components/Stage';
 import { countHide } from './game/count';
@@ -64,10 +65,12 @@ function BadLink({ reason }: { reason: 'malformed' | 'future' | 'painting' }) {
  */
 function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; title: string; named: boolean }) {
   const [showCard, setShowCard] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
   const [shared, setShared] = useState<string | null>(null);
 
   const onSolved = useCallback(() => {
     countHide('found');
+    setShowCredits(false);
     setShowCard(true);
   }, []);
 
@@ -89,7 +92,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
     togglePause,
     reset,
     giveUp,
-  } = useHunt({ puzzle, runId: puzzle.id, onSolved, blocked: showCard });
+  } = useHunt({ puzzle, runId: puzzle.id, onSolved, blocked: showCard || showCredits });
 
   const done = solvedMs ?? gaveUpMs;
   // A setter's name is quoted, since it can read as part of the sentence -- "hid in Eric's
@@ -126,7 +129,18 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
     <div className="app">
       <header className="topbar">
         <h1 className="title friend-title" title={named ? title : undefined}>
-          <span className="title-btn">Find Me</span>{' '}
+          {/* As on the daily game: the way to ask what the painting is. */}
+          <button
+            type="button"
+            className="title-btn"
+            onClick={() => {
+              setShowCard(false);
+              setShowCredits((open) => !open);
+            }}
+            title="About the painting"
+          >
+            Find Me
+          </button>{' '}
           <span className="title-day">{named ? title : 'from a friend'}</span>
         </h1>
         <p className={`clock${running ? ' is-running' : ''}`}>
@@ -195,6 +209,8 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
           solvedMs={solvedMs}
           onReopen={() => setShowCard(true)}
         />
+
+        {showCredits && <Credits puzzle={puzzle} onDismiss={() => setShowCredits(false)} />}
 
         {showCard && done !== null && (
           <>
