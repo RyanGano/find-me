@@ -61,7 +61,10 @@ await page.waitForTimeout(300);
 await page.screenshot({ path: `${OUT}/2-board.png` });
 
 check('painting is blurred before the first move', await page.$('.stage-viewport.is-blurred') !== null);
-check('clock reads ready before the first move', (await page.textContent('.clock')).trim() === 'ready');
+// Before the first move there is no hunt to time, so the slot the clock will take is the
+// way into the player's stats instead. It used to read `ready`, and this used to say so.
+check('no clock before the first move', await page.$('.clock') === null);
+check('the stats button holds that slot until the hunt starts', await page.$('.btn-stats') !== null);
 
 const plan = await page.evaluate(() => {
   const stage = document.querySelector('.stage');
@@ -100,7 +103,7 @@ async function zoomTo(want) {
 // That lets the run observe the amber state before it turns green.
 await zoomTo(scale * 1.07);
 check('blur lifts on the first move', await page.$('.stage-viewport.is-blurred') === null);
-check('clock starts on the first move', (await page.textContent('.clock')).trim() !== 'ready');
+check('clock starts on the first move', await page.$('.clock.is-running') !== null);
 await page.screenshot({ path: `${OUT}/3-zoomed.png` });
 
 // Rotate with shift+wheel until upright, again easing off as it closes in.
@@ -125,19 +128,29 @@ check(
 );
 await page.screenshot({ path: `${OUT}/4-rotated.png` });
 
-// Pan the hidden shape to the centre of the stage in one drag.
-{
+// Pan the hidden shape to the centre of the stage.
+//
+// In as many drags as it takes, rather than the one this used to assume. At match zoom the
+// hiding place can sit thousands of pixels outside the stage, and a single drag can only
+// carry what fits inside the window -- so on a day whose shape happened to be far out, the
+// pan fell short, the shape never came on screen, and every check from the badge onwards
+// failed for a reason that had nothing to do with the badge.
+for (let drag = 0; drag < 40; drag++) {
   const m = await readTransform(page);
   const sx = m.a * plan.cx + m.c * plan.cy + m.e;
   const sy = m.b * plan.cx + m.d * plan.cy + m.f;
   const dx = plan.stage.w / 2 - sx;
   const dy = plan.stage.h / 2 - sy;
-  const startX = Math.min(Math.max(cxs - dx / 2, plan.stage.left + 40), plan.stage.left + plan.stage.w - 40);
-  const startY = Math.min(Math.max(cys - dy / 2, plan.stage.top + 40), plan.stage.top + plan.stage.h - 40);
+  if (Math.abs(dx) < 2 && Math.abs(dy) < 2) break;
+  // Keep both ends of the drag inside the stage, with room to press and release.
+  const stepX = Math.max(-plan.stage.w * 0.6, Math.min(plan.stage.w * 0.6, dx));
+  const stepY = Math.max(-plan.stage.h * 0.6, Math.min(plan.stage.h * 0.6, dy));
+  const startX = cxs - stepX / 2;
+  const startY = cys - stepY / 2;
   await page.mouse.move(startX, startY);
   await page.mouse.down();
-  for (let i = 1; i <= 40; i++) {
-    await page.mouse.move(startX + (dx * i) / 40, startY + (dy * i) / 40);
+  for (let i = 1; i <= 20; i++) {
+    await page.mouse.move(startX + (stepX * i) / 20, startY + (stepY * i) / 20);
   }
   await page.mouse.up();
 }
@@ -160,7 +173,11 @@ await page.screenshot({ path: `${OUT}/5-solved.png` });
 
 const time = await page.textContent('.result-time');
 check('puzzle solves', Boolean(time), `time ${time}`);
-check('clock marked done', await page.$('.clock.is-done') !== null);
+// The day is over, so the clock hands its slot back to the stats button.
+check(
+  'the clock gives its slot back once the day is done',
+  await page.$('.clock') === null && await page.$('.btn-stats') !== null,
+);
 check('the badge turns green on the solve', await page.$('.reference.is-solved') !== null);
 
 await page.reload({ waitUntil: 'networkidle' });
@@ -318,6 +335,112 @@ await mp.evaluate(() => {
 }
 
 await mp.screenshot({ path: `${OUT}/6-mobile.png` });
+
+// ------------------------------------------------------------------ run continuity
+//
+// A phone can have two pages of the same day alive at once: a second tab, or one the
+// browser froze and handed back. Each banks its run when it is hidden, and the hidden one
+// knows only what it last saw -- so a stale page used to write its older clock straight
+// over the run the player had carried on elsewhere, and every return handed them back the
+// same earlier time. A unit test cannot see this: it takes two live documents.
+//
+// `?test` throughout, so this writes to the test store and never a real one.
+
+console.log('\n== run continuity (two pages) ==');
+const twoCtx = await browser.newContext({ viewport: { width: 1000, height: 760 }, hasTouch: true });
+
+const hidePage = (p) =>
+  p.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+const showPage = (p) =>
+  p.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+const bankedMs = (p) =>
+  p.evaluate(() => {
+    const raw = localStorage.getItem('find-me:test');
+    const held = raw && JSON.parse(raw).progress;
+    return held ? Math.round(held.ms) : null;
+  });
+/** The clock as a number of milliseconds, from `12.3s` or `1:02.5`. */
+const clockMs = async (p) => {
+  const text = ((await p.textContent('.clock')) ?? '').trim().replace('s', '');
+  const parts = /^(?:(\d+):)?([\d.]+)$/.exec(text);
+  return parts ? (Number(parts[1] ?? 0) * 60 + Number(parts[2])) * 1000 : NaN;
+};
+async function openTest(p) {
+  p.on('pageerror', (e) => errors.push('continuity: ' + e));
+  await p.goto(URL + '?test', { waitUntil: 'networkidle' });
+  await p.waitForSelector('.stage-image');
+  const close = p.getByRole('button', { name: 'Close', exact: true });
+  if (await close.count()) {
+    await close.click();
+    await p.waitForTimeout(200);
+  }
+}
+/** A wheel over the stage: the first move, which starts the clock. */
+async function startClock(p) {
+  const box = await p.locator('.stage').boundingBox();
+  await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await p.mouse.wheel(0, -40);
+  await p.waitForTimeout(150);
+}
+
+// The page that gets left behind: a little way into the hunt, paused, hidden.
+const stale = await twoCtx.newPage();
+await openTest(stale);
+await stale.evaluate(() => localStorage.removeItem('find-me:test'));
+await openTest(stale);
+await startClock(stale);
+await stale.waitForTimeout(2500);
+await stale.getByRole('button', { name: 'Pause' }).click();
+await stale.waitForTimeout(150);
+const staleAt = await clockMs(stale);
+await hidePage(stale);
+await stale.waitForTimeout(200);
+
+// The page the player actually carries on in, which takes the run further.
+const played = await twoCtx.newPage();
+await openTest(played);
+check('a second page picks the banked run up where it was', Math.abs((await clockMs(played)) - staleAt) < 700);
+await played.getByRole('button', { name: 'Resume' }).click();
+await played.waitForTimeout(3000);
+await played.getByRole('button', { name: 'Pause' }).click();
+await played.waitForTimeout(150);
+await hidePage(played);
+await played.waitForTimeout(200);
+const carried = await bankedMs(played);
+check('the run that was played on is the one banked', carried > staleAt + 2000, `banked ${carried}ms`);
+
+// The stale page comes back. It must not still be showing the clock it had, and hiding it
+// again must not put that clock back over the run.
+await showPage(stale);
+await stale.waitForTimeout(400);
+check(
+  'a page coming back shows the run as it stands, not as it left it',
+  Math.abs((await clockMs(stale)) - carried) < 700,
+  `shows ${(await clockMs(stale)) / 1000}s, run is ${carried}ms`,
+);
+check('and says it is continuing a run', (await stale.$('.resume-note')) !== null);
+
+await hidePage(stale);
+await stale.waitForTimeout(200);
+check('a stale page cannot bank its clock over a longer run', (await bankedMs(stale)) >= carried, `banked ${await bankedMs(stale)}ms`);
+
+// A page rejoining the bank it wrote itself has nothing to pick up, and should not jump.
+await showPage(played);
+await played.waitForTimeout(400);
+check('the page that banked the run is left alone', (await played.$('.resume-note')) === null);
+
+const fresh = await twoCtx.newPage();
+await openTest(fresh);
+check('a fresh page opens on the longer run', Math.abs((await clockMs(fresh)) - carried) < 700);
+
 await browser.close();
 
 if (errors.length) {
