@@ -103,6 +103,7 @@ node scripts/diag-size.mjs                 # badge vs shape geometry check
 node scripts/diag-badge.mjs               # badge colour vs the shape as painted
 npm run fingerprint --silent              # every shipped puzzle as JSON, to diff across a change
 npm run rungs                             # the ramp, and what each rung costs on a calm vs busy canvas
+npm run difficulty                        # how every week is likely to feel -- a report for a person, never a test
 npm run busyness                          # measure every painting's clutter and every day's dimness
 npm run busyness -- --write               # ...and write them into the puzzle files
 npm run preview:shapes                    # every shape, at play sizes, with its share emoji

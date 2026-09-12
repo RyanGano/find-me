@@ -465,7 +465,7 @@ npm run build
 ```
 
 `assets.test.ts` pins the asset's real dimensions to the seed. `week.test.ts` asserts the
-new week gets harder, takes longer to find, stays visible once framed, and opens with no
+new week shrinks and turns further every day, stays visible once framed, and opens with no
 transparency. `curation.test.ts` checks the running order for repeated painters and runs
 of one genre. `daily.test.ts` walks 400 dates against the longer rotation.
 `determinism.test.ts` fails the build on any randomness under `src/`.
@@ -473,6 +473,14 @@ of one genre. `daily.test.ts` walks 400 dates against the longer rotation.
 A failure here is a real finding, not a test to adjust. A `week.test.ts` failure means the
 week needs re-planning; a `curation.test.ts` failure means the painting is wrong for this
 slot and the order cannot be changed to accommodate it.
+
+**Then run `npm run difficulty` and show the user the table.** How hard a week feels is
+their decision, not a test: the report prices every day of every week, says how much of
+the full ramp each week delivers, and flags a painting calmer than the model was fitted on,
+days that cannot be made as hard as their rung, a week that does not climb, busy weeks
+too close together, and days faint enough to need a look. It never fails and prints no
+positions, so it is safe to show them. Do not add a test or an exemption list to settle a
+week's difficulty -- ask. Run it after any change to the ramp or the rules too.
 
 Then run the browser smoke test, which exercises the app end to end:
 

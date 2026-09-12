@@ -1539,9 +1539,15 @@ and off limits.
 
 `starry`'s Monday was **not** re-tuned. It had already been played, and moving a served day
 hands it back to everyone who set a time on it. The cost is that its Monday is now harder
-than its Tuesday; `MONDAY_LEFT_AS_SERVED` in `week.test.ts` names it and asserts the ramp
-from Tuesday. It is the served day that is out of line, so every day still ahead of a player
-climbs properly.
+than its Tuesday, and `npm run difficulty` carries a note saying so. It is the served day
+that is out of line, so every day still ahead of a player climbs properly.
+
+How a week climbs is no longer a test at all. Whether a week is too easy, too hard or flat
+is a judgement -- a few easy weeks in the mix are welcome -- so `week.test.ts` fails only on
+defects (a shape you cannot see once framed, a day that does not shrink or turn further),
+and `npm run difficulty` prints every week's priced times, its share of the full ramp and
+anything worth a second look, for a person to decide on after adding paintings or changing
+the rules.
 
 Two tests moved with it. The week ramp is now asserted on the **time** each day is priced at
 rather than on `scan`: those used to be the same statement, and since the ramp gained a

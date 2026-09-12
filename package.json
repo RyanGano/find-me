@@ -18,7 +18,8 @@
     "rungs": "vite-node scripts/rungs.mjs",
     "fingerprint": "vite-node scripts/fingerprint.mjs",
     "preview:shapes": "vite-node scripts/preview-shapes.mjs",
-    "busyness": "vite-node scripts/measure-busyness.mjs"
+    "busyness": "vite-node scripts/measure-busyness.mjs",
+    "difficulty": "vite-node scripts/difficulty-report.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
