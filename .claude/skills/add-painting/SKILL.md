@@ -175,12 +175,13 @@ the one exception to Rule 5, and it holds only under all of these conditions:
   Monday. Otherwise Monday's players will already have played the week it displaces.
   Recheck the index just before committing, because a Monday can pass mid-task.
 - **Before touching anything**, run `npm run fingerprint --silent > .scratch/before.json`.
-  Afterwards, diff it against a fresh run. Every week up to and including the current one
-  must be unchanged. The weeks after the insert are expected to change.
-- **Every week after the insert moves.** Its index changes, so `plan-weeks.mjs` re-seeds its
-  angles and `shapeRun` re-deals its shapes. Re-plan and re-tune **each** of those weeks by
-  name (steps 5 and 6), and look at each one (step 7), not just the new week. Weeks before
-  the insert do not move.
+  Afterwards, diff it against a fresh run. Every existing week must be unchanged; only the
+  new week's seven days may appear.
+- **Plan and tune the new week alone.** `npm run plan -- NAME` deals only the week it is
+  named, around the fixed Sunday before it and the fixed Monday after it, and leaves every
+  other week exactly as it is. Do **not** re-plan or re-tune the weeks after the insert:
+  their calendar dates move, but nothing in their day lines does, and `version` and `spot`
+  are keyed by painting, not by position.
 - **Rule 3 applies on both sides.** The new week must not share a painter with either
   neighbour, and must not form a run of three in a genre with the weeks around it.
 - **Insert calm paintings only.** Never reorder existing weeks, and never insert a busy one.
@@ -196,9 +197,10 @@ changes which painting every future day lands on, and hands people finished boar
 puzzles they never played.
 
 The new week goes **last** in the `WEEKS` array in `src/game/puzzles.ts`. Nothing above it
-moves — not a line, not a field. `plan-weeks.mjs` seeds its angles from the week's index,
-and `shapeRun` in `src/game/shapeOrder.ts` chooses each week's shapes from the weeks
-*before* it only. Appending is what keeps the existing weeks byte-identical.
+moves — not a line, not a field. Name **only the new week** when planning and tuning:
+`plan-weeks.mjs` rewrites exactly the weeks it is given, and `shapeRun` in
+`src/game/shapeOrder.ts` deals only those, around the fixed weeks either side. That is what
+keeps the existing weeks byte-identical.
 
 The only exception is the temporary one under Rule 4.
 
@@ -216,10 +218,11 @@ these, and `shapeOrder.test.ts` fails the build if it does not:
    `shapeRun` breaks ties by a hash for exactly this reason.
 
 If the test fails after planning, re-run `npm run plan -- NAME` rather than editing a
-`shape:` by hand; the test also checks that the file matches what the planner would choose.
-If a shape has been added to or removed from `shapes.ts` since the last week was planned,
-first add every week already served to `SHAPES_AS_SERVED`. Otherwise the registry change
-re-deals shapes on weeks players have finished.
+`shape:` by hand. The test also checks that re-planning any one week, or dealing a new one
+between two others, leaves every other week's shapes where they were. If a shape has been
+added to or removed from `shapes.ts` since the last week was planned, first add every week
+already served to `SHAPES_AS_SERVED`. Otherwise a bare `npm run plan` re-deals shapes on
+weeks players have finished.
 
 ## Steps
 
@@ -375,9 +378,9 @@ Re-planning re-plans the **whole week**, not the one day you were unhappy with �
 planner places the seven days together. So after any `avoid.json` change, re-tune and
 re-judge all seven, and never assume a day you already approved survived unchanged. This
 is only safe before the week ships. A week that has been served, and the week being played
-right now, are both frozen -- see "Which weeks may be changed" in CLAUDE.md. Appending a
-painting is exempt from all of that by construction, which is why new weeks are appended
-and never inserted: nothing already on the calendar moves.
+right now, are both frozen -- see "Which weeks may be changed" in CLAUDE.md. Adding a
+painting is exempt from all of that as long as only the new week is named: nothing already
+on the calendar is re-planned.
 
 ### 6. Tune the camouflage in a real browser
 
@@ -488,9 +491,8 @@ through `?puzzle=NAME-sun`. They aren't recorded and don't affect a streak.
 
 Commit `src/game/puzzles.ts`, `public/puzzles/NAME.jpg`, `scripts/resize-images.mjs`, any
 `scripts/avoid.json` change, and the README/comment count updates. If the week was inserted
-under Rule 4's temporary clause, the re-planned and re-tuned weeks after it go in the same
-commit, and so does the fingerprint check showing that nothing up to the current week
-moved. The source scan under
+under Rule 4's temporary clause, say so in the commit message, along with the fingerprint
+check showing that no existing week moved. The source scan under
 `.source-images/` stays out, and so does anything from `local/`. Then **delete the scan**,
 along with the week sheets and diag frames: the asset is committed, the `source` field
 says where the scan came from, and `assets.test.ts` will catch a regeneration off the

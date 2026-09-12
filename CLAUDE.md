@@ -165,10 +165,13 @@ week's shapes across the whole calendar, and `shapeOrder.test.ts` holds the file
 rules: never the same shape two days in a row, Sunday to the next Monday included; every
 shape used roughly as often as every other; and an order that looks random rather than
 stepping through the `SHAPES` list. Inside a week the seven are still all different, and
-each sits only on a day its symmetry lets it turn far enough for. Weeks served before the
-rules arrived are exempt by name in `SHAPES_AS_SERVED`. The choice is a function of the
-shape registry, so before adding or removing a shape, add every week already served to
-that list. Otherwise re-planning re-deals shapes on weeks players have already finished.
+each sits only on a day its symmetry lets it turn far enough for. `npm run plan -- <image>`
+deals only the weeks it names, around the fixed weeks either side, so adding, inserting or
+re-planning one week never re-deals another -- plan and tune only the week that changed.
+Weeks served before the rules arrived are exempt by name in `SHAPES_AS_SERVED`. The choice
+is a function of the shape registry, so before adding or removing a shape, add every week
+already served to that list. Otherwise a bare `npm run plan` re-deals shapes on weeks
+players have already finished.
 See "Within a week" in README.md.
 
 **A week is seven different things.** `src/game/palette.ts` names the colour of a hiding

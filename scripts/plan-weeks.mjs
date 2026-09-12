@@ -646,9 +646,11 @@ function weeks(source) {
 let source = readFileSync(FILE, 'utf8');
 const found = weeks(source);
 if (!found.length) throw new Error(`no week seeds found in ${FILE}`);
-// Chosen for every week at once, front to back, before anything is rewritten: each week's
-// shapes lean on the week before it, however many of them this run is re-planning.
-const shapeWeeks = shapeRun(found, FILE.endsWith('testbed.ts') ? [] : undefined);
+// Chosen before anything is rewritten, and only for the weeks this run is planning: every
+// other week keeps its shapes and stands as a fixed neighbour, Sunday before and Monday
+// after, so adding, inserting or re-planning one week never re-deals another.
+const planned = found.map((w) => w.image).filter((id) => !only.length || only.includes(id));
+const shapeWeeks = shapeRun(found, planned, FILE.endsWith('testbed.ts') ? [] : undefined);
 
 // Back to front, so rewriting one week cannot shift the offsets of the next.
 for (const [w, week] of [...found.entries()].reverse()) {

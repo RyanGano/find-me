@@ -178,8 +178,11 @@ A shape still only lands on a day it can turn far enough for, so the symmetric o
 on the front half of the week. The weeks already served when the rules arrived keep their
 shapes and are named in `SHAPES_AS_SERVED`, a list of exemptions. The choice depends on
 the shape registry, so **before adding or removing a shape, add every week already served
-to that list**; otherwise the next plan re-deals them. `shapeOrder.test.ts` holds the file
-to all three rules and to what the planner would choose.
+to that list**; otherwise a bare `npm run plan` re-deals them. The planner deals only the
+weeks it is named, around the fixed weeks on both sides, so adding, inserting or re-planning
+a week costs that week alone. `shapeOrder.test.ts` holds the file to all three rules, and
+checks that re-planning any one week -- or dealing a new one between two others -- leaves
+every other week's shapes exactly where they were.
 
 Ten paintings therefore give ten weeks -- seventy days -- and `week.test.ts`
 asserts the rules rather than the numbers: seven days per painting, seven different

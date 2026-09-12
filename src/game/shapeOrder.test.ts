@@ -43,11 +43,29 @@ describe('the order shapes come in', () => {
     expect(neighbours / Math.max(1, days.length - 1)).toBeLessThan(0.25);
   });
 
-  it('is what the planner would choose', () => {
-    // So the three rules above are not satisfied by a hand edit the next `npm run plan`
-    // would undo.
-    expect(chosen.map((w) => w.shapes)).toEqual(
-      shapeRun(weeks).filter((_, i) => !SHAPES_AS_SERVED.includes(weeks[i].image)),
-    );
+  // Adding, inserting or re-planning a week must cost that week and nothing else, so the
+  // pipeline never has to re-plan and re-tune paintings that did not change.
+  function expectOnlyDealt(run: string[][], before: typeof weeks, w: number) {
+    run.forEach((shapes, i) => {
+      if (i !== w) expect(shapes, `${before[i].image} was re-dealt`).toEqual(before[i].shapes);
+    });
+    const image = before[w].image;
+    const prev = run[(w - 1 + run.length) % run.length];
+    const next = run[(w + 1) % run.length];
+    expect(run[w][0], `${image} Monday repeats the Sunday before it`).not.toBe(prev[6]);
+    expect(run[w][6], `${image} Sunday repeats the Monday after it`).not.toBe(next[0]);
+    expect(new Set(run[w]).size, `${image} repeats a shape`).toBe(7);
+    run[w].forEach((s, d) => expect(canHold(s, d), `${image} cannot turn ${s} on day ${d}`).toBe(true));
+  }
+
+  it('re-plans one week without re-dealing any other', () => {
+    for (const week of chosen) expectOnlyDealt(shapeRun(weeks, [week.image]), weeks, weeks.indexOf(week));
+  });
+
+  it('deals an inserted week around its neighbours without moving them', () => {
+    for (let at = SHAPES_AS_SERVED.length; at <= weeks.length; at++) {
+      const inserted = [...weeks.slice(0, at), { image: 'inserted', shapes: [] }, ...weeks.slice(at)];
+      expectOnlyDealt(shapeRun(inserted, ['inserted']), inserted, at);
+    }
   });
 });

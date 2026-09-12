@@ -77,6 +77,55 @@
       "reason": "testbed",
       "note": "Not a failure. One of the three play-test bench paintings in src/game/testbed.ts -- see the Netherlandish Proverbs entry. Chosen as the smooth-glaze stress case that can still hold a week: quietest 11.7, median 40.8.",
       "added": "2026-09-05"
+    },
+    {
+      "title": "View of Delft",
+      "artist": "Johannes Vermeer",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 6000x4982 Commons scan: quietest 5.3, busiest 59.0, median 12.6 against a floor of 15. Clutter 0.330. A large even sky and still water leave the hard end of the week nowhere to hide.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "Mr and Mrs Andrews",
+      "artist": "Thomas Gainsborough",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 7301x4231 Commons scan: quietest 3.8, busiest 43.6, median 13.3. Clutter 0.335.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "The Avenue at Middelharnis",
+      "artist": "Meindert Hobbema",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 5707x4226 Commons scan: quietest 4.6, busiest 43.4, median 12.3, search 1.58. Clutter 0.317.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "The Maas at Dordrecht",
+      "artist": "Aelbert Cuyp",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 7276x4895 Google Art Project scan: quietest 4.9, busiest 54.5, median 12.0. Clutter 0.304. Glassy water and haze under most of the canvas.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "The Ninth Wave",
+      "artist": "Ivan Aivazovsky",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 5815x3840 Commons scan: median 8.1, the same reading as the Fighting Temeraire, and clutter 0.144, the lowest of anything measured. Blended sky and sea with almost no facture at shape scale.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "View of Warsaw from the Royal Castle",
+      "artist": "Bernardo Bellotto",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 19382x11838 Google Art Project scan: quietest 5.5, busiest 50.4, median 12.4. Clutter 0.394. Crisp architectural detail is confined to a band; the rest is sky and river.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "Among the Sierra Nevada, California",
+      "artist": "Albert Bierstadt",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 10500x6298 Commons scan: quietest 3.2, busiest 45.2, median 12.2. Clutter 0.265. Luminous haze over most of the canvas.",
+      "added": "2026-09-12"
     }
   ]
 }
