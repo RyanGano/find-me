@@ -323,6 +323,26 @@ function rgb(hex: string): [number, number, number] {
   return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
 }
 
+/** A color as the custom sliders hold it: hue in degrees, saturation and brightness 0--100. */
+export type Hsv = { h: number; s: number; v: number };
+
+export function hexToHsv(hex: string): Hsv {
+  const [r, g, b] = rgb(hex).map((c) => c / 255);
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  let h = 0;
+  if (d > 0) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: Math.round((h * 60 + 360) % 360), s: max ? Math.round((d / max) * 100) : 0, v: Math.round(max * 100) };
+}
+
+export function hsvToHex({ h, s, v }: Hsv): string {
+  const f = (n: number) => {
+    const k = (n + h / 60) % 6;
+    return (v / 100) * (1 - (s / 100) * Math.max(0, Math.min(k, 4 - k, 1)));
+  };
+  return `#${[f(5), f(3), f(1)].map((c) => Math.round(c * 255).toString(16).padStart(2, '0')).join('')}`;
+}
+
 /**
  * The least a shape has to stand off the paint to be findable at all: an absolute floor,
  * and the paint's own texture, since the same step that shows on a calm glaze disappears

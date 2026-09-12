@@ -6,12 +6,15 @@ import {
   colourFor,
   HIDE_OPACITY,
   HIDE_SIZE,
+  hexToHsv,
   hideLink,
+  hsvToHex,
   minOpacityFor,
   paintStats,
   hidePuzzle,
   servedPaintings,
   type Hide,
+  type Hsv,
   type Painting,
   type PaintStats,
 } from './game/hide';
@@ -25,7 +28,7 @@ import { useGestures } from './hooks/useGestures';
 
 const HELP_SEEN = 'find-me:hide-help-seen';
 
-/** A few paints to start from; the colour well beside them takes anything. */
+/** A few paints to start from; the custom sliders beside them take anything. */
 const SWATCHES = ['#f4ecd8', '#d9b36c', '#b5543c', '#6b8f5e', '#4f6d8f', '#2e2a26'];
 
 /** A tap is a press that barely moved and did not linger -- anything else is a pan. */
@@ -97,6 +100,12 @@ export default function HideMaker() {
   // Auto until the setter picks a colour, and again whenever they ask for it back: the
   // colour then follows the paint under the shape as it moves and grows.
   const [auto, setAuto] = useState(true);
+  // The custom sliders, open or not. Our own rather than the browser's colour well: Chrome
+  // on Android opens its well's Custom view on black whatever the colour is, so the setter
+  // lost the auto colour they meant to adjust. Held as HSV so the hue survives a trip
+  // through gray.
+  const [mixing, setMixing] = useState(false);
+  const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(SWATCHES[0]));
   const [showHelp, setShowHelp] = useState(() => !seen());
   const [status, setStatus] = useState<string | null>(null);
   // At the whole-painting view a hidden shape is a few pixels across, so the setter can
@@ -316,6 +325,27 @@ export default function HideMaker() {
     setAuto(false);
   }, []);
 
+  // Opening starts from whatever is showing -- the auto colour included -- and fixes it,
+  // so it stops following the paint while it is being adjusted.
+  const toggleMixer = useCallback(() => {
+    if (mixing) {
+      setMixing(false);
+      return;
+    }
+    setHsv(hexToHsv(fill));
+    chooseFill(fill);
+    setMixing(true);
+  }, [mixing, fill, chooseFill]);
+
+  const mix = useCallback(
+    (next: Hsv) => {
+      setHsv(next);
+      chooseFill(hsvToHex(next));
+    },
+    [chooseFill],
+  );
+  const custom = !auto && !SWATCHES.includes(chosenFill);
+
   const closeHelp = useCallback(() => {
     markSeen();
     setShowHelp(false);
@@ -483,7 +513,10 @@ export default function HideMaker() {
             <button
               type="button"
               className={`hide-auto${auto ? ' is-on' : ''}`}
-              onClick={() => setAuto(true)}
+              onClick={() => {
+                setAuto(true);
+                setMixing(false);
+              }}
               aria-pressed={auto}
               title="Pick a color from the paint under the shape"
             >
@@ -495,18 +528,66 @@ export default function HideMaker() {
                 type="button"
                 className={`hide-swatch${!auto && chosenFill === c ? ' is-on' : ''}`}
                 style={{ background: c }}
-                onClick={() => chooseFill(c)}
+                onClick={() => {
+                  chooseFill(c);
+                  setMixing(false);
+                }}
                 aria-label={`Color ${c}`}
               />
             ))}
-            <input
-              type="color"
-              value={fill}
-              onChange={(e) => chooseFill(e.target.value)}
-              aria-label="Any color"
+            <button
+              type="button"
+              className={`hide-custom${custom || mixing ? ' is-on' : ''}`}
+              style={custom ? { background: chosenFill } : undefined}
+              onClick={toggleMixer}
+              aria-expanded={mixing}
+              aria-label="Custom color"
+              title="Custom color"
             />
           </div>
         </div>
+
+        {mixing && (
+          <div className="hide-mix">
+            <label className="hide-row">
+              <span>Hue</span>
+              <input
+                type="range"
+                min={0}
+                max={359}
+                value={hsv.h}
+                onChange={(e) => mix({ ...hsv, h: Number(e.target.value) })}
+                style={{
+                  background: 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
+                }}
+              />
+            </label>
+            <label className="hide-row">
+              <span>Vivid</span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={hsv.s}
+                onChange={(e) => mix({ ...hsv, s: Number(e.target.value) })}
+                style={{
+                  background: `linear-gradient(to right, ${hsvToHex({ ...hsv, s: 0 })}, ${hsvToHex({ ...hsv, s: 100 })})`,
+                }}
+              />
+            </label>
+            <label className="hide-row">
+              <span>Light</span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={hsv.v}
+                onChange={(e) => mix({ ...hsv, v: Number(e.target.value) })}
+                style={{ background: `linear-gradient(to right, #000, ${hsvToHex({ ...hsv, v: 100 })})` }}
+              />
+            </label>
+          </div>
+        )}
 
         <label className="hide-row">
           <span>Size</span>

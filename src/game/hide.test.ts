@@ -8,9 +8,11 @@ import {
   HIDE_OPACITY,
   HIDE_SIZE,
   HIDE_VERSION,
+  hexToHsv,
   hideFromHash,
   hideLink,
   hidePuzzle,
+  hsvToHex,
   minOpacityFor,
   paintStats,
   servedPaintings,
@@ -41,6 +43,18 @@ function pack(value: unknown): string {
 }
 
 describe('friend hides', () => {
+  it('opens the custom sliders on the color already chosen', () => {
+    expect(hexToHsv('#ff0000')).toEqual({ h: 0, s: 100, v: 100 });
+    expect(hexToHsv('#000000')).toEqual({ h: 0, s: 0, v: 0 });
+    expect(hsvToHex({ h: 120, s: 100, v: 100 })).toBe('#00ff00');
+    expect(hsvToHex({ h: 360, s: 0, v: 100 })).toBe('#ffffff');
+    const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    for (const hex of ['#a1b2c3', '#f4ecd8', '#2e2a26', '#6b8f5e', '#b5543c', '#4f6d8f']) {
+      const back = channels(hsvToHex(hexToHsv(hex)));
+      channels(hex).forEach((c, i) => expect(Math.abs(c - back[i])).toBeLessThanOrEqual(3));
+    }
+  });
+
   it('round-trips every shape through the link', () => {
     for (const shape of Object.keys(SHAPES)) {
       const hide = sample({ shape });
