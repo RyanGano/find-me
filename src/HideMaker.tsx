@@ -344,7 +344,10 @@ export default function HideMaker() {
         </p>
       ) : (
         <p className="practice-note">
-          <a href="./">back to today&rsquo;s puzzle</a>
+          <span className="test-banner-what">hide one for a friend</span>
+          <a className="test-banner-exit" href="./">
+            back to the game
+          </a>
         </p>
       )}
 

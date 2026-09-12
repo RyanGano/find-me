@@ -236,6 +236,10 @@ body,
 }
 
 .practice-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   margin: 0;
   padding: 5px 14px;
   font-size: 0.78rem;
@@ -243,6 +247,28 @@ body,
   text-transform: uppercase;
   color: var(--bg);
   background: var(--accent);
+}
+
+/*
+ * A link on one of the accent bars, whatever it is.
+ *
+ * These bars invert the page: dark ink on the one bright colour in the whole design. A
+ * link inside one does not inherit that -- the browser paints an anchor its own link
+ * colour, which is chosen against a dark page and lands as pale blue on yellow, which is
+ * unreadable. So say it once, here, for every bar rather than per link: whoever adds the
+ * next way-out to one of these should not have to know.
+ */
+.practice-note a,
+.test-banner a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.practice-note a:focus-visible,
+.test-banner a:focus-visible {
+  outline: 2px solid var(--bg);
+  outline-offset: 2px;
 }
 
 /*
@@ -298,6 +324,7 @@ body,
 .test-banner-exit:focus-visible {
   color: var(--accent);
   background: var(--bg);
+  text-decoration: none;
 }
 
 /* Narrow enough that the sentence would be cut mid-word: keep the mode and the way out,
