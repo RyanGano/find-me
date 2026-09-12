@@ -18,6 +18,13 @@ export interface Size {
 const REVEAL_SCALE = 0.6;
 
 /**
+ * How much further along a banked run has to be before a page coming back takes it over
+ * its own. Big enough that a page rejoining the bank it wrote itself never jumps; small
+ * enough that a run genuinely carried on elsewhere always wins.
+ */
+const REJOIN_SLACK_MS = 250;
+
+/**
  * A run banked mid-hunt, in the only terms the hunt itself cares about: how far the
  * clock had got, and the view it was left at. The daily game's `Progress` carries more
  * than this -- which day, which version of it, which tally run -- and satisfies it; the
@@ -68,6 +75,11 @@ export interface HuntSession {
   onSolved?(ms: number, metrics: RunMetrics, runId: string): void;
   /** The page is going away with the run unfinished. */
   onLeave?(run: LeftRun, runId: string): void;
+  /**
+   * The page has come back, and the run may have moved on without it. Answers with the
+   * run as it stands now, or nothing. See `rejoin`.
+   */
+  onReturn?(): ResumableRun | undefined;
   /**
    * Identifies this run to whatever is counting it. Supplied by the caller rather than
    * minted here, so that a resumed run carries the id it was banked with -- and so this
@@ -313,14 +325,56 @@ export function useHunt(session: HuntSession) {
       }
       on.current.onLeave?.({ ms, t: run.t, w: box.w, h: box.h, k: tracker.current }, runId);
     };
+    /**
+     * Come back to the run as it stands, rather than as this page last saw it.
+     *
+     * A hidden page banks its run and then sits there frozen, still holding the clock it
+     * had. If another page of the same day carried that run on in the meantime -- a second
+     * tab, or the one the browser handed back first -- this page is behind, and the clock
+     * is far too much of the game to leave showing a number that is not the run. So on the
+     * way back in, whatever is banked wins if it is further along than what this page
+     * holds, and it comes back the way a resumed run does: held, and saying so.
+     *
+     * It can only ever move the clock forward. A page rejoining the bank it wrote itself
+     * finds its own time there and does nothing at all.
+     */
+    const rejoin = () => {
+      const run = live.current;
+      if (!run) return;
+      const mine = run.paused ? run.elapsed : performance.now() - run.startedAt;
+      const banked = on.current.onReturn?.();
+      if (!banked || banked.ms <= mine + REJOIN_SLACK_MS) return;
+      // The whole run comes across, not just its clock: the trace behind it, the hint if
+      // one was taken, and the view it was left at. Half of one run and half of another
+      // would be a third thing that nobody played.
+      if (banked.k) tracker.current = banked.k;
+      setStartedAt(performance.now() - banked.ms);
+      setElapsed(banked.ms);
+      setPaused(true);
+      setResuming(true);
+      setHinted(tookHint(tracker.current.m));
+      const box = stage.current;
+      if (box && Math.abs(banked.w - box.w) < 1 && Math.abs(banked.h - box.h) < 1) {
+        setTransform(banked.t);
+      }
+    };
+
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') bank();
+      else rejoin();
+    };
+    // A page restored from the back/forward cache is not always a visibility change, and
+    // it is the one that has most likely been away while another page played on.
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) rejoin();
     };
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('pagehide', bank);
+    window.addEventListener('pageshow', onShow);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', bank);
+      window.removeEventListener('pageshow', onShow);
     };
   }, [runId]);
 

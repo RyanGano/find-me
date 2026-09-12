@@ -206,6 +206,18 @@ export default function App() {
     [isPractice, day, puzzle.version],
   );
 
+  /**
+   * The run as it stands right now, for a page coming back to it.
+   *
+   * The same read as `saved`, but taken again rather than remembered: the point of it is
+   * that another page of this day may have carried the run on while this one sat hidden,
+   * and a value read at mount is exactly the stale answer that would be no use.
+   */
+  const onReturn = useCallback(
+    () => (isPractice ? undefined : getProgress(day, puzzle.version)),
+    [isPractice, day, puzzle.version],
+  );
+
   const gate = useMemo(() => giveUpAfterMs(puzzle), [puzzle]);
   const hintGate = useMemo(() => hintAfterMs(puzzle), [puzzle]);
   const circle = useMemo(() => hintCircle(puzzle), [puzzle]);
@@ -243,6 +255,7 @@ export default function App() {
     onStart,
     onSolved,
     onLeave,
+    onReturn,
   });
 
   // The run is over however it ended: both close the day, and both open the card.

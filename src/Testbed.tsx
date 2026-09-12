@@ -328,6 +328,14 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
     [round.id, puzzle.id],
   );
 
+  // Read again on the way back in, never remembered: a tester can have this hunt open in
+  // more than one page too, and the bench is only worth anything if it plays as the game
+  // does. See `rejoin` in `useHunt`.
+  const onReturn = useCallback(
+    () => getBenchProgress(round.id, puzzle.id),
+    [round.id, puzzle.id],
+  );
+
   const {
     stageRef,
     transform,
@@ -347,7 +355,7 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
     togglePause,
     reset,
     giveUp,
-  } = useHunt({ puzzle, resume, runId, onSolved, onLeave });
+  } = useHunt({ puzzle, resume, runId, onSolved, onLeave, onReturn });
 
   // Once they have given up, the reveal ring is the last resort -- offered, not forced.
   // Somebody who still cannot see the shape with it centred and half-zoomed is telling us
