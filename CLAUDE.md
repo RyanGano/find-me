@@ -301,8 +301,12 @@ finishing any change to user-facing copy, grep the strings you touched for `our\
   work is done: the candidate is not in `.claude/skills/add-painting/rejected.json` (every
   painting turned down is recorded there, with why); no nudity, including depicted
   statuary; and it does not repeat the painter or extend a run of the genre at the tail of
-  the rotation. New weeks are always appended, never inserted — `daily.ts` indexes the
-  calendar into `PUZZLES`, so reordering moves every painting after it.
+  the rotation. A fourth gate follows once the asset exists: a really busy painting
+  (`clutter` at or above *The Proverbs*) sits at least five weeks from the last one. New
+  weeks are always appended, never inserted — `daily.ts` indexes the calendar into
+  `PUZZLES`, so reordering moves every painting after it. The one exception, temporary and
+  described in the skill, is a calm painting inserted among future weeks to spread out busy
+  weeks already queued too close together.
 - Changing where a day hides means re-planning and re-tuning that week, then re-running
   the suite: `npm run plan -- <image>`, `npm run build`, `npx vite preview --port 4173 &`,
   `npm run camouflage -- --solve <image>`. A spot that only reveals itself as unusable once
