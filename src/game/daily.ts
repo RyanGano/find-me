@@ -67,9 +67,19 @@ export function puzzleForDay(index: number): Puzzle {
   return PUZZLES[i];
 }
 
-/** Milliseconds until the next puzzle unlocks. */
+/**
+ * Milliseconds until the next puzzle unlocks.
+ *
+ * Measured to the next local midnight by asking the calendar for it, not by adding a flat
+ * twenty-four hours to this one. Two days a year are not twenty-four hours long, and on
+ * the longer of them -- the hour that is repeated, `2026-11-01` here -- adding a day
+ * landed an hour *before* midnight, so this went negative for the last hour of the day and
+ * the result card's countdown ran backwards past zero. Constructing the next date handles
+ * the shift, the end of a month and the end of a year alike.
+ */
 export function msUntilTomorrow(now: Date = new Date()): number {
-  return localMidnight(now) + DAY_MS - now.getTime();
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+  return tomorrow - now.getTime();
 }
 
 export interface DailySelection {

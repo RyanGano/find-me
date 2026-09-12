@@ -101,6 +101,36 @@ describe('msUntilTomorrow', () => {
     expect(ms).toBeGreaterThan(0);
     expect(ms).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
   });
+
+  // `useDayRollover` waits this long and then re-checks the date rather than assuming it
+  // has turned, so the only thing that would actually hurt is a delay of zero: that is a
+  // spin, not a wait. A flat 24 hours added to local midnight is the wrong length of day
+  // twice a year, so walk a whole one -- both shifts included -- rather than trusting it.
+  it('never asks a waiter to come back immediately, on any date of the year', () => {
+    const day = new Date(2026, 0, 1, 0, 0, 0);
+    for (let i = 0; i < 366; i++) {
+      for (const hour of [0, 1, 2, 3, 12, 23]) {
+        const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 30);
+        expect(msUntilTomorrow(at), at.toString()).toBeGreaterThan(0);
+      }
+      day.setDate(day.getDate() + 1);
+    }
+  });
+
+  // Waiting it out lands on the next day exactly once, from any hour of any date --
+  // including the two whose length is not twenty-four hours, which is what adding a flat
+  // day to this midnight got wrong in both directions.
+  it('lands on the next day from any hour of any date of the year', () => {
+    const day = new Date(2026, 0, 1, 0, 0, 0);
+    for (let i = 0; i < 366; i++) {
+      for (const hour of [0, 1, 2, 12, 23]) {
+        const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 30);
+        const at = new Date(start.getTime() + msUntilTomorrow(start));
+        expect(dayIndex(at), start.toString()).toBe(dayIndex(start) + 1);
+      }
+      day.setDate(day.getDate() + 1);
+    }
+  });
 });
 
 describe('puzzle data', () => {

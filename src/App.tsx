@@ -29,6 +29,7 @@ import {
   type Stats,
 } from './game/storage';
 import { isDone } from './game/testbedStore';
+import { useDayRollover } from './hooks/useDayRollover';
 import { useHunt, type LeftRun } from './hooks/useHunt';
 import { useUpdateAvailable } from './hooks/useUpdateAvailable';
 
@@ -274,6 +275,28 @@ export default function App() {
 
   const canGiveUp = startedAt !== null && done === null && clock >= gate;
   const canHint = startedAt !== null && done === null && !hinted && clock >= hintGate;
+
+  /**
+   * Midnight has passed under a page that was left open, so the painting on screen is
+   * yesterday's.
+   *
+   * Picked up as soon as the board is idle, and not one moment before: a hunt in progress
+   * is a hunt for the puzzle it started on and is left to finish on its own terms, and so
+   * is the card it ends on -- which has been counting down to this and now has nothing
+   * left to promise. Both of those are things the player is looking at, and neither is
+   * worth taking off them to be a day more correct.
+   *
+   * A reload rather than re-selecting in place, because the day is the thing this whole
+   * component is arranged around: the run id, the stats, the resume, the streak and the
+   * how-to are all read once, for one day, at mount. Coming back through the front door
+   * is the only way to get all of them right at once, and the page is idle anyway.
+   */
+  const newDay = useDayRollover(!isPractice);
+  useEffect(() => {
+    if (!newDay || showResult) return;
+    if (startedAt !== null && done === null) return;
+    location.reload();
+  }, [newDay, showResult, startedAt, done]);
 
   // How everyone else did, asked for only once the run is over -- never before or during a
   // hunt, where a solve rate would be a difficulty hint. A practice run is not counted and
