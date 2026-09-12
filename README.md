@@ -1236,7 +1236,13 @@ thing a player in the middle of today's hunt has no business reading. The addres
 - **No tuner behind it.** Size is held to `HIDE_SIZE`, and strength never goes under
   `HIDE_OPACITY.min` (0.7). On top of that, the maker measures the paint under the shape
   and asks for a minimum contrast (`HIDE_CONTRAST`): an absolute floor, raised on busy
-  paint. The difference is taken in CIE Lab with hue counting for half, because in
+  paint. It is judged against the paint under the shape itself, pixel by pixel, and at
+  least half the shape has to clear it (`HIDE_CONTRAST.share`); texture is taken between
+  neighboring pixels. The first cut judged against the average of the square round the
+  shape: where a pale patch met dark paint that average was a middling color under
+  neither, so a cream shape laid on the pale passed while a gold one, far easier to see,
+  was refused -- and the spread about that average called a clean edge busy. The
+  difference is taken in CIE Lab with hue counting for half, because in
   textured paint a shape is picked out by being lighter or darker -- the first cut
   measured plain RGB with a 0.45 floor, and a gold shape on yellow paint passed it while
   being all but invisible. A color that cannot clear the floor even at full strength

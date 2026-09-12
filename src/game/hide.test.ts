@@ -135,6 +135,23 @@ describe('friend hides', () => {
     expect(minOpacityFor('#d9b36c', flat(243, 185, 58))).not.toBeNull();
   });
 
+  it('judges a color against the paint under the shape, not the block round it', () => {
+    // Pale paint in dark, with the shape covering the pale and straying a row onto the dark.
+    const data: number[] = [];
+    const cover: number[] = [];
+    for (let y = 0; y < 10; y++) {
+      for (let x = 0; x < 10; x++) {
+        const inShape = x >= 2 && x <= 7 && y >= 2 && y <= 7;
+        data.push(...(inShape && y <= 6 ? [230, 225, 210] : [50, 80, 120]), 255);
+        cover.push(inShape ? 1 : 0);
+      }
+    }
+    expect(minOpacityFor('#f4ecd8', paintStats(data, cover))).toBeNull();
+    expect(minOpacityFor('#d9b36c', paintStats(data, cover))).not.toBeNull();
+    // Judged on the whole block, mostly dark, the pale color passed.
+    expect(minOpacityFor('#f4ecd8', paintStats(data))).not.toBeNull();
+  });
+
   it('never lets a findable color go under the opacity floor', () => {
     expect(minOpacityFor('#101010', flat(240, 240, 240))).toBe(HIDE_OPACITY.min);
   });
@@ -150,10 +167,13 @@ describe('friend hides', () => {
 
   it('asks more on busy paint than on calm', () => {
     const calm = paintStats(Array.from({ length: 64 }, () => [150, 150, 150, 255]).flat());
-    const busy = paintStats(Array.from({ length: 64 }, (_, i) => (i % 2 ? [110, 110, 110, 255] : [190, 190, 190, 255])).flat());
+    // A checkerboard, so every neighbor differs.
+    const busy = paintStats(Array.from({ length: 64 }, (_, i) => ((i + (i >> 3)) % 2 ? [76, 76, 76, 255] : [232, 232, 232, 255])).flat());
     expect(busy.texture).toBeGreaterThan(calm.texture);
-    const onCalm = minOpacityFor('#606060', calm) ?? 2;
-    const onBusy = minOpacityFor('#606060', busy) ?? 2;
+    // Faint enough on calm paint to need more than the opacity floor.
+    const onCalm = minOpacityFor('#c2c2c2', calm) ?? 2;
+    const onBusy = minOpacityFor('#c2c2c2', busy) ?? 2;
+    expect(onCalm).toBeGreaterThan(HIDE_OPACITY.min);
     expect(onBusy).toBeGreaterThan(onCalm);
   });
 

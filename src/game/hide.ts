@@ -232,10 +232,12 @@ export function hidePuzzle(h: Hide, painting: Painting): Puzzle {
 
 /** The paint under a hide, as far as telling a shape from it goes. */
 export interface PaintStats {
-  /** Mean color, 0--255 per channel. */
+  /** Mean color of the paint the shape covers, 0--255 per channel. */
   mean: [number, number, number];
-  /** RMS difference of the paint from its own mean, in CIE Lab: its busyness. */
+  /** RMS difference between neighboring pixels, in CIE Lab: the paint's busyness. */
   texture: number;
+  /** The paint under the shape pixel by pixel, each with how much of it the shape covers. */
+  cover: { rgb: [number, number, number]; weight: number }[];
 }
 
 /**
@@ -258,31 +260,62 @@ function lab([r, g, b]: readonly number[]): [number, number, number] {
 
 const CHROMA_WEIGHT = 0.5;
 
-function distance(a: readonly number[], b: readonly number[]): number {
-  const [la, aa, ba] = lab(a);
-  const [lb, ab, bb] = lab(b);
+function labDistance(a: readonly number[], b: readonly number[]): number {
   // Hue counts for half: in textured paint a shape is picked out by being lighter or
   // darker, and one that differs only in hue -- cream on yellow -- all but vanishes.
-  return Math.hypot(la - lb, (aa - ab) * CHROMA_WEIGHT, (ba - bb) * CHROMA_WEIGHT);
+  return Math.hypot(a[0] - b[0], (a[1] - b[1]) * CHROMA_WEIGHT, (a[2] - b[2]) * CHROMA_WEIGHT);
 }
 
-/** Mean and texture of a block of RGBA pixels. */
-export function paintStats(data: ArrayLike<number>): PaintStats {
-  const n = Math.max(1, Math.floor(data.length / 4));
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  for (let i = 0; i < n * 4; i += 4) {
-    r += data[i];
-    g += data[i + 1];
-    b += data[i + 2];
+function distance(a: readonly number[], b: readonly number[]): number {
+  return labDistance(lab(a), lab(b));
+}
+
+/**
+ * The paint in a square block of RGBA pixels, as a shape drawn over it would meet it.
+ *
+ * `cover` is how much of each pixel the shape covers, 0--1. Without it the whole block
+ * counts. It matters wherever the paint changes under the shape: the block round a shape
+ * on a pale patch in dark paint averages to a middling color that is under neither, and
+ * judged against that average a pale shape looked plainly findable while a gold one, far
+ * easier to see, was refused.
+ *
+ * Texture is taken between neighboring pixels, over the whole block, rather than as the
+ * spread about the mean: two flat colors meeting at a clean edge are not busy paint, and
+ * the spread counted them as though they were.
+ */
+export function paintStats(data: ArrayLike<number>, cover?: ArrayLike<number>): PaintStats {
+  const n = Math.floor(data.length / 4);
+  const side = Math.round(Math.sqrt(n));
+  const at = (i: number): [number, number, number] => [data[i * 4], data[i * 4 + 1], data[i * 4 + 2]];
+  // A read off the painting's edge comes back transparent, and counts for nothing.
+  const inside = (i: number) => data[i * 4 + 3] > 0;
+
+  const covered: PaintStats['cover'] = [];
+  const sum = [0, 0, 0];
+  let total = 0;
+  for (let i = 0; i < n; i++) {
+    const weight = inside(i) ? (cover?.[i] ?? 1) : 0;
+    if (weight <= 0) continue;
+    const c = at(i);
+    covered.push({ rgb: c, weight });
+    c.forEach((v, k) => (sum[k] += v * weight));
+    total += weight;
   }
-  const mean: [number, number, number] = [r / n, g / n, b / n];
+  const mean = sum.map((v) => v / Math.max(total, 1e-9)) as [number, number, number];
+
   let sq = 0;
-  for (let i = 0; i < n * 4; i += 4) {
-    sq += distance([data[i], data[i + 1], data[i + 2]], mean) ** 2;
+  let pairs = 0;
+  for (let i = 0; i < n; i++) {
+    if (!inside(i)) continue;
+    const x = i % side;
+    for (const j of [x + 1 < side ? i + 1 : -1, i + side]) {
+      if (j < 0 || j >= n || !inside(j)) continue;
+      sq += distance(at(i), at(j)) ** 2;
+      pairs++;
+    }
   }
-  return { mean, texture: Math.sqrt(sq / n) };
+  // A difference between two pixels carries the spread of both, hence the halving.
+  return { mean, texture: pairs ? Math.sqrt(sq / pairs / 2) : 0, cover: covered };
 }
 
 function rgb(hex: string): [number, number, number] {
@@ -296,8 +329,12 @@ function rgb(hex: string): [number, number, number] {
  * into streaky brushwork. Set at the edge of *impossible*, not of *easy*: a hide may be
  * very hard, but zoomed right in on it the shape has to be there to see. Chosen by eye
  * on the served paintings, not measured against play the way the daily ramp is.
+ *
+ * `share` is how much of the shape has to clear that against the paint directly under
+ * it: a shape that stands out only where a corner strays off its patch is not one a
+ * player can recognize.
  */
-export const HIDE_CONTRAST = { floor: 12, texture: 1 } as const;
+export const HIDE_CONTRAST = { floor: 12, texture: 1, share: 0.5 } as const;
 
 /**
  * The least opacity at which `fill` can be told from this paint -- never under
@@ -305,20 +342,28 @@ export const HIDE_CONTRAST = { floor: 12, texture: 1 } as const;
  * yellow-on-yellow case: a color that close to the paint cannot be found however solid
  * it is drawn.
  *
- * A translucent fill moves the paint toward itself by `opacity` of the way; the least
- * opacity is found by bisection, since Lab is not linear in that mix.
+ * A translucent fill moves each pixel of paint toward itself by `opacity` of the way; the
+ * least opacity is found by bisection, since Lab is not linear in that mix.
  */
 export function minOpacityFor(fill: string, paint: PaintStats): number | null {
   const need = Math.max(HIDE_CONTRAST.floor, HIDE_CONTRAST.texture * paint.texture);
-  // Translucent paint mixes in RGB, so the shown color is found there and then compared.
   const f = rgb(fill);
-  const shown = (o: number) => paint.mean.map((m, i) => m + (f[i] - m) * o);
-  if (distance(shown(HIDE_OPACITY.max), paint.mean) < need) return null;
+  const under = paint.cover.map(({ rgb: p, weight }) => ({ p, lab: lab(p), weight }));
+  const total = under.reduce((s, u) => s + u.weight, 0);
+  // Translucent paint mixes in RGB, so the shown color is found there and then compared.
+  const findable = (o: number) => {
+    let clear = 0;
+    for (const { p, lab: l, weight } of under) {
+      if (labDistance(lab(p.map((m, i) => m + (f[i] - m) * o)), l) >= need) clear += weight;
+    }
+    return total > 0 && clear >= HIDE_CONTRAST.share * total;
+  };
+  if (!findable(HIDE_OPACITY.max)) return null;
   let lo = 0;
   let hi: number = HIDE_OPACITY.max;
   for (let i = 0; i < 20; i++) {
     const mid = (lo + hi) / 2;
-    if (distance(shown(mid), paint.mean) >= need) hi = mid;
+    if (findable(mid)) hi = mid;
     else lo = mid;
   }
   const least = hi;

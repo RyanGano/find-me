@@ -32,6 +32,33 @@ const SWATCHES = ['#f4ecd8', '#d9b36c', '#b5543c', '#6b8f5e', '#4f6d8f', '#2e2a2
 const TAP_SLOP = 8;
 const TAP_MS = 400;
 
+/**
+ * How much of each pixel of a `box`-wide square the shape covers, 0--1: the shape drawn the
+ * way the stage draws it, `size` across, turned `angle` degrees clockwise about (cx, cy).
+ */
+function shapeCover(
+  shape: string,
+  size: number,
+  angle: number,
+  cx: number,
+  cy: number,
+  box: number,
+): Float32Array | undefined {
+  const canvas = document.createElement('canvas');
+  canvas.width = box;
+  canvas.height = box;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return undefined;
+  const def = SHAPES[shape];
+  ctx.translate(cx, cy);
+  ctx.rotate((angle * Math.PI) / 180);
+  ctx.scale(size / 100, size / 100);
+  ctx.translate(-50, -50);
+  ctx.fill(new Path2D(def.path), def.fillRule ?? 'evenodd');
+  const alpha = ctx.getImageData(0, 0, box, box).data;
+  return Float32Array.from({ length: box * box }, (_, i) => alpha[i * 4 + 3] / 255);
+}
+
 function seen(): boolean {
   try {
     return localStorage.getItem(HELP_SEEN) !== null;
@@ -87,8 +114,10 @@ export default function HideMaker() {
   // how strong a given color has to be to be findable there at all.
   const [samplerReady, setSamplerReady] = useState<string | null>(null);
   const [paint, setPaint] = useState<PaintStats | null>(null);
-  const fill = auto && paint ? colourFor(paint) : chosenFill;
-  const least = paint ? minOpacityFor(fill, paint) : HIDE_OPACITY.min;
+  // Held between renders: the check reads every pixel under the shape, and the board
+  // re-renders on every frame of a pinch.
+  const fill = useMemo(() => (auto && paint ? colourFor(paint) : chosenFill), [auto, paint, chosenFill]);
+  const least = useMemo(() => (paint ? minOpacityFor(fill, paint) : HIDE_OPACITY.min), [fill, paint]);
   // A color this close to the paint cannot be found however solid it is drawn.
   const blends = least === null;
   const strength = Math.max(opacity, least ?? HIDE_OPACITY.max);
@@ -158,14 +187,15 @@ export default function HideMaker() {
 
   useGestures(stageRef, { onGesture, onInteract: () => {}, enabled: Boolean(transform) && !showHelp });
 
-  // The painting, small, for reading the colour under a tap.
+  // The painting at half size, for reading the colour under the shape: fine enough that
+  // the smallest shape still covers a block of pixels its own shape can be traced on.
   const sampler = useRef<{ image: string; ctx: CanvasRenderingContext2D; k: number } | null>(null);
   useEffect(() => {
     const img = new Image();
     let live = true;
     img.onload = () => {
       if (!live) return;
-      const k = Math.min(1, 800 / img.naturalWidth);
+      const k = Math.min(1, 1300 / img.naturalWidth);
       const canvas = document.createElement('canvas');
       canvas.width = Math.round(img.naturalWidth * k);
       canvas.height = Math.round(img.naturalHeight * k);
@@ -182,14 +212,17 @@ export default function HideMaker() {
   }, [painting]);
 
   const samplePaint = useCallback(
-    (cx: number, cy: number, r: number): PaintStats | null => {
+    (cx: number, cy: number, shapeName: string, shapeSize: number, shapeAngle: number): PaintStats | null => {
       const s = sampler.current;
       if (!s || s.image !== painting.image) return null;
-      const rad = Math.max(1, Math.round(r * s.k));
-      const x = Math.max(0, Math.round(cx * s.k) - rad);
-      const y = Math.max(0, Math.round(cy * s.k) - rad);
+      // Wide enough to hold the shape at any angle. Not held to the canvas: a read off the
+      // edge comes back transparent, and keeps the shape centered in the block.
+      const rad = Math.max(1, Math.ceil((shapeSize / 2) * Math.SQRT2 * s.k));
+      const x = Math.round(cx * s.k) - rad;
+      const y = Math.round(cy * s.k) - rad;
       try {
-        return paintStats(s.ctx.getImageData(x, y, rad * 2, rad * 2).data);
+        const data = s.ctx.getImageData(x, y, rad * 2, rad * 2).data;
+        return paintStats(data, shapeCover(shapeName, shapeSize * s.k, shapeAngle, cx * s.k - x, cy * s.k - y, rad * 2));
       } catch {
         return null;
       }
@@ -197,11 +230,12 @@ export default function HideMaker() {
     [painting.image],
   );
 
-  // Re-read whenever the shape moves or grows, since either changes the paint it covers.
+  // Re-read whenever the shape moves, grows, turns or changes, since each changes the
+  // paint it covers.
   useEffect(() => {
     // oxlint-disable-next-line react/set-state-in-effect
-    setPaint(spot && samplerReady === painting.image ? samplePaint(spot.cx, spot.cy, size / 2) : null);
-  }, [spot, size, samplerReady, painting.image, samplePaint]);
+    setPaint(spot && samplerReady === painting.image ? samplePaint(spot.cx, spot.cy, shape, size, angle) : null);
+  }, [spot, shape, size, angle, samplerReady, painting.image, samplePaint]);
 
   // Which painting the stage has actually drawn. Changing `src` leaves the old picture on
   // screen, stretched to the new one's size, until the new one arrives -- so until the two
