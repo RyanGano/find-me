@@ -41,6 +41,15 @@ export function puzzleNumber(index: number): number {
 }
 
 /**
+ * The day number behind a puzzle number: the inverse of `puzzleNumber`, kept beside it
+ * so the two cannot drift. Wanted wherever something arrives written the way a player
+ * would write it -- a restore link quoting the number off their own share text.
+ */
+export function dayOfNumber(number: number): number {
+  return number - 1;
+}
+
+/**
  * The puzzle for a day number.
  *
  * Puzzles are stored Monday-first in blocks of seven, so shifting the day number by the

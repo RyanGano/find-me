@@ -208,6 +208,30 @@ function record(day: number, result: Result): void {
   write(store);
 }
 
+/**
+ * Put a result back, over whatever the day currently holds, and hand back what it
+ * displaced.
+ *
+ * The one write here that ignores `record`'s rules, and the only one that ever should.
+ * `record` protects a day from being improved by a replay and supersedes it when the
+ * puzzle is redefined, and both are right for a run somebody has just played -- but they
+ * are also how a real time gets lost, and a rule cannot repair a case it caused. So the
+ * repair is a separate door, reached only from `?restore` (see `restore.ts`), which is
+ * opened by hand for one person at a time.
+ *
+ * It returns the old result rather than swallowing it, because a restore is done on
+ * somebody's word about a day they played: what it overwrote is the only check that the
+ * link went to the right browser and named the right day, and it has to be visible.
+ */
+export function restoreResult(day: number, result: Result): Result | undefined {
+  const store = read();
+  const key = String(day);
+  const existing = store.results[key];
+  store.results[key] = result;
+  write(store);
+  return existing;
+}
+
 export interface Stats {
   played: number;
   best: number | null;

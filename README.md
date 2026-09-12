@@ -1093,6 +1093,44 @@ sessions it is obvious. Open it, quit the browser, open it again: two markers st
 reading "written just now" means nothing this site writes survives, and that is the whole
 diagnosis.
 
+### `?restore`
+
+`/?restore=<puzzle>:<ms>:<version>` writes one result back onto the browser that opened
+it, and reports what it replaced. `/?restore=18:34676:16xku87` puts 34.676s back on
+puzzle #18 as a solve of the version named; a trailing `:g` restores a day that was given
+up on instead.
+
+It exists because there is nowhere else the repair could happen. A result lives in that
+player's own `localStorage` and nowhere else -- the daily tally is keyed by a run id
+minted when a run starts and forgotten when it ends, so no server holds anyone's day to
+correct -- and the browser that lost the time is a phone, which has no console in it.
+Desktop devtools can fix this in ten seconds; the people it happens to are not on a
+desktop. So it is a link you send them.
+
+A time gets lost in the first place because `record` keeps the first result of a given
+version but lets a *newer* version supersede it: that is what hands a re-tuned day back
+as playable, and it is also what lets a replay of that day overwrite the time really set
+on the old one. `restoreResult` is the only write that ignores those rules, and it is
+reached from here and nowhere else.
+
+It is not a hole in anything. A result only ever moves the board, streak and best of the
+browser it is written on; the tally cannot see it, and neither can the calendar or anyone
+else's game. Someone who wanted to lie to themselves about their own stats could already
+do it with devtools, on any browser that has them.
+
+Two things it deliberately cannot do. It cannot forge a puzzle: the version is written
+exactly as given, so a wrong one leaves the day playable rather than passing an invented
+time off as a solve of the current puzzle. And it cannot overwrite quietly: the page
+always says what was there before, so a link sent to the wrong person, or carrying the
+wrong day, shows up the moment it is opened. It also reads the result back afterwards and
+says whether the browser kept it, since a browser that keeps nothing is exactly the one a
+player in this position tends to be on -- `?diag` above is the rest of that answer.
+
+The number in the link is the **puzzle number**, the `#18` off the player's own share
+text, not the day index it is stored under. Converting it is `dayOfNumber` in `daily.ts`,
+next to `puzzleNumber`, so the offset is in one place rather than in whoever writes the
+link.
+
 ## Deployment
 
 Pushing to `main` runs lint, tests and a build, then publishes `dist/` to GitHub Pages.

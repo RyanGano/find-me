@@ -5,7 +5,9 @@ import Testbed from './Testbed';
 import { Diagnostics } from './components/Diagnostics';
 import FriendHunt from './FriendHunt';
 import { hideFromHash } from './game/hide';
+import { parseRestore } from './game/restore';
 import { isTestMode } from './game/testMode';
+import { Restore } from './Restore';
 import HideMaker from './HideMaker';
 import './index.css';
 
@@ -14,6 +16,12 @@ const params = new URLSearchParams(window.location.search);
 // `?diag` answers the one question the game itself cannot: does anything this site
 // writes survive the browser being quit? It is not linked from anywhere.
 const diag = params.has('diag');
+
+// `?restore=` puts a lost time back on the browser it was lost on, and reports what it
+// replaced. A page of its own because it writes to the results store, which is no thing
+// to do underneath a board that has already read the day it is about to be handed. See
+// `restore.ts` for why this is a link rather than a console session.
+const restore = parseRestore(window.location.search);
 
 // `?beta` is the play-test bench: paintings that are not in the game, served in
 // rounds to people who have agreed to try them. The link says `beta` because that is
@@ -40,6 +48,8 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {diag ? (
       <Diagnostics />
+    ) : restore ? (
+      <Restore request={restore.request} />
     ) : hide ? (
       <FriendHunt code={hide} />
     ) : making ? (
