@@ -107,7 +107,10 @@ function Hunt({ puzzle, link }: { puzzle: Puzzle; link: string }) {
     ];
     countHide('told');
     const result = await shareResult(lines.join('\n'));
-    setShared(result === 'copied' ? 'Copied' : result === 'failed' ? 'Could not share' : 'Shared');
+    // Short on purpose: this sits on the button beside "Today's puzzle", and the two
+    // have to stay on one line down to a 320px phone. "Try again" is also the truer
+    // word -- the button still works, so it is an invitation, not a verdict.
+    setShared(result === 'copied' ? 'Copied' : result === 'failed' ? 'Try again' : 'Shared');
   }, [done, gaveUpMs, link, metrics, puzzle.emoji, puzzle.title]);
 
   return (
@@ -195,6 +198,10 @@ function Hunt({ puzzle, link }: { puzzle: Puzzle; link: string }) {
                   : `You found the ${puzzle.thing} your friend hid in ${puzzle.title}.`}
               </p>
               {huntTrace(metrics) && <p className="hide-trace">{huntTrace(metrics)}</p>}
+              {/* Two, so they sit on one line on a phone. There is no third for looking
+                  around the painting because there does not need to be one: the scrim is
+                  the whole board, so a tap on the picture puts the card away, and the
+                  badge in the corner brings it back. */}
               <div className="hide-actions">
                 <button type="button" className="btn btn-primary" onClick={share}>
                   {shared ?? 'Tell them'}
@@ -202,9 +209,6 @@ function Hunt({ puzzle, link }: { puzzle: Puzzle; link: string }) {
                 <a className="btn" href="/">
                   Today&rsquo;s puzzle
                 </a>
-                <button type="button" className="btn" onClick={() => setShowCard(false)}>
-                  Look around
-                </button>
               </div>
             </div>
           </>
