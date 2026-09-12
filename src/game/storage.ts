@@ -164,6 +164,37 @@ export function getResult(day: number): Result | undefined {
   return read().results[String(day)];
 }
 
+/** Whether a day is over for this player, and whether it is still the day they played. */
+export interface DayState {
+  /**
+   * The recorded result that closes the day, if there is one. Matched on the day alone:
+   * a day somebody has finished is finished, whatever the puzzle has become since.
+   */
+  result?: Result;
+  /**
+   * The day was redefined after that result was set -- re-tuned, re-hidden, or the shape
+   * swapped. Worth telling the player about and worth offering another go at, but never
+   * grounds for taking the finished board away: the replay would then supersede the time
+   * they really set, and no server holds a copy to put back.
+   */
+  retuned: boolean;
+}
+
+/**
+ * How a day stands for this player, as the board needs to open it.
+ *
+ * The two questions here used to be one. `getCurrentResult` answers "is this a solve of
+ * the puzzle as it is now", which is the right question for the *tuner* and the wrong one
+ * for the *board*: asked at mount it meant that nudging a day's paint handed a fresh clock
+ * to everyone who had already finished it, and the replay then overwrote the real time.
+ * Keeping them apart is the whole fix -- `result` closes the day, `retuned` only tells the
+ * player what happened and offers them the new one.
+ */
+export function getDayState(day: number, version: string): DayState {
+  const result = read().results[String(day)];
+  return { result, retuned: result !== undefined && result.v !== version };
+}
+
 /**
  * The result that counts as "you have already played today": a recorded time for this
  * day *and* for the puzzle as it is defined now. A redefined puzzle is a new puzzle.

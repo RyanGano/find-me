@@ -32,6 +32,13 @@ interface Props {
   metrics: RunMetrics | null;
   /** How everyone else did today, once it has arrived. Null means say nothing. */
   tally: DayTally | null;
+  /**
+   * The day was redefined after this time was set, so the painting now holds a puzzle
+   * this result is not a solve of. Said plainly, with the new one offered as a practice
+   * run -- the recorded time is the one that was really earned, and nothing here may
+   * quietly replace it.
+   */
+  retuned?: boolean;
   /** The share button was pressed, for the tally. */
   onShared: () => void;
   onReplay: () => void;
@@ -46,6 +53,7 @@ export function ResultCard({
   gaveUp,
   metrics,
   tally,
+  retuned,
   onShared,
   onReplay,
 }: Props) {
@@ -186,6 +194,13 @@ export function ResultCard({
       )}
 
       {tally && <p className="result-others">{tallyLine(tally)}</p>}
+
+      {retuned && (
+        <p className="result-retuned">
+          This puzzle changed after you played it. Your time stands.{' '}
+          <a href={`./?puzzle=${puzzle.id}`}>Try the new one</a> — it isn&rsquo;t recorded.
+        </p>
+      )}
 
       <p className="result-art">
         <strong>{puzzle.title}</strong>

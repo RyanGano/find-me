@@ -18,7 +18,7 @@ import type { RunMetrics } from './game/metrics';
 import { openRound } from './game/rounds';
 import {
   clearProgress,
-  getCurrentResult,
+  getDayState,
   getProgress,
   getStats,
   isPersistent,
@@ -79,9 +79,20 @@ export default function App() {
   // is writing to for the whole life of the component. See `testMode.ts`.
   const isTest = useMemo(() => isTestMode(), []);
 
-  // A solve already recorded for today opens as a finished board, not a fresh timer.
-  const prior = useMemo(
-    () => (isPractice ? undefined : getCurrentResult(day, puzzle.version)),
+  // A solve already recorded for today opens as a finished board, not a fresh timer --
+  // whatever the puzzle has become since it was set.
+  //
+  // This used to be matched on the day's `version` as well, which meant that re-tuning a
+  // day handed a fresh clock to everyone who had already finished it. That is right for
+  // the tuner -- a redefined puzzle really is a new challenge -- but it was being asked a
+  // second question it cannot answer: whether this player has played today. They have,
+  // and a day somebody has finished is over. What a moved version earns is the *offer* of
+  // another go, which the card makes; what it must never do is take the finished board
+  // away without asking, because the replay then supersedes the time they actually set
+  // and there is no copy of it anywhere else. See `restoreResult` in `storage.ts` for the
+  // door that exists because this did not.
+  const { result: prior, retuned } = useMemo(
+    () => (isPractice ? { retuned: false } : getDayState(day, puzzle.version)),
     [day, isPractice, puzzle.version],
   );
 
@@ -847,6 +858,7 @@ export default function App() {
             gaveUp={gaveUpMs !== null}
             metrics={metrics}
             tally={isPractice ? null : tally}
+            retuned={retuned}
             onShared={onShared}
             onReplay={replay}
           />

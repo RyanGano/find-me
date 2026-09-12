@@ -834,6 +834,21 @@ button.reference:focus-visible {
   color: var(--muted);
 }
 
+/* Said on a board that is already finished, so it has to read as a note rather than as
+   the result. The link inside it is the only way to the new puzzle, so it is underlined
+   rather than left to colour alone. */
+.result-retuned {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.result-retuned a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .result-art {
   display: flex;
   flex-direction: column;

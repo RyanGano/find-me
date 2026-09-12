@@ -4,6 +4,7 @@ import {
   isPersistent,
   touch,
   getCurrentResult,
+  getDayState,
   getHistory,
   getProgress,
   getResult,
@@ -79,6 +80,46 @@ const V2 = 'bbbb';
 beforeEach(() => {
   installStorage();
   removeCookies();
+});
+
+describe('getDayState', () => {
+  it('says nothing is recorded for a day that has not been played', () => {
+    expect(getDayState(3, V1)).toEqual({ result: undefined, retuned: false });
+  });
+
+  it('closes the day on the recorded result', () => {
+    saveResult(3, 12345, V1);
+    const state = getDayState(3, V1);
+    expect(state.result?.ms).toBe(12345);
+    expect(state.retuned).toBe(false);
+  });
+
+  // The whole point of splitting this out of `getCurrentResult`: a day that was re-tuned
+  // under a player who had already finished it used to come back as "not played", which
+  // handed them a fresh clock and let the replay overwrite the time they really set.
+  it('keeps the day closed when the puzzle has been redefined since', () => {
+    saveResult(3, 12345, V1);
+    const state = getDayState(3, V2);
+    expect(state.result?.ms).toBe(12345);
+    expect(state.retuned).toBe(true);
+  });
+
+  it('keeps a given-up day closed across a redefinition too', () => {
+    saveGaveUp(3, 240000, V1);
+    const state = getDayState(3, V2);
+    expect(state.result?.gaveUp).toBe(true);
+    expect(state.retuned).toBe(true);
+  });
+
+  // From before versioning existed, so there is no version to compare: the day is still
+  // theirs and still closed, and saying "redefined" is the honest answer about a puzzle
+  // whose definition nobody recorded.
+  it('treats a pre-versioning result as a closed day that has since moved', () => {
+    localStorage.setItem(KEY, JSON.stringify({ results: { 3: { ms: 12345, at: '' } } }));
+    const state = getDayState(3, V1);
+    expect(state.result?.ms).toBe(12345);
+    expect(state.retuned).toBe(true);
+  });
 });
 
 describe('saveResult / getCurrentResult', () => {
