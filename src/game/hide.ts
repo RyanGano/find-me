@@ -27,10 +27,34 @@ export interface Hide {
   /** `#rrggbb`. */
   fill: string;
   opacity: number;
+  /** What the setter called it, if anything. Never part of the hunt: no fingerprint reads it. */
+  name?: string;
 }
 
-/** Bumped when the packed layout changes; a link from a newer build is refused politely. */
-export const HIDE_VERSION = 1;
+/**
+ * Bumped when the packed layout changes; a link from a newer build is refused politely.
+ *
+ * 2 is 1 with the name on the end, and only a named hide is packed as 2: an unnamed link
+ * stays byte for byte what it was, so it still opens on a page cached from before names.
+ * A named one sent to such a page gets "made on a newer version" rather than "cut short".
+ */
+export const HIDE_VERSION = 2;
+
+/** The longest name a hide may carry, in characters (code points, so an emoji is one). */
+export const HIDE_NAME_MAX = 50;
+
+/**
+ * A name as it is being typed: control characters out and held to the length, but spaces
+ * left alone, so a trailing one does not vanish from under the cursor.
+ */
+export function limitName(raw: string): string {
+  return Array.from(raw.replace(/\p{Cc}/gu, '')).slice(0, HIDE_NAME_MAX).join('');
+}
+
+/** A name as it travels and is shown: runs of space collapsed, trimmed, held to the length. */
+export function cleanName(raw: string): string {
+  return limitName(raw.replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim()).trim();
+}
 
 /**
  * How small and how faint a setter may go, in the painting's own pixels (every asset is
@@ -86,11 +110,11 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, n));
 }
 
-/** A hide held to the limits and to its painting's edges. */
+/** A hide held to the limits and to its painting's edges, its name cleaned or dropped. */
 export function clampHide(h: Hide, painting: Pick<Painting, 'width' | 'height'>): Hide {
   const size = Math.round(clamp(h.size, HIDE_SIZE.min, HIDE_SIZE.max));
   const half = size / 2;
-  return {
+  const held: Hide = {
     ...h,
     size,
     cx: Math.round(clamp(h.cx, half, painting.width - half)),
@@ -98,6 +122,9 @@ export function clampHide(h: Hide, painting: Pick<Painting, 'width' | 'height'>)
     angle: Math.round(((((h.angle + 180) % 360) + 360) % 360) - 180),
     opacity: Math.round(clamp(h.opacity, HIDE_OPACITY.min, HIDE_OPACITY.max) * 100) / 100,
   };
+  delete held.name;
+  const name = cleanName(h.name ?? '');
+  return name ? { ...held, name } : held;
 }
 
 function toBase64Url(text: string): string {
@@ -118,8 +145,9 @@ function fromBase64Url(code: string): string {
  * at a glance in a message preview.
  */
 export function encodeHide(h: Hide): string {
-  const packed = [
-    HIDE_VERSION,
+  const name = cleanName(h.name ?? '');
+  const packed: (string | number)[] = [
+    name ? 2 : 1,
     h.image,
     h.shape,
     Math.round(h.cx),
@@ -129,6 +157,7 @@ export function encodeHide(h: Hide): string {
     h.fill.replace(/^#/, '').toLowerCase(),
     Math.round(h.opacity * 100),
   ];
+  if (name) packed.push(name);
   return toBase64Url(JSON.stringify(packed));
 }
 
@@ -155,11 +184,14 @@ export function decodeHide(code: string, now: Date = new Date()): Decoded {
   }
   if (!Array.isArray(packed) || typeof packed[0] !== 'number') return { ok: false, reason: 'malformed' };
   if (packed[0] > HIDE_VERSION) return { ok: false, reason: 'future' };
-  if (packed[0] !== HIDE_VERSION || packed.length !== 9) return { ok: false, reason: 'malformed' };
+  if (!((packed[0] === 1 && packed.length === 9) || (packed[0] === 2 && packed.length === 10))) {
+    return { ok: false, reason: 'malformed' };
+  }
 
-  const [, image, shape, cx, cy, size, angle, fill, opacity] = packed;
+  const [, image, shape, cx, cy, size, angle, fill, opacity, name = ''] = packed;
   const numbers = [cx, cy, size, angle, opacity];
   if (
+    typeof name !== 'string' ||
     typeof image !== 'string' ||
     typeof shape !== 'string' ||
     !Object.hasOwn(SHAPES, shape) ||
@@ -174,10 +206,25 @@ export function decodeHide(code: string, now: Date = new Date()): Decoded {
   if (!painting) return { ok: false, reason: 'painting' };
 
   const hide = clampHide(
-    { image, shape, cx, cy, size, angle, fill: `#${fill}`, opacity: opacity / 100 },
+    { image, shape, cx, cy, size, angle, fill: `#${fill}`, opacity: opacity / 100, name },
     painting,
   );
   return { ok: true, hide, painting };
+}
+
+/** What a hide goes by: its own name, or the painting's when it was not given one. */
+export function hideTitle(h: Hide, painting: Pick<Painting, 'title'>): string {
+  return h.name || painting.title;
+}
+
+/** The message a setter sends with the link. */
+export function hideShareText(h: Hide, painting: Pick<Painting, 'title'>, link: string): string {
+  const def = getShape(h.shape);
+  return [
+    h.name ? `I created a Find Me puzzle named "${h.name}"` : `I created a Find Me puzzle in "${painting.title}"`,
+    `Can you find the ${def.label} ${def.emoji} in the painting?`,
+    link,
+  ].join('\n');
 }
 
 /** The value of `h` in a location hash, if there is one. */

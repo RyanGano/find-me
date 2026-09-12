@@ -2,9 +2,11 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { dayIndex, EPOCH, weekday } from './daily';
 import {
+  cleanName,
   colourFor,
   decodeHide,
   encodeHide,
+  HIDE_NAME_MAX,
   HIDE_OPACITY,
   HIDE_SIZE,
   HIDE_VERSION,
@@ -12,6 +14,9 @@ import {
   hideFromHash,
   hideLink,
   hidePuzzle,
+  hideShareText,
+  hideTitle,
+  limitName,
   hsvToHex,
   minOpacityFor,
   paintStats,
@@ -82,6 +87,62 @@ describe('friend hides', () => {
     for (const code of ['', 'not base64 !!', pack({}), pack([1, first.image]), pack([1, first.image, 'nope', 1, 1, 50, 0, 'aabbcc', 70]), pack([1, first.image, 'star', 1, 1, 50, 0, 'red', 70])]) {
       expect(decodeHide(code, NOW)).toEqual({ ok: false, reason: 'malformed' });
     }
+  });
+
+  it('packs an unnamed hide exactly as links were packed before names', () => {
+    const code = encodeHide(sample({ name: '   ' }));
+    const packed = JSON.parse(atob(code.replace(/-/g, '+').replace(/_/g, '/')));
+    expect(packed).toEqual([1, first.image, 'star', 400, 600, 50, -30, 'a1b2c3', 70]);
+    // And one made before names still opens, with no name on it.
+    const old = decodeHide(pack(packed), NOW);
+    expect(old.ok).toBe(true);
+    if (old.ok) expect('name' in old.hide).toBe(false);
+  });
+
+  it('round-trips a name, emoji and quotes included', () => {
+    for (const name of ['Grandma’s pick', 'Find "it" 🌻 if you can', 'a'.repeat(HIDE_NAME_MAX)]) {
+      const back = decodeHide(encodeHide(sample({ name })), NOW);
+      expect(back.ok).toBe(true);
+      if (back.ok) expect(back.hide).toEqual(sample({ name }));
+    }
+  });
+
+  it('cleans a name, however the link was edited', () => {
+    expect(cleanName('  two\t\tspaces \n here  ')).toBe('two spaces here');
+    expect(cleanName('bellring')).toBe('bell ring');
+    expect(Array.from(cleanName('🌻'.repeat(80)))).toHaveLength(HIDE_NAME_MAX);
+    expect(limitName('keeps a trailing space ')).toBe('keeps a trailing space ');
+    const long = decodeHide(pack([2, first.image, 'star', 400, 600, 50, 0, 'aabbcc', 70, ` ${'x'.repeat(90)} `]), NOW);
+    expect(long.ok && long.hide.name).toBe('x'.repeat(HIDE_NAME_MAX));
+    const blank = decodeHide(pack([2, first.image, 'star', 400, 600, 50, 0, 'aabbcc', 70, '  ']), NOW);
+    expect(blank.ok).toBe(true);
+    if (blank.ok) expect('name' in blank.hide).toBe(false);
+  });
+
+  it('refuses a name in the wrong place', () => {
+    for (const code of [
+      pack([1, first.image, 'star', 1, 1, 50, 0, 'aabbcc', 70, 'named']),
+      pack([2, first.image, 'star', 1, 1, 50, 0, 'aabbcc', 70]),
+      pack([2, first.image, 'star', 1, 1, 50, 0, 'aabbcc', 70, 42]),
+    ]) {
+      expect(decodeHide(code, NOW)).toEqual({ ok: false, reason: 'malformed' });
+    }
+  });
+
+  it('never lets the name move the hunt', () => {
+    expect(hidePuzzle(sample({ name: 'one' }), first)).toEqual(hidePuzzle(sample(), first));
+  });
+
+  it('goes by its name, or the painting when it has none', () => {
+    expect(hideTitle(sample(), first)).toBe(first.title);
+    expect(hideTitle(sample({ name: 'Mine' }), first)).toBe('Mine');
+    const link = 'https://example.test/#h=x';
+    expect(hideShareText(sample({ name: 'Mine' }), first, link)).toBe(
+      `I created a Find Me puzzle named "Mine"\nCan you find the star ${SHAPES.star.emoji} in the painting?\n${link}`,
+    );
+    expect(hideShareText(sample(), first, link)).toBe(
+      `I created a Find Me puzzle in "${first.title}"\nCan you find the star ${SHAPES.star.emoji} in the painting?\n${link}`,
+    );
   });
 
   it('refuses a link from a newer build', () => {

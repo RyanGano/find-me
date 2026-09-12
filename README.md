@@ -1230,6 +1230,16 @@ thing a player in the middle of today's hunt has no business reading. The addres
   fragment (`#h=`), which is never sent to the host or a referrer. It is not secret, only
   not readable at a glance. A link from a newer build, a cut-short one, or one naming a
   painting this page does not know gets a friendly card rather than a broken board.
+- **A name is optional.** The setter can give a hide a name of up to 50 characters behind
+  the **✎ Name** button on the painting row, folded away so the controls are no taller for
+  those who skip it. It replaces the painting's title in the friend's top bar, their result
+  card and the line they share back, and in the setter's share text; the alt text keeps
+  the painting's. Only a named hide is packed as layout 2 -- layout 1 with the name on the
+  end -- so an unnamed link is byte for byte what it was and still opens on a page cached
+  from before names, while a named one sent to such a page is told it came from a newer
+  version rather than that it was cut short. The name is cleaned (control characters out,
+  space collapsed, trimmed, held to the length) both when it is packed and when a link is
+  opened, and no fingerprint reads it: naming a hide cannot change the hunt.
 - **Only paintings already served.** The painting list is every week the calendar has
   reached, worked out the way `daily.ts` maps it, so the maker cannot show a painting
   early.

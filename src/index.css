@@ -1895,6 +1895,85 @@ button.reference:focus-visible {
   border-color: var(--accent);
 }
 
+/* The painting list and the name button share a row; the list gives way, the button
+   holds its place and cuts a long name short. */
+.hide-painting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hide-painting select {
+  flex: 1 1 auto;
+}
+
+.hide-name-btn {
+  flex: 0 1 auto;
+  max-width: 45%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  font-size: 0.78rem;
+  height: 30px;
+  padding: 0 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hide-name-btn.is-on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.hide-name-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hide-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hide-name input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.hide-name-count {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A friend's name for their hide can run to fifty characters; on a phone it is cut short
+   in the bar rather than pushing the clock and buttons off it. */
+.friend-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.friend-title ~ .clock,
+.friend-title ~ .topbar-actions {
+  flex-shrink: 0;
+}
+
 /* Until the chosen painting has loaded, the stage would show the previous one stretched
    to the new one's size; hide it and pulse a placeholder of the right shape instead. */
 .board.is-loading .stage-canvas {

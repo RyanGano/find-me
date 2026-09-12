@@ -3,12 +3,16 @@ import { Shape } from './components/Shape';
 import { Stage } from './components/Stage';
 import {
   clampHide,
+  cleanName,
   colourFor,
+  HIDE_NAME_MAX,
   HIDE_OPACITY,
   HIDE_SIZE,
   hexToHsv,
   hideLink,
+  hideShareText,
   hsvToHex,
+  limitName,
   minOpacityFor,
   paintStats,
   hidePuzzle,
@@ -112,6 +116,13 @@ export default function HideMaker() {
   // put a ring round it to see where it went. Off to begin with: the point of the thing is
   // how the shape sits in the painting, and a ring is the one view that cannot show that.
   const [showRing, setShowRing] = useState(false);
+  // An optional name, typed into a field that stays folded away behind a button on the
+  // painting row until asked for, so the controls are no taller for the many who skip it.
+  // Kept across a change of painting: it is the setter's, not the painting's.
+  const [name, setName] = useState('');
+  const [naming, setNaming] = useState(false);
+  const named = cleanName(name);
+  const nameLength = Array.from(name).length;
 
   // One of the five hide counters: somebody opened the maker. Once per page load, before
   // anything has been set, so it is the top of the funnel and not a measure of finishing.
@@ -133,7 +144,7 @@ export default function HideMaker() {
 
   const hide: Hide | null = spot
     ? clampHide(
-        { image: painting.image, shape, cx: spot.cx, cy: spot.cy, size, angle, fill, opacity: strength },
+        { image: painting.image, shape, cx: spot.cx, cy: spot.cy, size, angle, fill, opacity: strength, name },
         painting,
       )
     : null;
@@ -354,14 +365,14 @@ export default function HideMaker() {
   const share = useCallback(async () => {
     if (!hide) return;
     const link = hideLink(hide, SITE_URL);
-    const text = `I hid a ${SHAPES[hide.shape].emoji} in ${painting.title}. Can you find it?\n${link}`;
+    const text = hideShareText(hide, painting, link);
     // Counted on the press, like a share of a daily result: what is being asked is
     // whether people reach for it, and a share sheet that is dismissed never comes back
     // to say so.
     countHide('made');
     const result = await shareResult(text);
     setStatus(result === 'copied' ? 'Link copied' : result === 'failed' ? link : 'Shared');
-  }, [hide, painting.title]);
+  }, [hide, painting]);
 
   return (
     <div className="app hide-maker">
@@ -458,6 +469,10 @@ export default function HideMaker() {
                   see how well it hides. There <em>are</em> guards in place to keep you from
                   sharing an impossible puzzle.
                 </li>
+                <li>
+                  Give it a name with <strong>✎ Name</strong> if you like. Without one it goes by
+                  the painting&rsquo;s title.
+                </li>
                 <li>Press share and send the link. They hunt for it just like the daily puzzle.</li>
               </ul>
               <p className="howto-note">
@@ -473,16 +488,55 @@ export default function HideMaker() {
       </main>
 
       <section className="hide-controls" aria-label="Your hide" hidden={showHelp}>
-        <label className="hide-row">
+        <div className="hide-row">
           <span>Painting</span>
-          <select value={painting.image} onChange={(e) => choosePainting(e.target.value)}>
-            {paintings.map((p) => (
-              <option key={p.image} value={p.image}>
-                {p.title} — {p.artist}
-              </option>
-            ))}
-          </select>
-        </label>
+          <div className="hide-painting">
+            <select aria-label="Painting" value={painting.image} onChange={(e) => choosePainting(e.target.value)}>
+              {paintings.map((p) => (
+                <option key={p.image} value={p.image}>
+                  {p.title} — {p.artist}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className={`hide-name-btn${named || naming ? ' is-on' : ''}`}
+              onClick={() => setNaming((prev) => !prev)}
+              aria-expanded={naming}
+              title={named ? `Named “${named}”` : 'Name your puzzle'}
+            >
+              <span aria-hidden="true">✎</span> <span className="hide-name-label">{named || 'Name'}</span>
+            </button>
+          </div>
+        </div>
+
+        {naming && (
+          <label className="hide-row">
+            <span>Name</span>
+            <span className="hide-name">
+              <input
+                type="text"
+                value={name}
+                placeholder={painting.title}
+                onChange={(e) => {
+                  setName(limitName(e.target.value));
+                  setStatus(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') setNaming(false);
+                }}
+                enterKeyHint="done"
+                autoComplete="off"
+                spellCheck
+              />
+              {nameLength >= HIDE_NAME_MAX - 10 && (
+                <span className="hide-name-count" aria-live="polite">
+                  {nameLength}/{HIDE_NAME_MAX}
+                </span>
+              )}
+            </span>
+          </label>
+        )}
 
         <div className="hide-row">
           <span>Shape</span>

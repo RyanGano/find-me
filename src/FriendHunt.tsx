@@ -3,7 +3,7 @@ import { ReferenceCard } from './components/ReferenceCard';
 import { Stage } from './components/Stage';
 import { countHide } from './game/count';
 import { formatTime } from './game/format';
-import { decodeHide, hideLink, hidePuzzle, type Decoded } from './game/hide';
+import { decodeHide, hideLink, hidePuzzle, hideTitle, type Decoded } from './game/hide';
 import { huntTrace, shareResult, SITE_URL } from './game/share';
 import type { Puzzle } from './game/types';
 import { useHunt } from './hooks/useHunt';
@@ -32,6 +32,8 @@ export default function FriendHunt({ code }: { code: string }) {
     <Hunt
       puzzle={hidePuzzle(decoded.hide, decoded.painting)}
       link={hideLink(decoded.hide, SITE_URL)}
+      title={hideTitle(decoded.hide, decoded.painting)}
+      named={Boolean(decoded.hide.name)}
     />
   );
 }
@@ -56,7 +58,11 @@ function BadLink({ reason }: { reason: 'malformed' | 'future' | 'painting' }) {
   );
 }
 
-function Hunt({ puzzle, link }: { puzzle: Puzzle; link: string }) {
+/**
+ * `title` is what the hide goes by -- the setter's name for it, or the painting's title. The
+ * puzzle keeps the painting's own, since the stage's alt text describes the picture.
+ */
+function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; title: string; named: boolean }) {
   const [showCard, setShowCard] = useState(false);
   const [shared, setShared] = useState<string | null>(null);
 
@@ -100,7 +106,7 @@ function Hunt({ puzzle, link }: { puzzle: Puzzle; link: string }) {
         ? `I gave up on your ${puzzle.emoji} after ${formatTime(done)}`
         : `Found your ${puzzle.emoji} in ${formatTime(done)}`,
       ...(trace ? [trace] : []),
-      `Find Me · ${puzzle.title}`,
+      `Find Me · ${title}`,
       // The hide itself, not the front door: whoever this goes to can hunt the same
       // shape, which is most of the point of telling them about it.
       link,
@@ -111,14 +117,14 @@ function Hunt({ puzzle, link }: { puzzle: Puzzle; link: string }) {
     // have to stay on one line down to a 320px phone. "Try again" is also the truer
     // word -- the button still works, so it is an invitation, not a verdict.
     setShared(result === 'copied' ? 'Copied' : result === 'failed' ? 'Try again' : 'Shared');
-  }, [done, gaveUpMs, link, metrics, puzzle.emoji, puzzle.title]);
+  }, [done, gaveUpMs, link, metrics, puzzle.emoji, title]);
 
   return (
     <div className="app">
       <header className="topbar">
-        <h1 className="title">
+        <h1 className="title friend-title" title={named ? title : undefined}>
           <span className="title-btn">Find Me</span>{' '}
-          <span className="title-day">from a friend</span>
+          <span className="title-day">{named ? title : 'from a friend'}</span>
         </h1>
         <p className={`clock${running ? ' is-running' : ''}`}>
           {startedAt === null ? 'ready' : formatTime(clock)}
@@ -194,9 +200,14 @@ function Hunt({ puzzle, link }: { puzzle: Puzzle; link: string }) {
               <h2>{gaveUpMs !== null ? 'There it was' : `Found it in ${formatTime(done)}`}</h2>
               <p>
                 {gaveUpMs !== null
-                  ? `The ringed ${puzzle.thing} is the one your friend hid in ${puzzle.title}.`
-                  : `You found the ${puzzle.thing} your friend hid in ${puzzle.title}.`}
+                  ? `The ringed ${puzzle.thing} is the one your friend hid in ${title}.`
+                  : `You found the ${puzzle.thing} your friend hid in ${title}.`}
               </p>
+              {named && (
+                <p className="howto-note">
+                  on {puzzle.title} by {puzzle.artist}
+                </p>
+              )}
               {huntTrace(metrics) && <p className="hide-trace">{huntTrace(metrics)}</p>}
               {/* Two, so they sit on one line on a phone. There is no third for looking
                   around the painting because there does not need to be one: the scrim is
