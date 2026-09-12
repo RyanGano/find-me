@@ -111,6 +111,21 @@ function cloverPath(): string {
   return parts.join(' ');
 }
 
+/**
+ * A disc with eight pointed rays, built about the box centre so it is exactly 8-fold.
+ * Each ray is wound the same way as `circle()` so that, under 'nonzero', nothing
+ * cancels where a ray might touch the disc.
+ */
+function sunPath(): string {
+  const parts = [circle(50, 50, 24)];
+  const at = (r: number, a: number): [number, number] => [50 + r * Math.cos(a), 50 + r * Math.sin(a)];
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4 - Math.PI / 2;
+    parts.push(polygon([at(48, a), at(26, a - 0.2), at(26, a + 0.2)]));
+  }
+  return parts.join(' ');
+}
+
 export const SHAPES: Record<string, ShapeDef> = {
   snowflake: {
     path: snowflakePath(),
@@ -283,6 +298,105 @@ export const SHAPES: Record<string, ShapeDef> = {
     symmetry: 1,
     label: 'music note',
     emoji: '🎵',
+  },
+  bell: {
+    path:
+      'M50 6 C54 6 56 9 56 12 C72 16 78 30 78 48 C78 66 82 74 92 80 V86 H8 V80 ' +
+      'C18 74 22 66 22 48 C22 30 28 16 44 12 C44 9 46 6 50 6 Z ' +
+      'M40 90 H60 C60 96 55 98 50 98 C45 98 40 96 40 90 Z',
+    symmetry: 1,
+    label: 'bell',
+    emoji: '🔔',
+  },
+  umbrella: {
+    // The shaft runs up into the canopy, so both are wound the same way and unioned.
+    path:
+      'M4 50 C4 22 26 6 50 6 C74 6 96 22 96 50 C88 44 80 44 73 50 C66 44 57 44 50 50 ' +
+      'C43 44 34 44 27 50 C20 44 12 44 4 50 Z ' +
+      'M46 46 H54 V84 C54 96 38 97 32 88 L39 83 C42 88 46 87 46 84 Z',
+    symmetry: 1,
+    label: 'umbrella',
+    emoji: '☂️',
+    fillRule: 'nonzero',
+  },
+  hourglass: {
+    // Every vertex has its opposite number about (50, 50), so it is exactly two-fold.
+    path:
+      'M16 4 H84 V14 H78 C78 34 60 44 56 50 C60 56 78 66 78 86 H84 V96 H16 V86 H22 ' +
+      'C22 66 40 56 44 50 C40 44 22 34 22 14 H16 Z',
+    symmetry: 2,
+    label: 'hourglass',
+    emoji: '⌛',
+  },
+  bone: {
+    /**
+     * The bar is wound the same way as `circle()`, or 'nonzero' cancels the overlaps into
+     * holes. Each pair of end circles overlaps rather than just touching: touching at a
+     * point closed off a pinhole between them and the end of the bar.
+     */
+    path:
+      'M20 42 V58 H80 V42 Z ' +
+      [circle(16, 41, 12), circle(16, 59, 12), circle(84, 41, 12), circle(84, 59, 12)].join(' '),
+    symmetry: 2,
+    label: 'bone',
+    emoji: '🦴',
+    fillRule: 'nonzero',
+  },
+  sun: {
+    path: sunPath(),
+    symmetry: 8,
+    label: 'sun',
+    emoji: '☀️',
+    fillRule: 'nonzero',
+  },
+  cloud: {
+    // A flat base wound the same way as `circle()`, with the puffs unioned over it.
+    path:
+      'M22 60 V80 H78 V60 Z ' +
+      [circle(22, 66, 14), circle(78, 66, 14), circle(36, 52, 18), circle(60, 44, 24), circle(78, 60, 16)].join(' '),
+    symmetry: 1,
+    label: 'cloud',
+    emoji: '☁️',
+    fillRule: 'nonzero',
+  },
+  apple: {
+    // Body, stem and leaf all wound clockwise, so where the stem meets the body stays filled.
+    path:
+      'M50 30 C62 22 86 22 88 50 C90 76 70 96 58 94 C54 93 52 91 50 91 C48 91 46 93 42 94 ' +
+      'C30 96 10 76 12 50 C14 22 38 22 50 30 Z ' +
+      'M47 30 C47 20 49 12 53 5 L59 8 C55 15 53 22 53 30 Z ' +
+      'M56 18 C62 6 76 4 86 8 C80 18 66 22 56 18 Z',
+    symmetry: 1,
+    label: 'apple',
+    emoji: '🍎',
+    fillRule: 'nonzero',
+  },
+  sailboat: {
+    path: 'M6 74 H94 L80 94 H20 Z M48 6 H53 V74 H48 Z M56 10 L90 68 H56 Z M45 22 L14 68 H45 Z',
+    symmetry: 1,
+    label: 'sailboat',
+    emoji: '⛵',
+  },
+  butterfly: {
+    // Mirror-symmetric, which is not rotational: it only matches upright. The left wings
+    // are traced in reverse of the right so that every piece winds clockwise and the body
+    // unions over them rather than cutting through.
+    path:
+      'M50 46 C42 52 28 54 18 48 C6 40 2 18 10 12 C20 6 40 18 50 46 Z ' +
+      'M50 46 C60 18 80 6 90 12 C98 18 94 40 82 48 C72 54 58 52 50 46 Z ' +
+      'M50 52 C50 62 48 76 42 84 C34 94 18 90 20 76 C22 60 40 54 50 52 Z ' +
+      'M50 52 C60 54 78 60 80 76 C82 90 66 94 58 84 C52 76 50 62 50 52 Z ' +
+      'M46 30 C46 25 54 25 54 30 V84 C54 90 46 90 46 84 Z',
+    symmetry: 1,
+    label: 'butterfly',
+    emoji: '🦋',
+    fillRule: 'nonzero',
+  },
+  puzzle: {
+    path: 'M11 27 H35 A10 10 0 1 1 49 27 H73 V51 A10 10 0 1 1 73 65 V89 H49 A10 10 0 1 0 35 89 H11 Z',
+    symmetry: 1,
+    label: 'puzzle piece',
+    emoji: '🧩',
   },
 };
 
