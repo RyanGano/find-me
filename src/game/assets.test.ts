@@ -44,6 +44,11 @@ const SOURCE_SCANS: Record<string, { width: number; height: number }> = {
   babel: { width: 4943, height: 3959 },
   deheem: { width: 4570, height: 3704 },
   venice: { width: 8392, height: 5724 },
+  haywain: { width: 6128, height: 4226 },
+  rainy: { width: 5982, height: 4531 },
+  breezing: { width: 5053, height: 3175 },
+  montmartre: { width: 6000, height: 4931 },
+  cardplayers: { width: 5789, height: 4608 },
 };
 
 /**

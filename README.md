@@ -184,7 +184,7 @@ a week costs that week alone. `shapeOrder.test.ts` holds the file to all three r
 checks that re-planning any one week -- or dealing a new one between two others -- leaves
 every other week's shapes exactly where they were.
 
-Ten paintings therefore give ten weeks -- seventy days -- and `week.test.ts`
+Fifteen paintings therefore give fifteen weeks -- one hundred and five days -- and `week.test.ts`
 asserts the rules rather than the numbers: seven days per painting, seven different
 shapes, every hiding place 400px from the others, and each day strictly smaller, fainter
 and further round than the one before it.
