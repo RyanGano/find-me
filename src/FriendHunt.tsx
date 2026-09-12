@@ -92,6 +92,9 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
   } = useHunt({ puzzle, runId: puzzle.id, onSolved, blocked: showCard });
 
   const done = solvedMs ?? gaveUpMs;
+  // A setter's name is quoted, since it can read as part of the sentence -- "hid in Eric's
+  // favorite painting" -- where a painting's title never does.
+  const quoted = named ? `“${title}”` : title;
 
   const onGiveUp = useCallback(() => {
     giveUp();
@@ -200,8 +203,8 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
               <h2>{gaveUpMs !== null ? 'There it was' : `Found it in ${formatTime(done)}`}</h2>
               <p>
                 {gaveUpMs !== null
-                  ? `The ringed ${puzzle.thing} is the one your friend hid in ${title}.`
-                  : `You found the ${puzzle.thing} your friend hid in ${title}.`}
+                  ? `The ringed ${puzzle.thing} is the one your friend hid in ${quoted}.`
+                  : `You found the ${puzzle.thing} your friend hid in ${quoted}.`}
               </p>
               {named && (
                 <p className="howto-note">
