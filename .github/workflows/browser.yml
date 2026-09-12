@@ -1,0 +1,58 @@
+name: Browser suite
+
+# Beside the deploy, not in front of it.
+#
+# `scripts/smoke.mjs` drives a real browser through a whole hunt -- the gestures, the
+# badge, the solve, and the two-page case a unit test cannot reach -- and takes about as
+# long as lint, tests and build put together. Deploy is roughly forty seconds today and
+# that is worth keeping, so this runs as a workflow of its own: the site ships at the
+# speed it always did, and a browser failure still marks the commit.
+#
+# Its own concurrency group for the same reason. Sharing the deploy's would mean a push
+# waiting on the previous run's browser job before it could ship.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The suite drives whatever Chrome it can find; a runner has nothing Playwright can
+      # use until this has run.
+      - run: npx playwright install --with-deps chromium
+
+      # Deliberately without `VITE_COUNT_URL`. The playthrough plays the real daily puzzle
+      # and solves it, so a build carrying the endpoint would post a genuine start and
+      # solve to the tally on every push -- a CI run counted as a player, every day, on
+      # whatever day it happened to be. Without it `count()` is a no-op, which is exactly
+      # what it is for.
+      - run: npm run build
+
+      - name: Drive the built site
+        run: |
+          npx vite preview --port 4173 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:4173/ > /dev/null && break
+            sleep 1
+          done
+          node scripts/smoke.mjs
