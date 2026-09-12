@@ -3,6 +3,9 @@ import { dayIndex, puzzleNumber } from './daily';
 import { applyRestoreOnce, forgetRestore, parseRestore } from './restore';
 import { getCurrentResult, getResult, getStats, saveGaveUp, saveResult } from './storage';
 
+/** A hiding place. Nothing here turns on which one, only that results carry it. */
+const S1 = 'ssss';
+
 /** Minimal localStorage, since the tests run in node. As in `storage.test.ts`. */
 function installStorage(): void {
   const data = new Map<string, string>();
@@ -91,7 +94,7 @@ describe('applyRestoreOnce', () => {
 
   it('writes the time over a replay that superseded it, and says what it replaced', () => {
     // Exactly the case this exists for: a re-tuned day, replayed, the real time gone.
-    saveResult(17, 6712, 'czplxb');
+    saveResult(17, 6712, 'czplxb', S1);
 
     const done = applyRestoreOnce(request);
 
@@ -106,7 +109,7 @@ describe('applyRestoreOnce', () => {
   });
 
   it('writes once, so a re-run cannot report the day as replacing its own restore', () => {
-    saveResult(17, 6712, 'czplxb');
+    saveResult(17, 6712, 'czplxb', S1);
     const first = applyRestoreOnce(request);
     const second = applyRestoreOnce(request);
     expect(second).toBe(first);
@@ -114,7 +117,7 @@ describe('applyRestoreOnce', () => {
   });
 
   it('restores a give-up as a give-up, which is played but is not a time', () => {
-    saveResult(17, 6712, 'czplxb');
+    saveResult(17, 6712, 'czplxb', S1);
     applyRestoreOnce({ ...request, gaveUp: true });
     expect(getResult(17)?.gaveUp).toBe(true);
     expect(getStats(17).best).toBeNull();
@@ -122,8 +125,8 @@ describe('applyRestoreOnce', () => {
   });
 
   it('puts the day back into the stats it earned', () => {
-    saveResult(16, 50000, 'aaaa');
-    saveResult(17, 6712, 'czplxb');
+    saveResult(16, 50000, 'aaaa', S1);
+    saveResult(17, 6712, 'czplxb', S1);
     expect(getStats(17).best).toBe(6712);
 
     applyRestoreOnce(request);
@@ -135,8 +138,8 @@ describe('applyRestoreOnce', () => {
   });
 
   it('leaves every other day alone', () => {
-    saveResult(16, 50000, 'aaaa');
-    saveGaveUp(15, 90000, 'bbbb');
+    saveResult(16, 50000, 'aaaa', S1);
+    saveGaveUp(15, 90000, 'bbbb', S1);
     applyRestoreOnce(request);
     expect(getResult(16)?.ms).toBe(50000);
     expect(getResult(15)?.gaveUp).toBe(true);

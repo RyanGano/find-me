@@ -3,6 +3,9 @@ import { count, type CountPayload } from './count';
 import { getStats, saveResult } from './storage';
 import { isTestMode, refreshTestMode } from './testMode';
 
+/** A hiding place. Nothing here turns on which one, only that results carry it. */
+const S1 = 'ssss';
+
 /** Land on the page with this query string. */
 function open(search: string): void {
   Object.defineProperty(globalThis, 'window', {
@@ -91,7 +94,7 @@ describe('what test mode keeps apart', () => {
 
   it('writes a result where the player will never read it', () => {
     open('?test');
-    saveResult(500, 1234, 'v');
+    saveResult(500, 1234, 'v', S1);
     expect(isTestMode()).toBe(true);
     expect([...local.keys()]).not.toContain('find-me:v1');
 
@@ -101,10 +104,10 @@ describe('what test mode keeps apart', () => {
 
   it('keeps a real result out of the test store, and the other way round', () => {
     open('');
-    saveResult(500, 1000, 'v');
+    saveResult(500, 1000, 'v', S1);
     open('?test');
     expect(getStats(500).played).toBe(0);
-    saveResult(500, 9999, 'v');
+    saveResult(500, 9999, 'v', S1);
     open('?test=off');
     expect(getStats(500).best).toBe(1000);
   });

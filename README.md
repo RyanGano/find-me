@@ -1025,13 +1025,28 @@ looks bigger than the badge" report was traced to gesture gain rather than geome
 
 ### Changing a puzzle that people have already played
 
-Each result is stored with a fingerprint of the puzzle it was set on -- the id, shape,
-position, size, angle, fill, opacity and blend. Move the shape, resize it, recolour it
-or swap it for another, and the fingerprint changes, so anyone holding a result for that
-day gets it handed back to them as playable rather than being shown a finished board for
-a puzzle that no longer exists. Their old time still counts towards played, best and
-streak; it just no longer locks the day. Editing a title or an artist line does not
-trip this, since it does not change what the player has to do.
+Each result is stored with two fingerprints of the puzzle it was set on. The `version`
+covers everything the player contends with -- id, shape, position, size, angle, fill,
+opacity, blend and cover. The `spot` covers the hunt alone -- id, shape, position, size
+and angle -- and none of the paint.
+
+Only the `spot` decides whether the day is handed back. Move the shape, resize it, turn
+it or swap it for another, and the day opens playable again: that is a hunt this player
+has not taken, and showing them a finished board would cost them a puzzle. Re-solve the
+day's opacity or fill and the day stays finished, because the shape is exactly where they
+found it -- the card says the puzzle changed and offers the new one as a practice run,
+which is not recorded. Editing a title or an artist line trips neither, since it does not
+change what the player has to do.
+
+It used to be the `version` alone, and that was one fingerprint doing two jobs. Re-tuning
+a day is a routine thing to do to a day nobody has played yet -- and it moves the version
+of every day in that week's file, including the ones people finished that morning. Anyone
+with the old build still open got a fresh clock on a painting they had just solved, with
+nothing on screen to say why, and `record` then let the second run supersede the first. It
+cost a real 34.7s solve, replaced by a 6.7s re-solve of a crown the player already knew
+the location of. A recorded time exists in exactly one place -- that browser's
+`localStorage` -- so there was nothing to put it back from. See [`?restore`](#restore) for
+the door that had to be built, and keep it shut.
 
 Keep `size` small, around 1.5% of the image width. Smaller means more zoom to reach the
 match, which is the fair way to make a puzzle harder; it also means the painting is shown

@@ -14,6 +14,7 @@ import {
   saveResult,
 } from './storage';
 import * as backup from './backup';
+import { fingerprint, spotprint } from './build';
 import { newTracker, type RunMetrics } from './metrics';
 import { PUZZLES } from './puzzles';
 
@@ -76,6 +77,9 @@ function removeCookies(): void {
 
 const V1 = 'aaaa';
 const V2 = 'bbbb';
+/** Hiding places. Two versions over `S1` are a re-tune; `S2` is a different hunt. */
+const S1 = 'ssss';
+const S2 = 'tttt';
 
 beforeEach(() => {
   installStorage();
@@ -84,12 +88,12 @@ beforeEach(() => {
 
 describe('getDayState', () => {
   it('says nothing is recorded for a day that has not been played', () => {
-    expect(getDayState(3, V1)).toEqual({ result: undefined, retuned: false });
+    expect(getDayState(3, V1, S1)).toEqual({ result: undefined, retuned: false });
   });
 
   it('closes the day on the recorded result', () => {
-    saveResult(3, 12345, V1);
-    const state = getDayState(3, V1);
+    saveResult(3, 12345, V1, S1);
+    const state = getDayState(3, V1, S1);
     expect(state.result?.ms).toBe(12345);
     expect(state.retuned).toBe(false);
   });
@@ -98,15 +102,15 @@ describe('getDayState', () => {
   // under a player who had already finished it used to come back as "not played", which
   // handed them a fresh clock and let the replay overwrite the time they really set.
   it('keeps the day closed when the puzzle has been redefined since', () => {
-    saveResult(3, 12345, V1);
-    const state = getDayState(3, V2);
+    saveResult(3, 12345, V1, S1);
+    const state = getDayState(3, V2, S1);
     expect(state.result?.ms).toBe(12345);
     expect(state.retuned).toBe(true);
   });
 
   it('keeps a given-up day closed across a redefinition too', () => {
-    saveGaveUp(3, 240000, V1);
-    const state = getDayState(3, V2);
+    saveGaveUp(3, 240000, V1, S1);
+    const state = getDayState(3, V2, S1);
     expect(state.result?.gaveUp).toBe(true);
     expect(state.retuned).toBe(true);
   });
@@ -116,36 +120,73 @@ describe('getDayState', () => {
   // whose definition nobody recorded.
   it('treats a pre-versioning result as a closed day that has since moved', () => {
     localStorage.setItem(KEY, JSON.stringify({ results: { 3: { ms: 12345, at: '' } } }));
-    const state = getDayState(3, V1);
+    const state = getDayState(3, V1, S1);
     expect(state.result?.ms).toBe(12345);
     expect(state.retuned).toBe(true);
+  });
+
+  // The exception the whole hiding place exists for: the shape really did move, so this
+  // is a hunt the player has not had, and holding the board shut would cost them a day.
+  it('reopens the day when the shape has been hidden somewhere else', () => {
+    saveResult(3, 12345, V1, S1);
+    expect(getDayState(3, V2, S2)).toEqual({ retuned: false });
+  });
+
+  it('keeps the day closed when only the paint moved', () => {
+    saveResult(3, 12345, V1, S1);
+    const state = getDayState(3, V2, S1);
+    expect(state.result?.ms).toBe(12345);
+    expect(state.retuned).toBe(true);
+  });
+
+  // A result from before hiding places were recorded cannot say which hunt it was, and
+  // the safe answer is the one that cannot cost somebody a time they really set.
+  it('keeps a day closed when the recorded result cannot say where it hunted', () => {
+    localStorage.setItem(KEY, JSON.stringify({ results: { 3: { ms: 12345, at: '', v: V1 } } }));
+    expect(getDayState(3, V2, S2).result?.ms).toBe(12345);
   });
 });
 
 describe('saveResult / getCurrentResult', () => {
   it('records and reads back a solve', () => {
-    saveResult(3, 12345, V1);
+    saveResult(3, 12345, V1, S1);
     expect(getCurrentResult(3, V1)?.ms).toBe(12345);
   });
 
   it('keeps the first solve of a puzzle, so replaying cannot improve it', () => {
-    saveResult(3, 12345, V1);
-    saveResult(3, 999, V1);
+    saveResult(3, 12345, V1, S1);
+    saveResult(3, 999, V1, S1);
     expect(getCurrentResult(3, V1)?.ms).toBe(12345);
   });
 
   it('hides a result recorded against a different version of the day', () => {
-    saveResult(3, 12345, V1);
+    saveResult(3, 12345, V1, S1);
     expect(getCurrentResult(3, V2)).toBeUndefined();
   });
 
-  it('lets a redefined puzzle be played and recorded again', () => {
-    saveResult(3, 12345, V1);
-    saveResult(3, 4321, V2);
+  it('lets a re-hidden puzzle be played and recorded again', () => {
+    saveResult(3, 12345, V1, S1);
+    saveResult(3, 4321, V2, S2);
     expect(getCurrentResult(3, V2)?.ms).toBe(4321);
     // ...and the new time is now the one that is protected.
-    saveResult(3, 10, V2);
+    saveResult(3, 10, V2, S2);
     expect(getCurrentResult(3, V2)?.ms).toBe(4321);
+  });
+
+  // The morning this rule came from: the crown stayed exactly where it was and the day's
+  // opacity moved by 0.002, and a 34.7s solve was replaced by a 6.7s re-solve of a hiding
+  // place the player already knew.
+  it('never lets a re-tune displace the time set on the same hiding place', () => {
+    saveResult(3, 34676, V1, S1);
+    saveResult(3, 6717, V2, S1);
+    expect(getResult(3)?.ms).toBe(34676);
+    expect(getResult(3)?.v).toBe(V1);
+  });
+
+  it('protects a recorded time when the new run cannot say where it hunted', () => {
+    saveResult(3, 34676, V1, S1);
+    saveResult(3, 999, V2, undefined as unknown as string);
+    expect(getResult(3)?.ms).toBe(34676);
   });
 
   it('treats a pre-versioning result as belonging to a puzzle that is gone', () => {
@@ -172,12 +213,12 @@ describe('saveResult / getCurrentResult', () => {
       reversals: 3,
       idleMs: 1200,
     };
-    saveResult(3, 25000, V1, m);
+    saveResult(3, 25000, V1, S1, m);
     expect(getCurrentResult(3, V1)?.m).toEqual(m);
   });
 
   it('still records a solve when there is nothing to say about how it went', () => {
-    saveResult(3, 25000, V1);
+    saveResult(3, 25000, V1, S1);
     expect(getCurrentResult(3, V1)?.ms).toBe(25000);
     expect(getCurrentResult(3, V1)?.m).toBeUndefined();
   });
@@ -185,14 +226,14 @@ describe('saveResult / getCurrentResult', () => {
   it('survives corrupt stored data', () => {
     localStorage.setItem(KEY, 'not json');
     expect(getCurrentResult(1, V1)).toBeUndefined();
-    saveResult(1, 500, V1);
+    saveResult(1, 500, V1, S1);
     expect(getCurrentResult(1, V1)?.ms).toBe(500);
   });
 });
 
 describe('giving up', () => {
   it('closes the day out, so coming back does not hand it over again', () => {
-    saveGaveUp(3, 240000, V1);
+    saveGaveUp(3, 240000, V1, S1);
     expect(getCurrentResult(3, V1)?.ms).toBe(240000);
     expect(getCurrentResult(3, V1)?.gaveUp).toBe(true);
   });
@@ -207,66 +248,66 @@ describe('giving up', () => {
       idleMs: 0,
       trace: 'vvpvg',
     };
-    saveGaveUp(3, 240000, V1, m);
+    saveGaveUp(3, 240000, V1, S1, m);
     expect(getCurrentResult(3, V1)?.m?.trace).toBe('vvpvg');
   });
 
   it('counts as played', () => {
-    saveGaveUp(3, 240000, V1);
+    saveGaveUp(3, 240000, V1, S1);
     expect(getStats(3).played).toBe(1);
   });
 
   it('is never a best time, however long or short the hunt was', () => {
-    saveResult(2, 30000, V1);
-    saveGaveUp(3, 900, V1);
+    saveResult(2, 30000, V1, S1);
+    saveGaveUp(3, 900, V1, S1);
     expect(getStats(3).best).toBe(30000);
   });
 
   it('has no best to show when it is the only day played', () => {
-    saveGaveUp(3, 240000, V1);
+    saveGaveUp(3, 240000, V1, S1);
     expect(getStats(3).best).toBeNull();
   });
 
   it('ends the streak on the day it happened', () => {
-    saveResult(1, 30000, V1);
-    saveResult(2, 30000, V1);
-    saveGaveUp(3, 240000, V1);
+    saveResult(1, 30000, V1, S1);
+    saveResult(2, 30000, V1, S1);
+    saveGaveUp(3, 240000, V1, S1);
     expect(getStats(3).streak).toBe(0);
   });
 
   it('is still a break in the streak once the day has passed', () => {
-    saveResult(1, 30000, V1);
-    saveGaveUp(2, 240000, V1);
-    saveResult(3, 30000, V1);
+    saveResult(1, 30000, V1, S1);
+    saveGaveUp(2, 240000, V1, S1);
+    saveResult(3, 30000, V1, S1);
     expect(getStats(3).streak).toBe(1);
   });
 
   it('does not stop a streak that has not reached it yet', () => {
-    saveGaveUp(1, 240000, V1);
-    saveResult(2, 30000, V1);
-    saveResult(3, 30000, V1);
+    saveGaveUp(1, 240000, V1, S1);
+    saveResult(2, 30000, V1, S1);
+    saveResult(3, 30000, V1, S1);
     expect(getStats(3).streak).toBe(2);
   });
 
   it('is protected like a solve: the day cannot be replayed into a time', () => {
-    saveGaveUp(3, 240000, V1);
-    saveResult(3, 1000, V1);
+    saveGaveUp(3, 240000, V1, S1);
+    saveResult(3, 1000, V1, S1);
     expect(getCurrentResult(3, V1)?.gaveUp).toBe(true);
     expect(getStats(3).best).toBeNull();
   });
 
   it('is superseded by a re-hidden day, exactly as a solve is', () => {
-    saveGaveUp(3, 240000, V1);
+    saveGaveUp(3, 240000, V1, S1);
     expect(getCurrentResult(3, V2)).toBeUndefined();
-    saveResult(3, 1000, V2);
+    saveResult(3, 1000, V2, S1);
     expect(getCurrentResult(3, V2)?.gaveUp).toBeUndefined();
   });
 
   it('survives the mirror as a give-up, not as a time somebody earned', () => {
     installCookies();
-    saveResult(1, 30000, V1);
-    saveGaveUp(2, 900, V1);
-    saveResult(3, 30000, V1);
+    saveResult(1, 30000, V1, S1);
+    saveGaveUp(2, 900, V1, S1);
+    saveResult(3, 30000, V1, S1);
 
     // iOS has swept localStorage; only the cookie is left.
     installStorage();
@@ -288,14 +329,48 @@ describe('puzzle versions', () => {
   it('is stable across reads, so a version cannot drift under a stored result', () => {
     expect(PUZZLES.map((p) => p.version)).toEqual(PUZZLES.map((p) => p.version));
   });
+
+  it('gives every puzzle a hiding place too', () => {
+    for (const p of PUZZLES) expect(p.spot, p.id).toMatch(/^[0-9a-z]+$/);
+  });
+
+  it('gives different puzzles different hiding places', () => {
+    expect(new Set(PUZZLES.map((p) => p.spot)).size).toBe(PUZZLES.length);
+  });
+
+  // The property the whole distinction rests on: solving a day's paint again must move
+  // the version and leave the hiding place alone, or a re-tune would still read as a
+  // re-hide and still hand the day back.
+  it('moves the version but not the hiding place when only the paint changes', () => {
+    const day = { shape: 'crown', cx: 1025, cy: 353, size: 25, angle: -104, blend: 'screen' };
+    const before = { ...day, fill: '#abbdd5', opacity: 0.348 };
+    const after = { ...day, fill: '#abbdd5', opacity: 0.35, cover: 0.5, base: '#4d6e9a' };
+    expect(fingerprint('starry', 'sat', after)).not.toBe(fingerprint('starry', 'sat', before));
+    expect(spotprint('starry', 'sat', after)).toBe(spotprint('starry', 'sat', before));
+  });
+
+  it('moves both when the shape is hidden somewhere else', () => {
+    const paint = { shape: 'crown', size: 25, angle: -104, fill: '#abbdd5', opacity: 0.35 };
+    const here = { ...paint, cx: 1025, cy: 353 };
+    const there = { ...paint, cx: 1025, cy: 354 };
+    expect(fingerprint('starry', 'sat', there)).not.toBe(fingerprint('starry', 'sat', here));
+    expect(spotprint('starry', 'sat', there)).not.toBe(spotprint('starry', 'sat', here));
+  });
+
+  it('moves the hiding place when the shape itself is swapped', () => {
+    const where = { cx: 1025, cy: 353, size: 25, angle: -104, fill: '#abbdd5', opacity: 0.35 };
+    expect(spotprint('starry', 'sat', { ...where, shape: 'spade' })).not.toBe(
+      spotprint('starry', 'sat', { ...where, shape: 'crown' }),
+    );
+  });
 });
 
 describe('progress', () => {
-  const RUN = { day: 3, v: V1, ms: 8000, t: { x: 10, y: -20, scale: 2.5, rot: 0.4 }, w: 800, h: 600 };
+  const RUN = { day: 3, v: V1, s: S1, ms: 8000, t: { x: 10, y: -20, scale: 2.5, rot: 0.4 }, w: 800, h: 600 };
 
   it('hands back the run it stored', () => {
     saveProgress(RUN);
-    const back = getProgress(3, V1);
+    const back = getProgress(3, V1, S1);
     expect(back?.ms).toBe(8000);
     expect(back?.t).toEqual(RUN.t);
     expect(back?.w).toBe(800);
@@ -303,18 +378,33 @@ describe('progress', () => {
   });
 
   it('has nothing to hand back before a run is stored', () => {
-    expect(getProgress(3, V1)).toBeUndefined();
+    expect(getProgress(3, V1, S1)).toBeUndefined();
   });
 
   it('refuses a run stored against another day, and drops it', () => {
     saveProgress(RUN);
-    expect(getProgress(4, V1)).toBeUndefined();
-    expect(getProgress(3, V1)).toBeUndefined();
+    expect(getProgress(4, V1, S1)).toBeUndefined();
+    expect(getProgress(3, V1, S1)).toBeUndefined();
   });
 
-  it('refuses a run stored against an older version of the day', () => {
+  // Re-tuning a day mid-hunt is not a reason to take somebody's clock off them: the
+  // shape is where it was, and the clock and the framing were spent looking for it there.
+  it('hands a run back when the day was re-tuned under it', () => {
     saveProgress(RUN);
-    expect(getProgress(3, V2)).toBeUndefined();
+    expect(getProgress(3, V2, S1)?.ms).toBe(8000);
+  });
+
+  it('refuses a run stored against a hiding place the shape has left', () => {
+    saveProgress(RUN);
+    expect(getProgress(3, V1, S2)).toBeUndefined();
+  });
+
+  // Banked before hiding places were recorded, so the version is all it has to go on.
+  it('falls back to the version for a run banked without a hiding place', () => {
+    saveProgress({ ...RUN, s: undefined });
+    expect(getProgress(3, V1, S1)?.ms).toBe(8000);
+    saveProgress({ ...RUN, s: undefined });
+    expect(getProgress(3, V2, S1)).toBeUndefined();
   });
 
   it('refuses a run left sitting longer than the resume window', () => {
@@ -322,13 +412,13 @@ describe('progress', () => {
     const store = JSON.parse(localStorage.getItem(KEY)!);
     store.progress.at = new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString();
     localStorage.setItem(KEY, JSON.stringify(store));
-    expect(getProgress(3, V1)).toBeUndefined();
+    expect(getProgress(3, V1, S1)).toBeUndefined();
   });
 
   it('keeps only the latest run', () => {
     saveProgress(RUN);
     saveProgress({ ...RUN, ms: 20000 });
-    expect(getProgress(3, V1)?.ms).toBe(20000);
+    expect(getProgress(3, V1, S1)?.ms).toBe(20000);
   });
 
   // A second page of the same day -- another tab, or one the phone froze and handed back --
@@ -336,32 +426,39 @@ describe('progress', () => {
   it('refuses a clock that runs backwards, so a stale page cannot shorten the run', () => {
     saveProgress({ ...RUN, ms: 300000 });
     saveProgress({ ...RUN, ms: 180000 });
-    expect(getProgress(3, V1)?.ms).toBe(300000);
+    expect(getProgress(3, V1, S1)?.ms).toBe(300000);
   });
 
   it("keeps the fuller run's view along with its clock", () => {
     saveProgress({ ...RUN, ms: 300000 });
     saveProgress({ ...RUN, ms: 180000, t: { x: 1, y: 2, scale: 1, rot: 0 } });
-    expect(getProgress(3, V1)?.t).toEqual(RUN.t);
+    expect(getProgress(3, V1, S1)?.t).toEqual(RUN.t);
   });
 
   it('takes a shorter run on another day, which is another run', () => {
     saveProgress({ ...RUN, ms: 300000 });
     saveProgress({ ...RUN, day: 4, ms: 1000 });
-    expect(getProgress(4, V1)?.ms).toBe(1000);
+    expect(getProgress(4, V1, S1)?.ms).toBe(1000);
   });
 
-  it('takes a shorter run on a re-defined puzzle, which is also another run', () => {
+  it('takes a shorter run on a re-hidden puzzle, which is also another run', () => {
+    saveProgress({ ...RUN, ms: 300000 });
+    saveProgress({ ...RUN, v: V2, s: S2, ms: 1000 });
+    expect(getProgress(3, V2, S2)?.ms).toBe(1000);
+  });
+
+  // Same run, same hiding place, repainted underneath: the clock still only goes forward.
+  it('keeps the fuller run when the day is re-tuned mid-hunt', () => {
     saveProgress({ ...RUN, ms: 300000 });
     saveProgress({ ...RUN, v: V2, ms: 1000 });
-    expect(getProgress(3, V2)?.ms).toBe(1000);
+    expect(getProgress(3, V2, S1)?.ms).toBe(300000);
   });
 
   it('clears on request, leaving recorded results alone', () => {
-    saveResult(3, 12345, V1);
+    saveResult(3, 12345, V1, S1);
     saveProgress(RUN);
     clearProgress();
-    expect(getProgress(3, V1)).toBeUndefined();
+    expect(getProgress(3, V1, S1)).toBeUndefined();
     expect(getCurrentResult(3, V1)?.ms).toBe(12345);
   });
 
@@ -369,7 +466,7 @@ describe('progress', () => {
     const k = { ...newTracker(), hot: true, hotAt: 4000, lastAt: 8000 };
     k.m.passes = 3;
     saveProgress({ ...RUN, k });
-    expect(getProgress(3, V1)?.k).toEqual(k);
+    expect(getProgress(3, V1, S1)?.k).toEqual(k);
   });
 
   it('drops a damaged collector but keeps the clock, since the run is the point', () => {
@@ -377,20 +474,20 @@ describe('progress', () => {
     const store = JSON.parse(localStorage.getItem(KEY)!);
     store.progress.k = { m: 'nonsense' };
     localStorage.setItem(KEY, JSON.stringify(store));
-    const back = getProgress(3, V1);
+    const back = getProgress(3, V1, S1);
     expect(back?.ms).toBe(8000);
     expect(back?.k).toBeUndefined();
   });
 
   it('ignores a malformed stored run', () => {
     localStorage.setItem(KEY, JSON.stringify({ results: {}, progress: { day: 3, v: V1 } }));
-    expect(getProgress(3, V1)).toBeUndefined();
+    expect(getProgress(3, V1, S1)).toBeUndefined();
   });
 
   it('leaves results readable alongside a stored run', () => {
     saveProgress(RUN);
-    saveResult(3, 12345, V1);
-    expect(getProgress(3, V1)?.ms).toBe(8000);
+    saveResult(3, 12345, V1, S1);
+    expect(getProgress(3, V1, S1)?.ms).toBe(8000);
     expect(getStats(3).played).toBe(1);
   });
 });
@@ -407,9 +504,9 @@ describe('the cookie mirror', () => {
   });
 
   it('hands the results back after localStorage is wiped under the player', () => {
-    saveResult(10, 30000, V1);
-    saveResult(11, 20000, V1);
-    saveResult(12, 25000, V1);
+    saveResult(10, 30000, V1, S1);
+    saveResult(11, 20000, V1, S1);
+    saveResult(12, 25000, V1, S1);
 
     // Exactly what iOS does: script-writable storage gone, cookies untouched.
     installStorage();
@@ -420,14 +517,14 @@ describe('the cookie mirror', () => {
   });
 
   it('keeps the version, so a re-hidden day still comes back playable', () => {
-    saveResult(12, 25000, V1);
+    saveResult(12, 25000, V1, S1);
     installStorage();
     expect(getCurrentResult(12, V2)).toBeUndefined();
     expect(getResult(12)?.ms).toBe(25000);
   });
 
   it('heals localStorage from the mirror on the way in', () => {
-    saveResult(10, 30000, V1);
+    saveResult(10, 30000, V1, S1);
     installStorage();
     touch();
 
@@ -445,13 +542,13 @@ describe('the cookie mirror', () => {
       reversals: 3,
       idleMs: 1200,
     };
-    saveResult(10, 25000, V1, m);
+    saveResult(10, 25000, V1, S1, m);
     // The mirror cannot afford the metrics; the primary store must still win.
     expect(getCurrentResult(10, V1)?.m).toEqual(m);
   });
 
   it('re-arms the cookie on a visit, not only on a solve', () => {
-    saveResult(10, 30000, V1);
+    saveResult(10, 30000, V1, S1);
     installCookies(); // the cookie expired; the localStorage copy is still there
     touch();
     installStorage();
@@ -459,8 +556,8 @@ describe('the cookie mirror', () => {
   });
 
   it('survives a mangled cookie without losing the days it can still read', () => {
-    saveResult(10, 30000, V1);
-    saveResult(11, 20000, V1);
+    saveResult(10, 30000, V1, S1);
+    saveResult(11, 20000, V1, S1);
     document.cookie = 'fm-results=1~2~ffk~a:n5c:aaaa,@@@:zz';
     installStorage();
     expect(getResult(11)).toBeUndefined();
@@ -479,9 +576,9 @@ describe('getHistory', () => {
   });
 
   it('hands back every recorded day in day order, give-ups included', () => {
-    saveResult(12, 30000, V1);
-    saveGaveUp(3, 240000, V1);
-    saveResult(7, 20000, V2);
+    saveResult(12, 30000, V1, S1);
+    saveGaveUp(3, 240000, V1, S1);
+    saveResult(7, 20000, V2, S1);
     expect(getHistory()).toEqual({
       days: [
         { day: 3, ms: 240000, gaveUp: true },

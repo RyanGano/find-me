@@ -1,4 +1,4 @@
-import { fingerprint } from './build';
+import { fingerprint, spotprint } from './build';
 import { dayIndex, EPOCH, weekday } from './daily';
 import { PUZZLES } from './puzzles';
 import { getShape, SHAPES } from './shapes';
@@ -209,6 +209,9 @@ export function hidePuzzle(h: Hide, painting: Painting): Puzzle {
     symmetry: def.symmetry,
   };
   const version = fingerprint(h.image, 'hide', target);
+  // Keyed the same way, though nothing here reads it: a hide is never recorded, so it has
+  // no result for a hiding place to be compared against.
+  const spot = spotprint(h.image, 'hide', target);
   return {
     id: `hide-${version}`,
     image: h.image,
@@ -222,6 +225,7 @@ export function hidePuzzle(h: Hide, painting: Painting): Puzzle {
     thing: def.label,
     emoji: def.emoji,
     version,
+    spot,
     target,
   };
 }

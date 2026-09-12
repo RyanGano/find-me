@@ -11,6 +11,9 @@ import {
   testerId,
 } from './testbedStore';
 
+/** A hiding place. Nothing here turns on which one, only that results carry it. */
+const S1 = 'ssss';
+
 const GAME_KEY = 'find-me:v1';
 const BENCH_KEY = 'find-me:testbed:v1';
 
@@ -144,8 +147,8 @@ describe('the bench cannot reach the game', () => {
   });
 
   it('leaves a streak, a best time and a recorded day exactly as it found them', () => {
-    saveResult(3, 45000, 'abc');
-    saveResult(4, 30000, 'def');
+    saveResult(3, 45000, 'abc', S1);
+    saveResult(4, 30000, 'def', S1);
     const before = getStats(4);
 
     testerId();
@@ -162,7 +165,7 @@ describe('the bench cannot reach the game', () => {
   it('is not disturbed by the game writing either', () => {
     saveAnswer('r1', 'cafe-fri', { ms: 1000, gaveUp: false, hard: 3, fair: 1 });
     const tester = testerId();
-    saveResult(9, 12000, 'xyz');
+    saveResult(9, 12000, 'xyz', S1);
     expect(testerId()).toBe(tester);
     expect(answersFor('r1')['cafe-fri'].hard).toBe(3);
     expect(data.has(GAME_KEY)).toBe(true);

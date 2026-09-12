@@ -91,6 +91,13 @@ export interface Puzzle {
    * hands the day back to the player instead of showing them a stale finished board.
    */
   version: string;
+  /**
+   * Fingerprint of the hunt alone -- which shape, where, how big, at what angle -- with
+   * none of the paint in it. What separates re-tuning a day from re-hiding it: the first
+   * leaves a player who has already found it with a day they have finished, the second
+   * is a new hunt on the same date and is handed back. See `spotprint` in `build.ts`.
+   */
+  spot: string;
 }
 
 /**

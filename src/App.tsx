@@ -92,16 +92,16 @@ export default function App() {
   // and there is no copy of it anywhere else. See `restoreResult` in `storage.ts` for the
   // door that exists because this did not.
   const { result: prior, retuned } = useMemo(
-    () => (isPractice ? { retuned: false } : getDayState(day, puzzle.version)),
-    [day, isPractice, puzzle.version],
+    () => (isPractice ? { retuned: false } : getDayState(day, puzzle.version, puzzle.spot)),
+    [day, isPractice, puzzle.version, puzzle.spot],
   );
 
   // A run left half-finished -- most often by an accidental edge swipe, which the browser
   // reads as "back" -- comes back with its clock where it was, rather than handing the
   // player a fresh timer and a free second look at the painting.
   const saved = useMemo(
-    () => (isPractice || prior ? undefined : getProgress(day, puzzle.version)),
-    [day, isPractice, prior, puzzle.version],
+    () => (isPractice || prior ? undefined : getProgress(day, puzzle.version, puzzle.spot)),
+    [day, isPractice, prior, puzzle.version, puzzle.spot],
   );
 
   // Identifies this run to the daily tally, and nothing beyond it. A resumed run carries
@@ -197,24 +197,24 @@ export default function App() {
     (ms: number, run: RunMetrics, id: string) => {
       setShowResult(true);
       if (!isPractice) {
-        saveResult(day, ms, puzzle.version, run);
+        saveResult(day, ms, puzzle.version, puzzle.spot, run);
         clearProgress();
         count(id, day, 'solved', ms);
       }
       setStats(getStats(day));
     },
-    [isPractice, day, puzzle.version],
+    [isPractice, day, puzzle.version, puzzle.spot],
   );
 
   const onLeave = useCallback(
     (left: LeftRun, id: string) => {
       if (isPractice) return;
-      saveProgress({ day, v: puzzle.version, ms: left.ms, t: left.t, w: left.w, h: left.h, k: left.k, r: id });
+      saveProgress({ day, v: puzzle.version, s: puzzle.spot, ms: left.ms, t: left.t, w: left.w, h: left.h, k: left.k, r: id });
       // A run the player walked away from. If they come back and solve it, the solve
       // supersedes this; if they never do, this is how long they lasted.
       count(id, day, 'left', left.ms);
     },
-    [isPractice, day, puzzle.version],
+    [isPractice, day, puzzle.version, puzzle.spot],
   );
 
   /**
@@ -225,8 +225,8 @@ export default function App() {
    * and a value read at mount is exactly the stale answer that would be no use.
    */
   const onReturn = useCallback(
-    () => (isPractice ? undefined : getProgress(day, puzzle.version)),
-    [isPractice, day, puzzle.version],
+    () => (isPractice ? undefined : getProgress(day, puzzle.version, puzzle.spot)),
+    [isPractice, day, puzzle.version, puzzle.spot],
   );
 
   const gate = useMemo(() => giveUpAfterMs(puzzle), [puzzle]);
@@ -386,12 +386,12 @@ export default function App() {
     setShowResult(true);
     setShowRing(true);
     if (!isPractice) {
-      saveGaveUp(day, ms, puzzle.version, m ?? undefined);
+      saveGaveUp(day, ms, puzzle.version, puzzle.spot, m ?? undefined);
       clearProgress();
       count(runId, day, 'gave-up', ms);
     }
     setStats(getStats(day));
-  }, [giveUp, isPractice, day, puzzle.version, runId]);
+  }, [giveUp, isPractice, day, puzzle.version, puzzle.spot, runId]);
 
   // The plea has said its piece; it should not sit on the painting for the rest of the
   // hunt. It goes the moment the door it was about opens too, but that is decided at

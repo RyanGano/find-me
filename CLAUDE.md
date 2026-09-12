@@ -189,11 +189,18 @@ if `Math.random` or crypto randomness ever appears under `src/`; `daily.test.ts`
 derives each shape's true rotational order from rasterised pixels rather than trusting
 the declared number.
 
-**Results are versioned by puzzle definition.** Each `Puzzle` carries a `version`
-fingerprint of everything defining the challenge. `src/game/storage.ts` records a result
-with the version it was set on, so re-hiding, resizing or recolouring a shape hands the
-day back as playable instead of showing a stale finished board — while old times still
-count towards played, best and streak. Title/artist edits do not trip it.
+**Results are versioned by puzzle definition, and re-hiding is not re-tuning.** Each
+`Puzzle` carries two fingerprints: `version`, over everything defining the challenge, and
+`spot`, over the hunt alone — shape, position, size, angle, and none of the paint.
+`src/game/storage.ts` records a result with both. Only a moved `spot` hands the day back
+as playable, because only that is a hunt the player has not taken; a moved `version` over
+the same `spot` leaves the day finished and says so on the card, offering the new paint as
+a practice run. `record` will not let a replay displace a recorded time unless the spot
+moved, and a result that cannot say where it hunted is never treated as one that moved.
+Old times count towards played, best and streak either way. Title/artist edits trip
+neither. Read "Changing a puzzle that people have already played" in README.md before
+touching any of it: matching on the version alone is what cost a player a real solve, and
+`restoreResult` exists only to repair that and must not become routine.
 
 **Run shape, not just the clock.** `src/game/metrics.ts` collects how a run was played
 (search vs. approach time, near-misses, dither, freezes) as plain numbers so a run

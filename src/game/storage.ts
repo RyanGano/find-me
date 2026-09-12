@@ -24,6 +24,17 @@ export interface Result {
    */
   v?: string;
   /**
+   * The hiding place this time was found in -- the shape, where it sat, how big, at what
+   * angle, and none of the paint. It is what says whether a later change to the day was a
+   * re-tune or a re-hide, and so whether the player has already had this hunt.
+   *
+   * Absent on everything recorded before it existed, which is read as "cannot tell". The
+   * safe answer there is that the day stays closed: handing a finished day back costs
+   * somebody the time they set, and showing a finished board for a day that has secretly
+   * moved costs them a hunt they can still go and take from the card.
+   */
+  s?: string;
+  /**
    * How the run was played, for the Find Me Age. Absent on results recorded before it
    * existed; those still show an age, taken from the clock alone. The age itself is not
    * stored, so retuning the estimate re-reads old runs rather than freezing them.
@@ -189,10 +200,19 @@ export interface DayState {
  * to everyone who had already finished it, and the replay then overwrote the real time.
  * Keeping them apart is the whole fix -- `result` closes the day, `retuned` only tells the
  * player what happened and offers them the new one.
+ *
+ * `spot` is what keeps that from going too far the other way. A day whose shape has
+ * actually moved is not the hunt this player took, and holding the board closed on it
+ * would quietly cost them a puzzle. So a moved spot reopens the day, exactly as a moved
+ * version used to -- and a moved version over the same spot no longer does.
  */
-export function getDayState(day: number, version: string): DayState {
+export function getDayState(day: number, version: string, spot: string): DayState {
   const result = read().results[String(day)];
-  return { result, retuned: result !== undefined && result.v !== version };
+  if (!result) return { retuned: false };
+  // Re-hidden: a different hunt on the same date, so it is handed back as a new puzzle
+  // and the time that was set on the old one is superseded when this one is finished.
+  if (result.s !== undefined && result.s !== spot) return { retuned: false };
+  return { result, retuned: result.v !== version };
 }
 
 /**
@@ -208,9 +228,10 @@ export function saveResult(
   day: number,
   ms: number,
   version: string,
+  spot: string,
   metrics?: RunMetrics,
 ): void {
-  record(day, { ms, at: new Date().toISOString(), v: version, m: metrics });
+  record(day, { ms, at: new Date().toISOString(), v: version, s: spot, m: metrics });
 }
 
 /**
@@ -224,19 +245,43 @@ export function saveResult(
  * Age is never read off them, since there is nothing honest it could say about a run
  * that did not end in a find.
  */
-export function saveGaveUp(day: number, ms: number, version: string, metrics?: RunMetrics): void {
-  record(day, { ms, at: new Date().toISOString(), v: version, m: metrics, gaveUp: true });
+export function saveGaveUp(
+  day: number,
+  ms: number,
+  version: string,
+  spot: string,
+  metrics?: RunMetrics,
+): void {
+  record(day, {
+    ms,
+    at: new Date().toISOString(),
+    v: version,
+    s: spot,
+    m: metrics,
+    gaveUp: true,
+  });
 }
 
 function record(day: number, result: Result): void {
   const store = read();
   const key = String(day);
   const existing = store.results[key];
-  // Keep the first result of a given puzzle, so replaying cannot improve the record --
-  // but a result from an older version of the day is superseded, not protected.
-  if (existing && existing.v === result.v) return;
+  // A recorded time is only ever displaced by a genuinely different hunt -- the shape
+  // moved, so the day this player finished is not the day now on the painting. Everything
+  // else leaves it alone: a replay cannot improve it, and neither can a re-tune, which is
+  // the same hiding place under different paint and so the same hunt they already took.
+  //
+  // This used to turn on the version, which made re-tuning a day enough to let a second
+  // run overwrite the first. `s` is absent on results recorded before it existed, and an
+  // unknown hiding place is never treated as a moved one: the recorded time stands.
+  if (existing && !rehidden(existing, result)) return;
   store.results[key] = result;
   write(store);
+}
+
+/** Whether two results are for different hiding places, where both say which they were. */
+function rehidden(a: Result, b: Result): boolean {
+  return a.s !== undefined && b.s !== undefined && a.s !== b.s;
 }
 
 /**
@@ -347,8 +392,15 @@ export function getHistory(): History {
  */
 export interface Progress {
   day: number;
-  /** Puzzle version, as on `Result`. A redefined puzzle is a new puzzle. */
+  /** Puzzle version, as on `Result`. */
   v: string;
+  /**
+   * Hiding place, as on `Result`, and what a resumed run is actually matched on: the
+   * clock and the framing belong to a hunt for a shape in a place, and re-solving that
+   * day's opacity underneath does not make them wrong. A run banked by a build from
+   * before this has none, and falls back to the version it was banked with.
+   */
+  s?: string;
   /** Elapsed time in milliseconds at the moment the page was left. */
   ms: number;
   /** The viewport transform, in the stage box it was measured in. */
@@ -398,13 +450,25 @@ function isProgress(value: unknown): value is Progress {
  * The run to resume for this puzzle, if there is one. A stored run for another day, an
  * older version of this day, or one left sitting for half a day is dropped on the spot.
  */
-export function getProgress(day: number, version: string): Progress | undefined {
+export function getProgress(day: number, version: string, spot: string): Progress | undefined {
   const progress = read().progress;
   if (!progress) return undefined;
   const fresh = Date.now() - Date.parse(progress.at) < PROGRESS_MAX_AGE_MS;
-  if (progress.day === day && progress.v === version && fresh) return progress;
+  if (progress.day === day && sameHunt(progress, version, spot) && fresh) return progress;
   clearProgress();
   return undefined;
+}
+
+/**
+ * Whether a banked run is a run at the hunt now on the board.
+ *
+ * The hiding place decides it where the run knows one, because that is what the clock and
+ * the framing were spent on; re-tuning the paint underneath a half-finished run is not a
+ * reason to take the clock off somebody. A run banked before hiding places were written
+ * down has only its version to go on, and keeps the stricter old answer.
+ */
+function sameHunt(progress: Progress, version: string, spot: string): boolean {
+  return progress.s !== undefined ? progress.s === spot : progress.v === version;
 }
 
 export function saveProgress(progress: Omit<Progress, 'at'>): void {
@@ -421,12 +485,15 @@ export function saveProgress(progress: Omit<Progress, 'at'>): void {
    * at it, however long they had played since, and every return handed back the same stale
    * time. The fuller run is the truer one, so it stands.
    *
-   * Only within one run, which is what the day and version being equal means -- a shorter
-   * run on another day, or on a re-defined puzzle, is a different run and simply replaces
-   * this one.
+   * Only within one run, which is what the day and hiding place being equal means -- a
+   * shorter run on another day, or on a shape that has since moved, is a different run and
+   * simply replaces this one.
    */
   const stale =
-    held !== undefined && held.day === progress.day && held.v === progress.v && held.ms > progress.ms;
+    held !== undefined &&
+    held.day === progress.day &&
+    (held.s !== undefined && progress.s !== undefined ? held.s === progress.s : held.v === progress.v) &&
+    held.ms > progress.ms;
   store.progress = { ...(stale ? held : progress), at: new Date().toISOString() };
   write(store);
 }
