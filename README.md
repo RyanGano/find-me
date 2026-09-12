@@ -57,7 +57,7 @@ around. It did not catch the lightning bolt, because the bolt was two-fold symme
 the eye and a couple of pixels out of true in the path, so the measurement agreed with
 the wrong declared number: it now reads a half turn onto itself exactly, and matches
 upside down. That costs it the back half of the week — a shape that matches every 180°
-can never ask for more than 90° of work — which `shapesForWeek` enforces on its own.
+can never ask for more than 90° of work — which `canHold` in `shapeOrder.ts` enforces on its own.
 
 A shape earns its place in the registry on two things the path string cannot show: the
 silhouette has to be unmistakable as an 18px speck with a whole painting around it, and
@@ -164,7 +164,22 @@ no company at all — Rousseau's Sunday scored 0.97 sitting on the line where th
 meets the sand, and played easy.
 
 Within a week no shape, and no hiding place, is ever reused. Across weeks they are, and
-that is fine.
+that is fine -- but which shape comes when is chosen across the whole calendar, by
+`shapeRun` in `src/game/shapeOrder.ts`, to three rules:
+
+1. **Never the same shape two days in a row**, including a Sunday and the Monday after it.
+2. **Every shape about as often as every other** -- within one use of each other over the
+   weeks the rules choose.
+3. **No order a player could learn.** The old planner stepped through a fixed list, so a
+   player who noticed could guess tomorrow's shape. Ties are now broken by a hash of the
+   week, the day and the shape.
+
+A shape still only lands on a day it can turn far enough for, so the symmetric ones stay
+on the front half of the week. The weeks already served when the rules arrived keep their
+shapes and are named in `SHAPES_AS_SERVED`, a list of exemptions. The choice depends on
+the shape registry, so **before adding or removing a shape, add every week already served
+to that list**; otherwise the next plan re-deals them. `shapeOrder.test.ts` holds the file
+to all three rules and to what the planner would choose.
 
 Ten paintings therefore give ten weeks -- seventy days -- and `week.test.ts`
 asserts the rules rather than the numbers: seven days per painting, seven different

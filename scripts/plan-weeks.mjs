@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { RAMP } from '../src/game/difficulty.ts';
 import { PUZZLES } from '../src/game/puzzles.ts';
 import { SHAPES } from '../src/game/shapes.ts';
+import { shapeRun } from '../src/game/shapeOrder.ts';
 import { colourAt, paintFor } from './lib/paint.mjs';
 import { dimnessOf } from './lib/busy.mjs';
 import {
@@ -41,37 +42,14 @@ const FILE = args.includes('--testbed') ? 'src/game/testbed.ts' : 'src/game/puzz
 const only = args.filter((a) => !a.startsWith('-'));
 
 /**
- * Shapes with rotational symmetry are the kind ones: a six-armed snowflake matches at
- * every 60 degrees, so it can never ask for more than 30 degrees of work. That caps
- * which days they can hold, and it is why the back half of the week is always drawn
- * from the one-way shapes.
+ * Which shape each day hides is chosen across the whole file, not week by week: never the
+ * same shape two days running (Sunday to the next Monday included), every shape about as
+ * often as every other, and no order a player could learn. See `shapeRun` in
+ * src/game/shapeOrder.ts, which `shapeOrder.test.ts` holds the shipped file to.
+ *
+ * Weeks named in `SHAPES_AS_SERVED` keep the shapes they were served with. The bench has
+ * no calendar and nothing served, so every bench week is chosen afresh.
  */
-const SYMMETRIC = ['snowflake', 'star', 'clover', 'triangle', 'blossom', 'cross', 'sun'];
-// Not all of these are strictly one-way -- the bolt, the diamond, the hourglass and the
-// bone all come back at a half turn -- but 90 degrees of work is enough for every rung up
-// to Friday, and the filter below is what actually decides which day a shape can hold.
-const ONE_WAY = [
-  'key', 'crescent', 'heart', 'anchor', 'fish', 'bolt', 'arrow',
-  'droplet', 'leaf', 'house', 'crown', 'spade', 'tree', 'note', 'diamond',
-  'bell', 'umbrella', 'hourglass', 'bone', 'cloud', 'apple', 'sailboat', 'butterfly', 'puzzle',
-];
-
-/** The shape for each day of week `w`, all seven different, symmetry falling as the week goes on. */
-function shapesForWeek(w) {
-  const chosen = [];
-  for (const [d, rung] of RAMP.entries()) {
-    // The step has to be coprime with the pool size or most orderings are unreachable:
-    // at 24 shapes a step of 4 would only ever produce six of them.
-    const oneWay = ONE_WAY.map((_, i) => ONE_WAY[(i + w * 5) % ONE_WAY.length]);
-    // The early days prefer a symmetric shape, but a symmetric shape that cannot turn
-    // far enough is no use at all -- some weeks the rotation simply runs out of them.
-    const pool = d < 3 ? [...SYMMETRIC.map((_, i) => SYMMETRIC[(i + w) % SYMMETRIC.length]), ...oneWay] : oneWay;
-    const pick = pool.find((s) => !chosen.includes(s) && 180 / SHAPES[s].symmetry >= rung.angle + 2);
-    if (!pick) throw new Error(`week ${w} day ${d}: no shape can turn ${rung.angle} degrees`);
-    chosen.push(pick);
-  }
-  return chosen;
-}
 
 /**
  * A stored angle that costs the player exactly the day's rung of work.
@@ -655,6 +633,9 @@ function weeks(source) {
       // A painting that is more spottable than most carries a smaller size ladder; see
       // `sizeScale` in puzzles.ts. Absent means the ramp's own sizes.
       sizeScale: field('sizeScale') ? +field('sizeScale') : 1,
+      // What the week carries now: kept by a week in `SHAPES_AS_SERVED`, and the neighbour
+      // the week after it must not repeat.
+      shapes: [...m[0].matchAll(/shape: '(\w+)'/g)].map((s) => s[1]),
       start: m.index,
       end: re.lastIndex,
     });
@@ -665,6 +646,9 @@ function weeks(source) {
 let source = readFileSync(FILE, 'utf8');
 const found = weeks(source);
 if (!found.length) throw new Error(`no week seeds found in ${FILE}`);
+// Chosen for every week at once, front to back, before anything is rewritten: each week's
+// shapes lean on the week before it, however many of them this run is re-planning.
+const shapeWeeks = shapeRun(found, FILE.endsWith('testbed.ts') ? [] : undefined);
 
 // Back to front, so rewriting one week cannot shift the offsets of the next.
 for (const [w, week] of [...found.entries()].reverse()) {
@@ -679,7 +663,7 @@ for (const [w, week] of [...found.entries()].reverse()) {
     );
   }
 
-  const shapes = shapesForWeek(w);
+  const shapes = shapeWeeks[w];
   const surveyed = survey(grey.data, grey.info, rgb, prominenceOn(rgb));
   // A spottable painting carries a smaller ladder -- see `sizeScale` in puzzles.ts. Every
   // window the planner measures with is derived from the day's size, so the scale has to

@@ -160,6 +160,17 @@ touching any of it: the term existed once, was removed for a circular reason, an
 shipped weeks paid for it. Those lines are machine-written —
 one dense line per day; hand edits are fine but must stay on one line.
 
+**Shapes come in no order a player can learn.** `src/game/shapeOrder.ts` chooses every
+week's shapes across the whole calendar, and `shapeOrder.test.ts` holds the file to three
+rules: never the same shape two days in a row, Sunday to the next Monday included; every
+shape used roughly as often as every other; and an order that looks random rather than
+stepping through the `SHAPES` list. Inside a week the seven are still all different, and
+each sits only on a day its symmetry lets it turn far enough for. Weeks served before the
+rules arrived are exempt by name in `SHAPES_AS_SERVED`. The choice is a function of the
+shape registry, so before adding or removing a shape, add every week already served to
+that list. Otherwise re-planning re-deals shapes on weeks players have already finished.
+See "Within a week" in README.md.
+
 **A week is seven different things.** `src/game/palette.ts` names the colour of a hiding
 place from a closed, deliberately coarse list, and a week must hide in at least four of
 them with no colour used more than twice — and a colour reused only in a different texture

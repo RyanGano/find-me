@@ -138,8 +138,28 @@ changes which painting every future day lands on, and hands people finished boar
 puzzles they never played.
 
 The new week goes **last** in the `WEEKS` array in `src/game/puzzles.ts`. Nothing above it
-moves — not a line, not a field. `plan-weeks.mjs` also seeds its shape rotation and angles
-from the week's index, so appending is what keeps the existing weeks byte-identical.
+moves — not a line, not a field. `plan-weeks.mjs` seeds its angles from the week's index,
+and `shapeRun` in `src/game/shapeOrder.ts` chooses each week's shapes from the weeks
+*before* it only. Appending is what keeps the existing weeks byte-identical.
+
+## Rule 5 — shapes across the calendar
+
+The planner picks the shapes. Do not hand-pick them. The new week must keep all three of
+these, and `shapeOrder.test.ts` fails the build if it does not:
+
+1. **Never the same shape two days in a row.** That includes the previous final week's
+   Sunday and the new week's Monday, and the new week's Sunday and the first week's Monday
+   (the calendar wraps).
+2. **Every shape used roughly an even amount** across the rotation: within one use of
+   each other over every week not exempt in `SHAPES_AS_SERVED`.
+3. **An order that looks random.** Never step through the shape list 1, 2, 3, 4…
+   `shapeRun` breaks ties by a hash for exactly this reason.
+
+If the test fails after planning, re-run `npm run plan -- NAME` rather than editing a
+`shape:` by hand; the test also checks that the file matches what the planner would choose.
+If a shape has been added to or removed from `shapes.ts` since the last week was planned,
+first add every week already served to `SHAPES_AS_SERVED`. Otherwise the registry change
+re-deals shapes on weeks players have finished.
 
 ## Steps
 

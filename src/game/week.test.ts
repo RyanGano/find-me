@@ -33,7 +33,7 @@ const FLOORED = new Set(['jatte-sun']);
  * it looks exactly like itself, so the day was rejecting a rotation players could see
  * was right. Giving the bolt its true two-fold symmetry costs this Saturday 28 degrees
  * of its 104, and the alternative was re-hiding a day that was already being played.
- * Nothing else has to live here: `shapesForWeek` in plan-weeks.mjs only offers a shape
+ * Nothing else has to live here: `canHold` in shapeOrder.ts only offers a shape
  * to a day it can actually turn far enough for, so with the symmetry corrected the bolt
  * can no longer be planned onto a Saturday or a Sunday at all.
  */
@@ -77,7 +77,7 @@ const MONDAY_LEFT_AS_SERVED = ['starry'];
  * It comes off this list the moment it is re-tuned. A list of exemptions, never of weeks
  * held to the rule, so a painting added later is caught by default.
  */
-const AWAITING_RETUNE = ['babel'];
+const AWAITING_RETUNE: string[] = [];
 
 describe('a week', () => {
   it('is a whole number of weeks long', () => {
