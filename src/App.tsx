@@ -187,6 +187,11 @@ export default function App() {
     return isPersistent() ? null : 'blocked';
   });
   const [warningSeen, setWarningSeen] = useState(() => flag(WARNING_SEEN));
+  // Which browser to send them to: Safari is no answer on an Android phone.
+  const platform = useMemo(() => {
+    const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
+    return /Android/i.test(ua) ? 'android' : /\b(iPhone|iPad|iPod)\b/.test(ua) ? 'ios' : 'other';
+  }, []);
 
   // Re-arm the backup copy of the results on the way in. On iOS its lifetime is capped
   // and refreshed on write, so opening the game has to be enough to keep it alive --
@@ -693,15 +698,20 @@ export default function App() {
         </p>
       )}
 
-      {storageWarning && !warningSeen && (
+      {/* Not while How to play is up: a first visit should not open on a red warning and
+          a long panel at once. */}
+      {storageWarning && !warningSeen && !showHowTo && (
         <p className="storage-note">
           <span>
             {storageWarning === 'in-app' ? (
               <>
                 <strong>Your streak will not be saved here.</strong> You have opened Find
-                Me inside another app, which gives it its own throwaway storage. Open
-                findme.ryangano.com in Safari — or use Share → Add to Home Screen, which
-                keeps it for good.
+                Me inside another app, which gives it its own throwaway storage.{' '}
+                {platform === 'ios'
+                  ? 'Open findme.ryangano.com in Safari — or use Share → Add to Home Screen, which keeps it for good.'
+                  : platform === 'android'
+                    ? 'Open findme.ryangano.com in Chrome — or use ⋮ → Add to Home screen, which keeps it for good.'
+                    : 'Open findme.ryangano.com in your browser instead.'}
               </>
             ) : (
               <>
