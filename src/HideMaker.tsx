@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Reporting } from './components/Reporting';
 import { Shape } from './components/Shape';
 import { Stage } from './components/Stage';
 import {
@@ -112,6 +113,8 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
   const [mixing, setMixing] = useState(false);
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(SWATCHES[0]));
   const [showHelp, setShowHelp] = useState(() => !seen());
+  // Opened from the help, and back to it again.
+  const [showReporting, setShowReporting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   // At the whole-painting view a hidden shape is a few pixels across, so the setter can
   // put a ring round it to see where it went. Off to begin with: the point of the thing is
@@ -468,7 +471,14 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
         {loading && <p className="loading">Loading the painting…</p>}
         {!spot && !showHelp && !loading && <p className="hide-hint">Tap the painting where you want to hide it</p>}
 
-        {showHelp && (
+        {showHelp && showReporting && (
+          <>
+            <div className="scrim" onClick={() => setShowReporting(false)} />
+            <Reporting onBack={() => setShowReporting(false)} />
+          </>
+        )}
+
+        {showHelp && !showReporting && (
           <>
             <div className="scrim" onClick={closeHelp} />
             <div className="howto" role="dialog" aria-label="Hide one for a friend">
@@ -490,10 +500,11 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
                 <li>Press share and send the link. They hunt for it just like the daily puzzle.</li>
               </ul>
               <p className="howto-note">
-                To keep the link short, the hide is saved on the Find Me server — its painting,
-                shape, position, color and name, and nothing about who made it. With reporting
-                switched off it is saved nowhere, and the link is a longer one that carries the
-                whole puzzle.
+                To keep the link short, your hide is saved on the Find Me server — its painting,
+                shape, position, color and name, never who made it.{' '}
+                <button type="button" className="link-btn" onClick={() => setShowReporting(true)}>
+                  What&rsquo;s reported
+                </button>
               </p>
               <button type="button" className="btn btn-primary" onClick={closeHelp}>
                 Got it

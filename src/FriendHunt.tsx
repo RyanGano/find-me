@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Credits } from './components/Credits';
 import { ReferenceCard } from './components/ReferenceCard';
+import { Reporting } from './components/Reporting';
 import { Stage } from './components/Stage';
 import { countHide, fetchHide, type BrokenReason } from './game/count';
 import { formatTime } from './game/format';
@@ -117,6 +118,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
   const [showCard, setShowCard] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   const [shared, setShared] = useState<string | null>(null);
+  const [showReporting, setShowReporting] = useState(false);
 
   const onSolved = useCallback(() => {
     countHide('found');
@@ -142,7 +144,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
     togglePause,
     reset,
     giveUp,
-  } = useHunt({ puzzle, runId: puzzle.id, onSolved, blocked: showCard || showCredits });
+  } = useHunt({ puzzle, runId: puzzle.id, onSolved, blocked: showCard || showCredits || showReporting });
 
   const done = solvedMs ?? gaveUpMs;
   // A setter's name is quoted, since it can read as part of the sentence -- "hid in Eric's
@@ -235,7 +237,19 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
         </div>
       </header>
 
-      <p className="practice-note">a hide from a friend — nothing here is recorded</p>
+      <p className="practice-note">
+        <span className="test-banner-what">A hide from a friend — not part of your streak</span>
+        <button
+          type="button"
+          className="test-banner-exit"
+          onClick={() => {
+            setShowCard(false);
+            setShowReporting(true);
+          }}
+        >
+          What&rsquo;s reported
+        </button>
+      </p>
 
       <main className="board">
         <Stage
@@ -261,6 +275,13 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
         />
 
         {showCredits && <Credits puzzle={puzzle} onDismiss={() => setShowCredits(false)} />}
+
+        {showReporting && (
+          <>
+            <div className="scrim" onClick={() => setShowReporting(false)} />
+            <Reporting onBack={() => setShowReporting(false)} />
+          </>
+        )}
 
         {showCard && done !== null && (
           <>
