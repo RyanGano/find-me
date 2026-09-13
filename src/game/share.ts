@@ -26,7 +26,7 @@ export function speedBar(ms: number): string {
 const TRACE_GLYPHS: Record<string, string> = { v: '🔍', p: '🟨', f: '🟩', g: '🏳️', h: '💡' };
 
 /** What each glyph means, for the one place the player is shown a key. */
-export const TRACE_KEY = '🔍 moved past it · 🟨 nearly · 🟩 got it';
+export const TRACE_KEY = '🔍 passed it · 🟨 nearly · 🟩 got it';
 
 /** The key for one run: the hint is only explained on a run that took one. */
 export function traceKey(metrics: RunMetrics | null | undefined): string {
@@ -62,7 +62,8 @@ export function buildShareText(
   ];
   // Sits directly under the clock, because it is the same result read a second way:
   // the time says how fast, the age says how it was played.
-  if (age !== null) lines.push(`Your Find Me Age: ${age}`);
+  // Not "Your": this is posted by the player, and read by everyone else.
+  if (age !== null) lines.push(`Find Me Age: ${age}`);
   if (streak > 1) lines.push(`🔥 ${streak} day streak`);
   lines.push(SITE_URL);
   return lines.join('\n');

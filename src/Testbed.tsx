@@ -257,7 +257,7 @@ function Finished({
   return (
     <div className="app testbed">
       <div className="howto testbed-card" role="dialog" aria-label="Round finished">
-        <h2>That is the lot — thank you.</h2>
+        <h2>That&rsquo;s all — thank you!</h2>
         {/* What they did, and nothing about how the round is administered. The rule
             that a device answers once, and which round this was, are our problem --
             reading them here is the tester being handed the machinery. */}

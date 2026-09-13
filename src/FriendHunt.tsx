@@ -117,12 +117,12 @@ function BadLink({ reason }: { reason: BrokenReason }) {
           {reason === 'future'
             ? 'It was made on a newer version of Find Me than this page. Reload, and if that does not do it, try again in a little while.'
             : reason === 'painting'
-              ? 'It is set on a painting this page does not know yet. Try again tomorrow.'
+              ? 'It uses a painting this page doesn’t have yet. Reload to get the latest version of Find Me.'
               : reason === 'unreachable'
                 ? 'Find Me could not be reached to fetch it. Check your connection, then reload to try again.'
                 : reason === 'unknown'
                   ? 'No hide goes by that code. Check it was typed right, or ask for the link again.'
-                  : 'The link looks cut short or mistyped. Ask for it to be sent again, whole.'}
+                  : 'The link looks cut short or mistyped. Ask your friend to send the full link again.'}
         </p>
         <p className="howto-note">
           In the meantime, today&rsquo;s puzzle is at <a href="/">findme.ryangano.com</a>.

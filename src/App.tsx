@@ -45,9 +45,9 @@ import { useUpdateAvailable } from './hooks/useUpdateAvailable';
  * says only roughly how far off they are, and says it as encouragement.
  */
 function plead(left: number): string {
-  if (left > 0.6) return 'Not yet — you have hardly begun. Have a proper hunt first.';
-  if (left > 0.25) return 'Not yet. Give it another minute of real looking — it is in there.';
-  return 'Nearly. A few more seconds and it is yours — you are closer than you think.';
+  if (left > 0.6) return 'Not yet — you’ve barely started. Keep looking a bit longer.';
+  if (left > 0.25) return 'Not yet. Give it another minute of real looking — it’s in there.';
+  return 'Nearly. A few more seconds and it’s yours — you’re closer than you think.';
 }
 
 const HOWTO_SEEN = 'find-me:howto-seen';

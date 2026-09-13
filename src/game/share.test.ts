@@ -79,7 +79,7 @@ describe('buildShareText', () => {
   it('puts the age directly under the time, above the streak', () => {
     const lines = buildShareText(12, PUZZLES[0], 83400, 4, 41).split('\n');
     expect(lines[1]).toContain('1:23.4');
-    expect(lines[2]).toBe('Your Find Me Age: 41');
+    expect(lines[2]).toBe('Find Me Age: 41');
     expect(lines[3]).toContain('streak');
   });
 
