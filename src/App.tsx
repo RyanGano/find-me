@@ -267,6 +267,15 @@ export default function App() {
     onReturn,
   });
 
+  // The update popup covers the board, so a live run is paused under it -- once, when it
+  // first appears. Closing it leaves the run paused, for the player to pick back up.
+  const pausedForUpdate = useRef(false);
+  useEffect(() => {
+    if (!updateAvailable || pausedForUpdate.current) return;
+    pausedForUpdate.current = true;
+    if (running) togglePause();
+  }, [updateAvailable, running, togglePause]);
+
   // The run is over however it ended: both close the day, and both open the card.
   const done = solvedMs ?? gaveUpMs;
 
