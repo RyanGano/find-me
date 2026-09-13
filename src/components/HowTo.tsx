@@ -10,10 +10,15 @@ interface Props {
    * controls, but no week, no hint and no streak to explain.
    */
   friend?: boolean;
+  /**
+   * A play-testing round that is open today: how many hunts it asks for, and whether this
+   * browser has already answered it. Absent when there is no round.
+   */
+  invite?: { hunts: number; done: boolean };
   onDismiss: () => void;
 }
 
-export function HowTo({ thing, rung, friend, onDismiss }: Props) {
+export function HowTo({ thing, rung, friend, invite, onDismiss }: Props) {
   const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   // Folded away rather than always on show: it is a promise the player can go and read,
   // not something to make them wade through before their first game.
@@ -27,6 +32,24 @@ export function HowTo({ thing, rung, friend, onDismiss }: Props) {
   return (
     <div className="howto" role="dialog" aria-label="How to play">
       <h2>How to play</h2>
+      {/* First, while a round is open: the highlighted ? in the bar is what brings a player
+          here, so the thing it is highlighted for should not be below the fold. The link
+          opens a new tab because the player may well be mid-hunt. */}
+      {invite && !friend && (
+        <p className="howto-invite">
+          {invite.done ? (
+            'Thanks for play-testing — your answers are in.'
+          ) : (
+            <>
+              <strong>Help test Find Me:</strong> {invite.hunts} short hunts on paintings that
+              aren&rsquo;t in the game.{' '}
+              <a href="/?beta" target="_blank" rel="noopener noreferrer">
+                Try them in a new tab
+              </a>
+            </>
+          )}
+        </p>
+      )}
       <p>
         {friend
           ? `A friend hid a ${thing} somewhere in this painting.`

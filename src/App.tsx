@@ -152,11 +152,10 @@ export default function App() {
     () => !prior && !saved && !isPractice && !flag(HOWTO_SEEN),
   );
 
-  const [showTestNote, setShowTestNote] = useState(false);
 
   /**
-   * The play-testing invitation behind the TEST button, which is only in the bar while
-   * there is a round to invite anyone to.
+   * The play-testing invitation at the top of How to play, which is only there -- and the
+   * ? button only highlighted -- while there is a round to invite anyone to.
    *
    * Read once, at mount, and read only -- the bench is offered from here, never touched
    * from here, so the daily game still cannot write a tester's row and a tester id is
@@ -499,7 +498,6 @@ export default function App() {
     return () => clearTimeout(id);
   }, [plea]);
 
-  const toggleTestNote = useCallback(() => setShowTestNote((prev) => !prev), []);
 
   // Dismissible, but the flag that remembers it is written to the very storage the
   // warning is about -- so in the case it exists for, it comes back on the next visit.
@@ -583,21 +581,6 @@ export default function App() {
         <h1 className="title">
           Find Me <span className="title-day">#{puzzleNumber(day)}</span>
         </h1>
-        {/* Small enough to read as a label on the title rather than a banner, but it is
-            the one thing in the bar that is a colour of its own, so it gets noticed --
-            and pressing it says what the play-testing round involves. */}
-        {invite && (
-          <button
-            type="button"
-            className={`test-pill${showTestNote ? ' is-open' : ''}`}
-            onClick={toggleTestNote}
-            title="Join a play-testing round"
-            aria-expanded={showTestNote}
-            aria-controls="test-note"
-          >
-            TEST
-          </button>
-        )}
         {/* The stats button never moves: shut while there is a hunt to time, so the bar
             does not rearrange itself on the first move, and the clock sits beside it for
             as long as the hunt runs. The badge is still the way back to the result. */}
@@ -673,47 +656,19 @@ export default function App() {
               </svg>
             </button>
           )}
+          {/* Highlighted while a play-testing round is open and unanswered here: the
+              invitation is at the top of How to play, and this is how anyone finds it. */}
           <button
             type="button"
-            className="btn btn-icon"
+            className={`btn btn-icon${invite && !invite.done ? ' is-highlight' : ''}`}
             onClick={() => togglePanel('howto')}
             title="How to play"
-            aria-label="How to play"
+            aria-label={invite && !invite.done ? 'How to play — play-testing is open' : 'How to play'}
           >
             <HelpIcon />
           </button>
         </div>
       </header>
-
-      {invite && showTestNote && (
-        <p className="test-note" id="test-note">
-          {/* The link opens a new tab on purpose: the player is very likely mid-hunt
-              with a clock running, and taking the page away from them to ask a favour
-              is a good way to lose both the run and the favour. */}
-          <span>
-            {invite.done ? (
-              'Thank you for the play-testing round — your answers are in.'
-            ) : (
-              <>
-                A play-testing round is open: {invite.hunts} short hunts on paintings that
-                are not in the game.{' '}
-                <a href="/?beta" target="_blank" rel="noopener noreferrer">
-                  Try them in a new tab
-                </a>
-                .
-              </>
-            )}
-          </span>
-          <button
-            type="button"
-            className="note-close"
-            onClick={toggleTestNote}
-            aria-label="Hide the play-testing note"
-          >
-            &times;
-          </button>
-        </p>
-      )}
 
       {/* Not while How to play is up: a first visit should not open on a red warning and
           a long panel at once. */}
@@ -924,7 +879,14 @@ export default function App() {
 
         {showStats && <StatsPanel onDismiss={() => setShowStats(false)} />}
 
-        {showHowTo && <HowTo thing={puzzle.thing} rung={RAMP[puzzle.dayOfWeek].label} onDismiss={dismissHowTo} />}
+        {showHowTo && (
+          <HowTo
+            thing={puzzle.thing}
+            rung={RAMP[puzzle.dayOfWeek].label}
+            invite={invite}
+            onDismiss={dismissHowTo}
+          />
+        )}
 
         {/* Dismissed on the click, not the pointerdown. The badge under the corner of
             the scrim is the way back to the result card, and closing on the way down

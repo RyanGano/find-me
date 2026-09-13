@@ -110,57 +110,37 @@ body,
   margin-left: auto;
 }
 
-/* Only there while a play-testing round is open. Deliberately quiet -- it is the only
-   coloured thing in the bar, which is enough to be seen without competing with the clock
-   -- and the note it opens says what the round involves. */
-.test-pill {
-  font: inherit;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+/* The ? while a play-testing round is open and this browser has not answered it: the
+   invitation lives in How to play, and this is what says there is something new there. */
+.btn-icon.is-highlight {
+  position: relative;
   color: var(--accent);
-  background: none;
-  border: 1px solid var(--accent);
-  border-radius: 999px;
-  padding: 2px 7px;
-  margin-left: -6px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  border-color: var(--accent);
 }
 
-.test-pill:hover,
-.test-pill.is-open {
-  color: var(--bg);
+.btn-icon.is-highlight::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
   background: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg-raised);
 }
 
-.test-pill:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.howto p.howto-invite {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
 }
 
-.test-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 7px 14px;
-  font-size: 0.78rem;
-  line-height: 1.4;
-  color: var(--muted);
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--line);
-}
-
-.test-note a {
+.howto-invite a {
   color: var(--accent);
   text-decoration: underline;
-}
-
-.test-note a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .note-close {
@@ -185,7 +165,7 @@ body,
   outline-offset: 2px;
 }
 
-/* Louder than the play-testing note on purpose: this one is telling the player that the thing
+/* Loud on purpose: this one is telling the player that the thing
    they are about to spend two minutes earning will not be there tomorrow. */
 .storage-note {
   display: flex;
@@ -967,12 +947,6 @@ button.reference:focus-visible {
 }
 
 @media (max-width: 420px) {
-  /* A title, a clock and three buttons still fill the bar on a phone. */
-  .test-pill {
-    padding: 2px 5px;
-    letter-spacing: 0.08em;
-  }
-
   .reference {
     top: 8px;
     right: 8px;
