@@ -51,6 +51,9 @@ function plead(left: number): string {
 }
 
 const HOWTO_SEEN = 'find-me:howto-seen';
+
+/** How long before the hint or the give-up opens its button starts to fill. */
+const ARM_MS = 10_000;
 const WARNING_SEEN = 'find-me:storage-warning-seen';
 
 /**
@@ -292,6 +295,20 @@ export default function App() {
 
   const canGiveUp = startedAt !== null && done === null && clock >= gate;
   const canHint = startedAt !== null && done === null && !hinted && clock >= hintGate;
+
+  /**
+   * How far through its last ten seconds a shut button is, 0--1, or null outside them.
+   *
+   * Drawn as a ring filling round the button, so a player who is watching for the way out
+   * can see it coming. Only the last ten seconds: a countdown from the start of the hunt
+   * would turn the wait into the thing being watched, which `plead` exists to avoid.
+   */
+  const armed = (opensAt: number): number | null => {
+    if (startedAt === null || done !== null || clock >= opensAt || clock < opensAt - ARM_MS) return null;
+    return (clock - (opensAt - ARM_MS)) / ARM_MS;
+  };
+  const hintArm = hinted ? null : armed(hintGate);
+  const giveUpArm = armed(gate);
 
   /**
    * Midnight has passed under a page that was left open, so the painting on screen is
@@ -800,7 +817,8 @@ export default function App() {
         {startedAt !== null && done === null && !confirming && !pleading && !hintNote && (
           <button
             type="button"
-            className={`giveup-btn${canGiveUp ? '' : ' is-shut'}`}
+            className={`giveup-btn${canGiveUp ? '' : ' is-shut'}${giveUpArm !== null ? ' is-arming' : ''}`}
+            style={giveUpArm !== null ? ({ '--arm': giveUpArm } as React.CSSProperties) : undefined}
             onClick={askToGiveUp}
             title={
               canGiveUp
@@ -819,7 +837,8 @@ export default function App() {
         {startedAt !== null && done === null && !hinted && !confirming && !pleading && (
           <button
             type="button"
-            className={`giveup-btn hint-btn${canHint ? '' : ' is-shut'}${canHint && canGiveUp ? ' is-nudge' : ''}`}
+            className={`giveup-btn hint-btn${canHint ? '' : ' is-shut'}${canHint && canGiveUp ? ' is-nudge' : ''}${hintArm !== null ? ' is-arming' : ''}`}
+            style={hintArm !== null ? ({ '--arm': hintArm } as React.CSSProperties) : undefined}
             onClick={askForHint}
             title={canHint ? 'Show me roughly where to look' : 'Not yet — keep looking a little longer'}
           >

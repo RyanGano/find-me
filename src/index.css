@@ -1736,6 +1736,28 @@ button.reference:focus-visible {
   opacity: 0.5;
 }
 
+/* The last ten seconds before a shut button opens: a ring fills round it, clockwise from
+   the top, so a player watching for the way out can see it coming. `--arm` runs 0--1
+   and is set by App. */
+.giveup-btn.is-arming {
+  opacity: 0.8;
+}
+
+.giveup-btn.is-arming::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  padding: 2px;
+  border-radius: 999px;
+  background: conic-gradient(var(--accent) calc(var(--arm, 0) * 360deg), transparent 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 .hint-btn {
   left: auto;
   right: 12px;
