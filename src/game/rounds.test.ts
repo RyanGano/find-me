@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { openRound, puzzlesOf, ROUNDS } from './rounds';
+import { inviteRound, openRound, puzzlesOf, roundById, ROUNDS, TEST_ROUND } from './rounds';
 import { TESTBED_PUZZLES } from './testbed';
 
 /**
@@ -87,6 +87,18 @@ describe('play-test rounds', () => {
       expect(openRound(new Date(oy, om - 1, od - 1))?.id).not.toBe(round.id);
       expect(openRound(new Date(cy, cm - 1, cd + 1))?.id).not.toBe(round.id);
     }
+  });
+
+  it('keeps the ?test round off the real link, but playable by name', () => {
+    expect(ROUNDS.map((r) => r.id)).not.toContain(TEST_ROUND.id);
+    for (const round of ROUNDS) expect(round.id).not.toBe(TEST_ROUND.id);
+    expect(() => puzzlesOf(TEST_ROUND)).not.toThrow();
+    expect(roundById(TEST_ROUND.id)).toBe(TEST_ROUND);
+    expect(inviteRound(true)).toBe(TEST_ROUND);
+    // A day with no real round open invites nobody outside `?test`.
+    const quiet = new Date(2026, 0, 1);
+    expect(openRound(quiet)).toBeUndefined();
+    expect(inviteRound(false, quiet)).toBeUndefined();
   });
 
   it('is a short sitting, because a long one gets abandoned at the hard end', () => {

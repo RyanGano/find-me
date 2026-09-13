@@ -17,7 +17,7 @@ import { frameFor, weekOf, type Frame } from './game/gallery';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
 import type { RunMetrics } from './game/metrics';
-import { openRound } from './game/rounds';
+import { inviteRound } from './game/rounds';
 import {
   clearProgress,
   getDayState,
@@ -51,7 +51,6 @@ function plead(left: number): string {
 }
 
 const HOWTO_SEEN = 'find-me:howto-seen';
-const BETA_SEEN = 'find-me:beta-seen';
 const WARNING_SEEN = 'find-me:storage-warning-seen';
 
 /**
@@ -151,27 +150,26 @@ export default function App() {
     () => !prior && !saved && !isPractice && !flag(HOWTO_SEEN),
   );
 
-  // The game is still being tuned, so a time, an age or a streak can move under someone
-  // who earned it. The sentence saying so opens itself once, on a first visit, and then
-  // folds back into the pill -- which stays for good, because the warning outlasts the
-  // one moment it was read.
-  const [showBetaNote, setShowBetaNote] = useState(() => !flag(BETA_SEEN));
+  const [showTestNote, setShowTestNote] = useState(false);
 
   /**
-   * The play-testing invitation that sits under the beta note.
+   * The play-testing invitation behind the TEST button, which is only in the bar while
+   * there is a round to invite anyone to.
    *
    * Read once, at mount, and read only -- the bench is offered from here, never touched
    * from here, so the daily game still cannot write a tester's row and a tester id is
-   * still minted only by someone who actually opens `/?beta`. There are three things it
-   * can say and all three are worth saying: a round is open and this device has not been
-   * through it, a round is open and it has (thank them, do not ask twice), or nothing is
-   * running and the honest answer is "not right now".
+   * still minted only by someone who actually opens `/?beta`. `?test` always has a round,
+   * reached by name so every hunt on it is recorded as a dry run.
    */
   const invite = useMemo(() => {
-    const round = openRound();
+    const round = inviteRound(isTest);
     if (!round) return undefined;
-    return { hunts: round.days.length, done: isDone(round.id) };
-  }, []);
+    return {
+      hunts: round.days.length,
+      done: isDone(round.id),
+      href: isTest ? `/?beta=${round.id}` : '/?beta',
+    };
+  }, [isTest]);
 
   /**
    * Whether this browser will still have the player's streak tomorrow, and why not.
@@ -485,10 +483,7 @@ export default function App() {
     return () => clearTimeout(id);
   }, [plea]);
 
-  const toggleBetaNote = useCallback(() => {
-    setFlag(BETA_SEEN);
-    setShowBetaNote((prev) => !prev);
-  }, []);
+  const toggleTestNote = useCallback(() => setShowTestNote((prev) => !prev), []);
 
   // Dismissible, but the flag that remembers it is written to the very storage the
   // warning is about -- so in the case it exists for, it comes back on the next visit.
@@ -590,17 +585,19 @@ export default function App() {
         </h1>
         {/* Small enough to read as a label on the title rather than a banner, but it is
             the one thing in the bar that is a colour of its own, so it gets noticed --
-            and pressing it says what being in beta costs the player. */}
-        <button
-          type="button"
-          className={`beta-pill${showBetaNote ? ' is-open' : ''}`}
-          onClick={toggleBetaNote}
-          title="Find Me is still in beta"
-          aria-expanded={showBetaNote}
-          aria-controls="beta-note"
-        >
-          beta
-        </button>
+            and pressing it says what the play-testing round involves. */}
+        {invite && (
+          <button
+            type="button"
+            className={`test-pill${showTestNote ? ' is-open' : ''}`}
+            onClick={toggleTestNote}
+            title="Join a play-testing round"
+            aria-expanded={showTestNote}
+            aria-controls="test-note"
+          >
+            TEST
+          </button>
+        )}
         {/* The clock only while there is a hunt to time. Either side of one -- before the
             first move, and once the day is over -- the same slot is the way into the
             player's stats. The badge is still the way back to the result. */}
@@ -688,36 +685,30 @@ export default function App() {
         </div>
       </header>
 
-      {showBetaNote && (
-        <p className="beta-note" id="beta-note">
+      {invite && showTestNote && (
+        <p className="test-note" id="test-note">
+          {/* The link opens a new tab on purpose: the player is very likely mid-hunt
+              with a clock running, and taking the page away from them to ask a favour
+              is a good way to lose both the run and the favour. */}
           <span>
-            <strong>Find Me is in beta.</strong> The puzzles are still being tuned, so
-            times, ages and streaks may change or reset at any point.
-            {/* The link opens a new tab on purpose: the player is very likely mid-hunt
-                with a clock running, and taking the page away from them to ask a favour
-                is a good way to lose both the run and the favour. */}
-            <span className="beta-note-invite">
-              {!invite ? (
-                'No play-testing round is open just now — there will be another.'
-              ) : invite.done ? (
-                'Thank you for the play-testing round — your answers are in.'
-              ) : (
-                <>
-                  A play-testing round is open: {invite.hunts} short hunts on paintings
-                  that are not in the game.{' '}
-                  <a href="/?beta" target="_blank" rel="noopener noreferrer">
-                    Try them in a new tab
-                  </a>
-                  .
-                </>
-              )}
-            </span>
+            {invite.done ? (
+              'Thank you for the play-testing round — your answers are in.'
+            ) : (
+              <>
+                A play-testing round is open: {invite.hunts} short hunts on paintings that
+                are not in the game.{' '}
+                <a href={invite.href} target="_blank" rel="noopener noreferrer">
+                  Try them in a new tab
+                </a>
+                .
+              </>
+            )}
           </span>
           <button
             type="button"
-            className="beta-note-close"
-            onClick={toggleBetaNote}
-            aria-label="Hide the beta note"
+            className="note-close"
+            onClick={toggleTestNote}
+            aria-label="Hide the play-testing note"
           >
             &times;
           </button>
@@ -744,7 +735,7 @@ export default function App() {
           </span>
           <button
             type="button"
-            className="beta-note-close"
+            className="note-close"
             onClick={dismissWarning}
             aria-label="Hide this warning"
           >
