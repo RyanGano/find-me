@@ -16,6 +16,7 @@ import {
   traceKey,
 } from '../game/share';
 import type { Stats } from '../game/storage';
+import { isTestMode } from '../game/testMode';
 import type { Puzzle } from '../game/types';
 import { WeekShare } from './WeekShare';
 
@@ -95,7 +96,7 @@ export function ResultCard({
     if (result !== 'failed') onShared();
   };
 
-  // Beta only, and never folded into the share text: what a player posts in public
+  // `?test` only, and never folded into the share text: what a player posts in public
   // should stay short and spoiler-free, and this is an instrument for tuning the
   // estimate, not a result. It lives behind the explanation because that is where a
   // tester asked to send their data has just been reading what the data is.
@@ -137,15 +138,17 @@ export function ResultCard({
           >
             Back
           </button>
-          <button type="button" className="btn btn-quiet" onClick={shareAgeData}>
-            {dataStatus === 'copied'
-              ? 'Copied — paste it back with your real age'
-              : dataStatus === 'shared'
-                ? 'Sent — add your real age'
-                : dataStatus === 'failed'
-                  ? 'Copy failed'
-                  : 'Share age data'}
-          </button>
+          {isTestMode() && (
+            <button type="button" className="btn btn-quiet" onClick={shareAgeData}>
+              {dataStatus === 'copied'
+                ? 'Copied — paste it back with your real age'
+                : dataStatus === 'shared'
+                  ? 'Sent — add your real age'
+                  : dataStatus === 'failed'
+                    ? 'Copy failed'
+                    : 'Share age data'}
+            </button>
+          )}
         </div>
       </div>
     );
