@@ -837,6 +837,12 @@ with a **Share this week** button, and Sunday's result card offers the same thin
 painting, its title and artist, the seven marks and the address, through the phone's
 share sheet where it takes files and as a download where it does not.
 
+The larger view also lists that week's notes about the painting, one under each day's name,
+for the days the player **found** -- `notesFor` in `gallery.ts`. Not the give-ups, though
+the result card showed them one: the wall is what a player has, and the marks right above
+the list already say which days are missing. A list rather than tapping a mark, because
+on a phone a row of small squares does not look like something to tap.
+
 A streak is gone after one missed day; the wall only grows. So it shows only what the
 player has: a week of give-ups hangs nothing, and a missed week has no empty frame,
 because an old day cannot be played again.

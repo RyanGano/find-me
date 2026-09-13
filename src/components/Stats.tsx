@@ -3,7 +3,7 @@ import { fetchTallies, type DayTally } from '../game/count';
 import { dayIndex } from '../game/daily';
 import { RAMP } from '../game/difficulty';
 import { formatTime } from '../game/format';
-import { galleryWall, type Frame, type WallWeek } from '../game/gallery';
+import { galleryWall, notesFor, type Frame, type WallWeek } from '../game/gallery';
 import { byWeekday, recentMarks, type Mark } from '../game/history';
 import { getHistory, getStats } from '../game/storage';
 import { WeekShare } from './WeekShare';
@@ -72,6 +72,7 @@ export function Stats({ onDismiss }: Props) {
         </div>
         <WallMarks week={open.week} labeled />
         {open.week.full && <p className="stats-note">Every day of the week found.</p>}
+        <WallNotes week={open.week} />
         <div className="howto-foot">
           <button type="button" className="btn btn-primary" onClick={() => setOpen(null)}>
             Back
@@ -214,6 +215,22 @@ function WallMarks({ week, labeled }: { week: WallWeek; labeled?: boolean }) {
         <span key={i} className={`stats-mark is-${m}`} title={MARK_LABEL[m]} />
       ))}
     </div>
+  );
+}
+
+/** The note from each day of the week the player found, under its day's name. */
+function WallNotes({ week }: { week: WallWeek }) {
+  const notes = notesFor(week);
+  if (notes.length === 0) return null;
+  return (
+    <dl className="gallery-notes">
+      {notes.map((n) => (
+        <div key={n.weekday}>
+          <dt>{RAMP[n.weekday].label}</dt>
+          <dd>{n.note}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

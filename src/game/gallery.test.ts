@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { puzzleForDay } from './daily';
-import { FIRST_KEPT_DAY, frameFor, galleryWall, thumbFor, weekOf } from './gallery';
+import { FIRST_KEPT_DAY, frameFor, galleryWall, notesFor, thumbFor, weekOf } from './gallery';
 import { IMAGES, PUZZLES } from './puzzles';
 import type { HistoryDay } from './storage';
 
@@ -75,6 +75,26 @@ describe('galleryWall', () => {
     // Days the cookie mirror only counts never reach `getHistory().days`, so there is
     // nothing to hang for them and nothing here guesses at them.
     expect(galleryWall([found(MON + 4)], MON + 20)[0].week.found).toBe(1);
+  });
+});
+
+describe('notesFor', () => {
+  it('gives a note only for the days found, Monday first', () => {
+    const week = weekOf([found(MON + 3), lost(MON + 1), found(MON)], MON, MON + 13);
+    expect(notesFor(week)).toEqual([
+      { weekday: 0, note: puzzleForDay(MON).note },
+      { weekday: 3, note: puzzleForDay(MON + 3).note },
+    ]);
+  });
+
+  it('gives nothing for a week with no finds', () => {
+    expect(notesFor(weekOf([lost(MON)], MON, MON + 7))).toEqual([]);
+  });
+
+  it('gives all seven for a full week, none of them the same', () => {
+    const notes = notesFor(weekOf(range(MON, 7).map(found), MON, MON + 7));
+    expect(notes.map((n) => n.weekday)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(new Set(notes.map((n) => n.note)).size).toBe(7);
   });
 });
 

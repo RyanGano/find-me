@@ -68,6 +68,24 @@ export function weekOf(days: HistoryDay[], day: number, today: number): WallWeek
   return { monday, marks, found, gaveUp, full };
 }
 
+export interface WallNote {
+  /** 0 is Monday. */
+  weekday: number;
+  note: string;
+}
+
+/**
+ * The notes a player has earned on a week: one for each day they found, Monday first.
+ * A give-up saw its note on the result card but did not earn it for the wall, and a missed
+ * day never saw one -- the marks above the list already say which days those were.
+ */
+export function notesFor(week: WallWeek): WallNote[] {
+  return week.marks.flatMap((m, weekday) => {
+    const note = m === 'solved' ? puzzleForDay(week.monday + weekday).note : undefined;
+    return note ? [{ weekday, note }] : [];
+  });
+}
+
 /** A better week has more finds, then fewer give-ups, then is the more recent. */
 function better(a: WallWeek, b: WallWeek): boolean {
   if (a.found !== b.found) return a.found > b.found;
