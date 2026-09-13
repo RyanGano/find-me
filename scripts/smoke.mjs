@@ -198,7 +198,7 @@ check('the way in to hiding one opens once the day is done', await page.$('.btn-
   await page.goBack();
   await page.waitForTimeout(300);
   check('back does not close the maker', page.url() === before && await page.isVisible('.hide-maker'));
-  await page.getByRole('button', { name: 'back to the game' }).click();
+  await page.locator('.hide-maker').getByRole('button', { name: 'Back', exact: true }).click();
   await page.waitForSelector('.hide-maker', { state: 'hidden' });
   check('its own button puts the maker away', page.url() === before && await page.$('.result') !== null);
 }

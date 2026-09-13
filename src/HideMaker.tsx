@@ -395,9 +395,12 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
   return (
     <div className="app hide-maker">
       <header className="topbar">
-        <h1 className="title">
-          Find Me <span className="title-day">hide one</span>
-        </h1>
+        {/* The way out lives in the bar, where a back button is looked for, rather than
+            on a bar of its own that repeated the title under it. */}
+        <button type="button" className="btn btn-back" onClick={onClose}>
+          <span aria-hidden="true">‹</span> Back
+        </button>
+        <h1 className="title">Hide one for a friend</h1>
         <div className="topbar-actions">
           {spot && (
             <button
@@ -432,21 +435,11 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
         </div>
       </header>
 
-      {isTestMode() ? (
+      {isTestMode() && (
         <p className="test-banner">
           <span className="test-banner-what">
             test mode <span>— making a hide</span>
           </span>
-          <button type="button" className="test-banner-exit" onClick={onClose}>
-            back to the game
-          </button>
-        </p>
-      ) : (
-        <p className="practice-note">
-          <span className="test-banner-what">hide one for a friend</span>
-          <button type="button" className="test-banner-exit" onClick={onClose}>
-            back to the game
-          </button>
         </p>
       )}
 
@@ -495,7 +488,7 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
                 <li>Pick a painting — any one Find Me has already had on the calendar.</li>
                 <li>Pick a shape, then tap the painting where you want it. Tap again to move it.</li>
                 <li>
-                  Set its color, size, angle and strength. <strong>Auto</strong> picks a color
+                  Set its color, size, angle and visibility. <strong>Auto</strong> picks a color
                   from the paint underneath. Pinch or scroll to zoom in, and turn the ring off to
                   see how well it hides. There <em>are</em> guards in place to keep you from
                   sharing an impossible puzzle.
@@ -528,7 +521,7 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
             <select aria-label="Painting" value={painting.image} onChange={(e) => choosePainting(e.target.value)}>
               {paintings.map((p) => (
                 <option key={p.image} value={p.image}>
-                  {p.title} — {p.artist}
+                  {p.title}
                 </option>
               ))}
             </select>
@@ -700,7 +693,7 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
         </label>
 
         <label className="hide-row">
-          <span>Strength</span>
+          <span>Visibility</span>
           <input
             type="range"
             min={Math.round((least ?? HIDE_OPACITY.max) * 100)}
@@ -721,6 +714,8 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
             <span className="hide-warning" role="status">
               This color blends into the paint here. Pick one that stands out more, or move it.
             </span>
+          ) : !spot ? (
+            <span className="hide-status">Tap the painting to place your shape</span>
           ) : (
             status && <span className="hide-status">{status}</span>
           )}

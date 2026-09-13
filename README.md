@@ -1323,7 +1323,7 @@ progress, and the maker's painting list is every week the calendar has reached, 
 thing a player in the middle of today's hunt has no business reading. It has **no address
 of its own**: it opens as a layer over the finished board, so there is no link that skips
 the day's puzzle to reach it, and it works the same inside `?test`. **Back does nothing
-while it is open** -- only its own "back to the game" closes it. A hide can take a while to
+while it is open** -- only its own Back button closes it. A hide can take a while to
 set and the maker is swiped at constantly, so an edge swipe read as back must not throw it
 away: opening pushes a history entry at the same address, and each back that spends it
 pushes another. The layer stays mounted once closed, so the puzzle piece brings the hide

@@ -1812,8 +1812,17 @@ button.test-banner-exit {
   cursor: pointer;
 }
 
-.hide-maker .topbar-actions {
-  margin-left: auto;
+.btn-back {
+  flex: none;
+  padding: 6px 12px 6px 9px;
+  font-size: 0.85rem;
+}
+
+.hide-maker .title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .hide-hint {
@@ -1846,7 +1855,7 @@ button.test-banner-exit {
 
 .hide-row {
   display: grid;
-  grid-template-columns: 70px minmax(0, 1fr);
+  grid-template-columns: 76px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   font-size: 0.85rem;
