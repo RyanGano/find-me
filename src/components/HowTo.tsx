@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { isCounted, setCounted } from '../game/count';
+import { Reporting } from './Reporting';
 
 interface Props {
   thing: string;
@@ -13,58 +13,11 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
   // Folded away rather than always on show: it is a promise the player can go and read,
   // not something to make them wade through before their first game.
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [counted, setCountedState] = useState(isCounted);
 
-  const toggleCounted = () => {
-    const next = !counted;
-    setCounted(next);
-    setCountedState(next);
-  };
-
-  // The tally note takes the panel over rather than unfolding below the rules: it is a
+  // The reporting note takes the panel over rather than unfolding below the rules: it is a
   // thing the player has gone looking for, and reading it next to the how-to left them
   // scrolling past the game to find the one control it exists for.
-  if (showPrivacy) {
-    return (
-      <div className="howto" role="dialog" aria-label="What’s reported">
-        <h2>What&rsquo;s reported</h2>
-        <p className="howto-note">
-          The only thing this site records is that a run happened, how it ended — solved,
-          given up on, or left — how long it took, how far in you first pressed give up if
-          you did so before it opened, how far in you took a hint if you did, whether the
-          result was shared, and whether you looked at your stats. Nothing that identifies
-          you.
-        </p>
-        <p className="howto-note">
-          To show how everyone else did, the game asks for the totals of days you have
-          finished. That request is not recorded. With reporting off it is not made, so you
-          won&rsquo;t see how everyone else did.
-        </p>
-        <p className="howto-note">
-          For <em>hide one for a friend</em> it records a few counts, to see whether anyone
-          uses it: that the maker was opened, that a hide was shared and whether it went as
-          a short link, that a hide was opened, that one was found, that a finder shared
-          their result back, and why a hide link did not open. None of these say which hide.
-        </p>
-        <p className="howto-note">
-          When you share a hide, it is saved on our server so its link can be short: its
-          painting, shape, position, color and name, and nothing about who made it. With
-          reporting off, your hides are shared as long links instead and nothing is saved. A
-          short link someone sends you still opens with reporting off; the server is asked
-          for that hide and nothing else, and nothing about you or how you played it is
-          kept.
-        </p>
-        <div className="howto-foot">
-          <button type="button" className="btn btn-primary" onClick={() => setShowPrivacy(false)}>
-            Back
-          </button>
-          <button type="button" className="btn btn-quiet" onClick={toggleCounted}>
-            {counted ? 'Don’t report my runs' : 'Reporting is off — turn it back on'}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (showPrivacy) return <Reporting onBack={() => setShowPrivacy(false)} />;
 
   return (
     <div className="howto" role="dialog" aria-label="How to play">
@@ -104,17 +57,18 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         This painting stays all week, with something different to find in it each day and
         each day harder than the last. Today is <strong>{rung}</strong>.
       </p>
+      {/* Reporting is on unless the player turns it off, so the first screen they see says
+          so -- in one line, with the way to the details and the switch. */}
+      <p className="howto-note">
+        Find Me reports plays anonymously.{' '}
+        <button type="button" className="link-btn" onClick={() => setShowPrivacy(true)}>
+          What&rsquo;s reported
+        </button>
+      </p>
 
       <div className="howto-foot">
         <button type="button" className="btn btn-primary" onClick={onDismiss}>
           Close
-        </button>
-        <button
-          type="button"
-          className="btn btn-quiet"
-          onClick={() => setShowPrivacy(true)}
-        >
-          What&rsquo;s reported
         </button>
       </div>
     </div>
