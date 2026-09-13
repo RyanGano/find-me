@@ -26,8 +26,8 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
   // scrolling past the game to find the one control it exists for.
   if (showPrivacy) {
     return (
-      <div className="howto" role="dialog" aria-label="What’s counted">
-        <h2>What&rsquo;s counted</h2>
+      <div className="howto" role="dialog" aria-label="What’s reported">
+        <h2>What&rsquo;s reported</h2>
         <p className="howto-note">
           The only thing this site records is that a run happened, how it ended — solved,
           given up on, or left — how long it took, how far in you first pressed give up if
@@ -37,7 +37,7 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         </p>
         <p className="howto-note">
           To show how everyone else did, the game asks for the totals of days you have
-          finished. That request is not recorded. With counting off it is not made, so you
+          finished. That request is not recorded. With reporting off it is not made, so you
           won&rsquo;t see how everyone else did.
         </p>
         <p className="howto-note">
@@ -49,8 +49,8 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
         <p className="howto-note">
           When you share a hide, it is saved on our server so its link can be short: its
           painting, shape, position, color and name, and nothing about who made it. With
-          counting off, your hides are shared as long links instead and nothing is saved. A
-          short link someone sends you still opens with counting off; the server is asked
+          reporting off, your hides are shared as long links instead and nothing is saved. A
+          short link someone sends you still opens with reporting off; the server is asked
           for that hide and nothing else, and nothing about you or how you played it is
           kept.
         </p>
@@ -59,7 +59,7 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
             Back
           </button>
           <button type="button" className="btn btn-quiet" onClick={toggleCounted}>
-            {counted ? 'Don’t count my runs' : 'Counting is off — count them again'}
+            {counted ? 'Don’t report my runs' : 'Reporting is off — turn it back on'}
           </button>
         </div>
       </div>
@@ -114,7 +114,7 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
           className="btn btn-quiet"
           onClick={() => setShowPrivacy(true)}
         >
-          What&rsquo;s counted
+          What&rsquo;s reported
         </button>
       </div>
     </div>

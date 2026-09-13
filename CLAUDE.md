@@ -22,7 +22,7 @@ cannot meet them should not ship:
    deployed server is the one doing so — check a real or `?test` row carries it.
 2. **The dashboard shows it.** If it is not on the stats dashboard it does not exist: add
    it to the overview and to a day page, restart the dashboard, and look at it.
-3. **The player is told.** `What's counted` in `src/components/HowTo.tsx` names it in plain
+3. **The player is told.** `What's reported` in `src/components/HowTo.tsx` names it in plain
    words, and "Counting" in README.md records it. A read counts too: say what it asks for
    and what switching counting off costs.
 4. **The private record is updated.** The checklist and field table in the gitignored

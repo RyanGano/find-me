@@ -229,7 +229,7 @@ function Intro({ round, count, onStart }: { round: Round; count: number; onStart
           knowingly.
         */}
         <p className="howto-note">
-          <strong>Your answers are sent</strong> even if you have turned off counting for
+          <strong>Your answers are sent</strong> even if you have turned off reporting for
           the daily game — a round is only the answers. That is the puzzle, your time,
           your rating, and a random id tying this round together. No account, no name,
           nothing that outlives the round.

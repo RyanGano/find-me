@@ -491,7 +491,7 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
               </ul>
               <p className="howto-note">
                 To keep the link short, the hide is saved on the Find Me server — its painting,
-                shape, position, color and name, and nothing about who made it. With counting
+                shape, position, color and name, and nothing about who made it. With reporting
                 switched off it is saved nowhere, and the link is a longer one that carries the
                 whole puzzle.
               </p>
