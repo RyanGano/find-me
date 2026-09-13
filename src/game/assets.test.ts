@@ -49,6 +49,10 @@ const SOURCE_SCANS: Record<string, { width: number; height: number }> = {
   breezing: { width: 5053, height: 3175 },
   montmartre: { width: 6000, height: 4931 },
   cardplayers: { width: 5789, height: 4608 },
+  fishstall: { width: 3840, height: 2358 },
+  streltsy: { width: 4000, height: 2301 },
+  cossacks: { width: 4122, height: 2437 },
+  moulin: { width: 40869, height: 30379 },
 };
 
 /**
@@ -75,7 +79,15 @@ describe('asset provenance', () => {
 
     it(`${image.id} has the shape of its recorded scan`, () => {
       // Round-trip the scan's ratio through the generated width, as `npm run images` does.
-      expect(Math.round((scan.height / scan.width) * image.width)).toBe(image.height);
+      const derived = Math.round((scan.height / scan.width) * image.width);
+      if (image.sourceWidth === undefined) {
+        expect(derived).toBe(image.height);
+      } else {
+        // Commons rounds a thumbnail's height to a whole pixel before it is scaled again,
+        // so an asset generated from one can land a pixel off the original's ratio. A
+        // different crop moves the height by far more than that.
+        expect(Math.abs(derived - image.height)).toBeLessThanOrEqual(1);
+      }
     });
 
     if (image.sourceWidth !== undefined) {

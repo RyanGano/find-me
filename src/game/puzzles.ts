@@ -93,7 +93,7 @@ interface WeekSeed {
  *
  * A player gets a whole week with one painting and seven different things to find in
  * it, each harder than the last -- see `difficulty.ts` for what "harder" means and how
- * each rung is measured. Fifteen paintings is therefore fifteen weeks, not fifteen days.
+ * each rung is measured. Nineteen paintings is therefore nineteen weeks, not nineteen days.
  *
  * The order of this list is held to a spread of painters and kinds by
  * `curation.test.ts`; a painting that has shipped cannot be moved without moving every
@@ -321,6 +321,46 @@ const WEEKS: WeekSeed[] = [
     ],
   },
   {
+    image: 'fishstall',
+    title: 'Fish Stall',
+    artist: 'Frans Snyders',
+    year: 'c. 1620',
+    genre: 'still-life',
+    source: 'https://commons.wikimedia.org/wiki/File:Frans_Snyders_-_Fish_Stall_-_WGA21521.jpg',
+    width: 2600,
+    height: 1597,
+    clutter: 0.492,
+    days: [
+      { shape: 'hourglass', cx: 833, cy: 1265, size: 40, angle: -168, fill: '#110e17', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.41, scan: 0.413, dim: 0.89 },
+      { shape: 'triangle', cx: 1913, cy: 377, size: 37, angle: 95, fill: '#908ab4', opacity: 0.119, blend: 'screen', blur: 0.5, ratio: 1.68, scan: 0.387, dim: 0.861, cover: 0.5, base: '#2a2a2b' },
+      { shape: 'heart', cx: 1217, cy: 305, size: 34, angle: 34, fill: '#c0aa9a', opacity: 0.096, blend: 'screen', blur: 0.5, ratio: 1.32, scan: 0.335, dim: 0.711, cover: 0.5, base: '#594638' },
+      { shape: 'diamond', cx: 1817, cy: 1385, size: 31, angle: 134, fill: '#bda097', opacity: 0.187, blend: 'screen', blur: 0.5, ratio: 1.58, scan: 0.329, dim: 0.803, cover: 0.5, base: '#4d3c37' },
+      { shape: 'tree', cx: 497, cy: 545, size: 28, angle: 70, fill: '#7f9aad', opacity: 0.187, blend: 'screen', blur: 0.5, ratio: 1.05, scan: 0.316, dim: 0.856, cover: 0.5, base: '#141617' },
+      { shape: 'bell', cx: 1337, cy: 1049, size: 25, angle: -104, fill: '#b48aa0', opacity: 0.226, blend: 'screen', blur: 0.5, ratio: 1.07, scan: 0.411, dim: 0.778, cover: 0.5, base: '#2a2829' },
+      { shape: 'leaf', cx: 2393, cy: 809, size: 22, angle: 148, fill: '#cba588', opacity: 0.187, blend: 'screen', blur: 0.5, ratio: 1.19, scan: 0.303, dim: 0.766, cover: 0.5, base: '#5b3e28' },
+    ],
+  },
+  {
+    image: 'streltsy',
+    title: 'Morning of the Streltsy Execution',
+    artist: 'Vasily Surikov',
+    year: '1881',
+    genre: 'history',
+    source: 'https://commons.wikimedia.org/wiki/File:Vasily_Surikov_-_Утро_стрелецкой_казни_-_Google_Art_Project.jpg',
+    width: 2600,
+    height: 1496,
+    clutter: 0.575,
+    days: [
+      { shape: 'arrow', cx: 1745, cy: 1217, size: 40, angle: -12, fill: '#21120d', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.29, scan: 0.496, dim: 0.879 },
+      { shape: 'star', cx: 1121, cy: 209, size: 37, angle: 97, fill: '#9ec1b8', opacity: 0.166, blend: 'screen', blur: 0.5, ratio: 2, scan: 0.435, dim: 0.668, cover: 0.5, base: '#485451' },
+      { shape: 'anchor', cx: 2129, cy: 185, size: 34, angle: -34, fill: '#4b577f', opacity: 0.135, blend: 'multiply', blur: 0.5, ratio: 3.05, scan: 0.342, dim: 0.127, cover: 0.5, base: '#d9dde9' },
+      { shape: 'key', cx: 977, cy: 1289, size: 31, angle: 46, fill: '#c0906e', opacity: 0.191, blend: 'screen', blur: 0.5, ratio: 2.56, scan: 0.407, dim: 0.891, cover: 0.5, base: '#22170f' },
+      { shape: 'bone', cx: 497, cy: 425, size: 28, angle: 110, fill: '#afba90', opacity: 0.332, blend: 'screen', blur: 0.5, ratio: 2.16, scan: 0.369, dim: 0.734, cover: 0.5, base: '#3d442a' },
+      { shape: 'note', cx: 329, cy: 1193, size: 25, angle: 104, fill: '#ebb145', opacity: 0.14, blend: 'screen', blur: 0.5, ratio: 1.71, scan: 0.364, dim: 0.88, cover: 0.5, base: '#302105' },
+      { shape: 'house', cx: 1985, cy: 713, size: 22, angle: -148, fill: '#95bba0', opacity: 0.17, blend: 'screen', blur: 0.5, ratio: 1.05, scan: 0.328, dim: 0.749, cover: 0.5, base: '#3a423c' },
+    ],
+  },
+  {
     image: 'hunters',
     title: 'The Hunters in the Snow',
     artist: 'Pieter Bruegel the Elder',
@@ -383,6 +423,48 @@ const WEEKS: WeekSeed[] = [
       { shape: 'key', cx: 1169, cy: 185, size: 28, angle: 70, fill: '#4b7576', opacity: 0.453, blend: 'multiply', blur: 0.5, ratio: 2.4, scan: 0.353, dim: 0.189, cover: 0.5, base: '#cfdedf' },
       { shape: 'puzzle', cx: 2369, cy: 1193, size: 25, angle: -104, fill: '#406c5f', opacity: 0.336, blend: 'multiply', blur: 0.5, ratio: 1.81, scan: 0.333, dim: 0.197, cover: 0.5, base: '#afd0c6' },
       { shape: 'house', cx: 1505, cy: 929, size: 22, angle: 148, fill: '#cfc7b1', opacity: 0.354, blend: 'screen', blur: 0.5, ratio: 1.55, scan: 0.345, dim: 0.473, cover: 0.5, base: '#8f8057' },
+    ],
+  },
+  {
+    image: 'moulin',
+    title: 'Dance at Le Moulin de la Galette',
+    artist: 'Pierre-Auguste Renoir',
+    year: '1876',
+    genre: 'genre-scene',
+    source:
+      'https://commons.wikimedia.org/wiki/File:Auguste_Renoir_-_Dance_at_Le_Moulin_de_la_Galette_-_Google_Art_Project.jpg',
+    sourceWidth: 3840,
+    width: 2600,
+    height: 1932,
+    clutter: 0.531,
+    days: [
+      { shape: 'sun', cx: 473, cy: 1721, size: 40, angle: 102, fill: '#353522', opacity: 1, blend: 'screen', blur: 0.5, ratio: 2.71, scan: 0.435, dim: 0.721 },
+      { shape: 'snowflake', cx: 1553, cy: 1625, size: 37, angle: -85, fill: '#92adb9', opacity: 0.201, blend: 'screen', blur: 0.5, ratio: 1.58, scan: 0.41, dim: 0.798, cover: 0.5, base: '#2c3d45' },
+      { shape: 'hourglass', cx: 1193, cy: 1337, size: 34, angle: -146, fill: '#c9c7aa', opacity: 0.209, blend: 'screen', blur: 0.5, ratio: 1.07, scan: 0.352, dim: 0.58, cover: 0.5, base: '#686861' },
+      { shape: 'crown', cx: 2057, cy: 1073, size: 31, angle: -46, fill: '#8bb599', opacity: 0.222, blend: 'screen', blur: 0.5, ratio: 1.37, scan: 0.363, dim: 0.8, cover: 0.5, base: '#24352a' },
+      { shape: 'puzzle', cx: 785, cy: 425, size: 28, angle: 70, fill: '#829baf', opacity: 0.17, blend: 'screen', blur: 0.5, ratio: 1.13, scan: 0.344, dim: 0.903, cover: 0.5, base: '#191c1e' },
+      { shape: 'sailboat', cx: 161, cy: 665, size: 25, angle: -104, fill: '#b3ae89', opacity: 0.234, blend: 'screen', blur: 0.5, ratio: 2.01, scan: 0.321, dim: 0.799, cover: 0.5, base: '#2b2a24' },
+      { shape: 'crescent', cx: 1961, cy: 401, size: 22, angle: 148, fill: '#90b8b8', opacity: 0.237, blend: 'screen', blur: 0.5, ratio: 1.56, scan: 0.3, dim: 0.834, cover: 0.5, base: '#2e3e3e' },
+    ],
+  },
+  {
+    image: 'cossacks',
+    title: 'Reply of the Zaporozhian Cossacks',
+    artist: 'Ilya Repin',
+    year: '1891',
+    genre: 'history',
+    source: 'https://commons.wikimedia.org/wiki/File:Ilja_Jefimowitsch_Repin_-_Reply_of_the_Zaporozhian_Cossacks_-_Yorck.jpg',
+    width: 2600,
+    height: 1537,
+    clutter: 0.556,
+    days: [
+      { shape: 'blossom', cx: 1001, cy: 233, size: 40, angle: -132, fill: '#d7d9e6', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 1.67, scan: 0.425, dim: 0.392 },
+      { shape: 'droplet', cx: 2081, cy: 209, size: 37, angle: -25, fill: '#82743e', opacity: 0.151, blend: 'multiply', blur: 0.5, ratio: 1.35, scan: 0.366, dim: 0.144, cover: 0.5, base: '#e4dec7' },
+      { shape: 'leaf', cx: 473, cy: 545, size: 34, angle: 34, fill: '#91a4b9', opacity: 0.119, blend: 'screen', blur: 0.5, ratio: 1.48, scan: 0.391, dim: 0.796, cover: 0.5, base: '#2e3740' },
+      { shape: 'apple', cx: 161, cy: 1313, size: 31, angle: -46, fill: '#87afb2', opacity: 0.131, blend: 'screen', blur: 0.5, ratio: 1.23, scan: 0.373, dim: 0.838, cover: 0.5, base: '#212728' },
+      { shape: 'bell', cx: 2417, cy: 1313, size: 28, angle: 70, fill: '#cfc6b4', opacity: 0.166, blend: 'screen', blur: 0.5, ratio: 1.11, scan: 0.318, dim: 0.485, cover: 0.5, base: '#887d64' },
+      { shape: 'spade', cx: 1097, cy: 1313, size: 25, angle: -104, fill: '#b3a088', opacity: 0.213, blend: 'screen', blur: 0.5, ratio: 1.23, scan: 0.335, dim: 0.809, cover: 0.5, base: '#2b2620' },
+      { shape: 'tree', cx: 1625, cy: 809, size: 22, angle: 148, fill: '#d0bbac', opacity: 0.379, blend: 'screen', blur: 0.5, ratio: 1.42, scan: 0.304, dim: 0.667, cover: 0.5, base: '#8e6950' },
     ],
   },
   {

@@ -1,6 +1,6 @@
 ---
 name: add-painting
-description: Add a new painting to Find Me and plan, tune and verify its whole Monday-to-Sunday week of puzzles. Use when the user asks to "add a painting", "add a new week", "add another artwork", "put a new painting in the rotation", or names a specific painting to add. Screens the candidate against the rejected list, for nudity, for variety against the weeks already in the rotation, and for how busy it is so really busy paintings stay weeks apart; appends it to the end of the puzzle list so nobody's calendar shifts (or, while busy weeks are queued too close, slots a calm one between them in the future lineup); refuses to finish until the week measures well and the suite is green; and never reveals where anything is hidden, so the person who asked for the week can still play it.
+description: Add a new painting to Find Me and plan, tune and verify its whole Monday-to-Sunday week of puzzles. Use when the user asks to "add a painting", "add a new week", "add another artwork", "put a new painting in the rotation", or names a specific painting to add. Screens the candidate against the rejected list, for nudity, for variety against the weeks already in the rotation, and for how busy it is so really busy paintings stay weeks apart; appends it to the end of the puzzle list so nobody's calendar shifts; refuses to finish until the week measures well and the suite is green; and never reveals where anything is hidden, so the person who asked for the week can still play it.
 ---
 
 # Add a painting
@@ -161,35 +161,6 @@ means four calm weeks in between, and ideally eight. If it would land closer, it
 mistimed, not bad. Say so, suggest a calm painting for this slot, and do **not** record it
 in `rejected.json`. A calm candidate is never held back by this rule.
 
-### Temporary — spreading out the busy weeks already queued
-
-When this rule arrived (September 2026), the lineup already had busy weeks bunched
-together, some of them still in the future. Until they are spread out, a **calm** painting
-does not automatically go last. It goes into the first gap between two busy weeks that is
-too tight (fewer than five places apart) and lies entirely after the current week. This is
-the one exception to Rule 5, and it holds only under all of these conditions:
-
-- **Only among weeks nobody has met.** Work out the current week index as CLAUDE.md
-  describes ("Which weeks may be changed"). The new week must go after it. If it would
-  become the week starting next Monday, it has to be committed and deployed before that
-  Monday. Otherwise Monday's players will already have played the week it displaces.
-  Recheck the index just before committing, because a Monday can pass mid-task.
-- **Before touching anything**, run `npm run fingerprint --silent > .scratch/before.json`.
-  Afterwards, diff it against a fresh run. Every existing week must be unchanged; only the
-  new week's seven days may appear.
-- **Plan and tune the new week alone.** `npm run plan -- NAME` deals only the week it is
-  named, around the fixed Sunday before it and the fixed Monday after it, and leaves every
-  other week exactly as it is. Do **not** re-plan or re-tune the weeks after the insert:
-  their calendar dates move, but nothing in their day lines does, and `version` and `spot`
-  are keyed by painting, not by position.
-- **Rule 3 applies on both sides.** The new week must not share a painter with either
-  neighbour, and must not form a run of three in a genre with the weeks around it.
-- **Insert calm paintings only.** Never reorder existing weeks, and never insert a busy one.
-
-Once no two busy weeks after the current week are fewer than five places apart, including
-the gap from the last busy week already served, **delete this subsection** and the
-matching sentence in CLAUDE.md, and go back to append-only.
-
 ## Rule 5 — always append, never insert
 
 `daily.ts` maps calendar days onto `PUZZLES` by index. Inserting or reordering a week
@@ -201,8 +172,6 @@ moves — not a line, not a field. Name **only the new week** when planning and 
 `plan-weeks.mjs` rewrites exactly the weeks it is given, and `shapeRun` in
 `src/game/shapeOrder.ts` deals only those, around the fixed weeks either side. That is what
 keeps the existing weeks byte-identical.
-
-The only exception is the temporary one under Rule 4.
 
 ## Rule 6 — shapes across the calendar
 
@@ -305,8 +274,7 @@ dimensions and moves every hiding place in its week. That has happened once alre
 Note the reported output dimensions — they go in the seed verbatim, and a test pins them.
 
 Now apply **Rule 4**: measure `clutter` on the new asset and check it against the busy weeks
-in the lineup. That decides whether a busy painting is mistimed, and whether a calm one goes
-last or into a gap under the temporary clause. If it is mistimed, delete the asset and the
+in the lineup. That decides whether a busy painting is mistimed. If it is, delete the asset and the
 `resize-images.mjs` line before choosing another painting.
 
 ### 4. Append the week seed
@@ -498,9 +466,7 @@ through `?puzzle=NAME-sun`. They aren't recorded and don't affect a streak.
 ### 9. Commit
 
 Commit `src/game/puzzles.ts`, `public/puzzles/NAME.jpg`, `scripts/resize-images.mjs`, any
-`scripts/avoid.json` change, and the README/comment count updates. If the week was inserted
-under Rule 4's temporary clause, say so in the commit message, along with the fingerprint
-check showing that no existing week moved. The source scan under
+`scripts/avoid.json` change, and the README/comment count updates. The source scan under
 `.source-images/` stays out, and so does anything from `local/`. Then **delete the scan**,
 along with the week sheets and diag frames: the asset is committed, the `source` field
 says where the scan came from, and `assets.test.ts` will catch a regeneration off the
@@ -527,9 +493,7 @@ away with nothing committed, and it is exactly the case the file exists for.
   white snowflake.
 - **Don't reorder weeks that players have already been served** to satisfy
   `curation.test.ts`. Reordering moves every painting after the one that moved, and hands
-  people finished boards for puzzles they never played. Change the painting instead. (A
-  calm painting inserted among future weeks under Rule 4's temporary clause is not
-  reordering; moving an existing week still is.)
+  people finished boards for puzzles they never played. Change the painting instead.
 - **Don't put two really busy paintings fewer than five weeks apart.** Starry and Proverbs
   set the bar. See Rule 4.
 - **Don't say where a shape ended up** — in a summary, a progress note, or a commit

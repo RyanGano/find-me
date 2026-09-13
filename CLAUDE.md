@@ -308,9 +308,7 @@ finishing any change to user-facing copy, grep the strings you touched for `our\
   the rotation. A fourth gate follows once the asset exists: a really busy painting
   (`clutter` at or above *The Proverbs*) sits at least five weeks from the last one. New
   weeks are always appended, never inserted — `daily.ts` indexes the calendar into
-  `PUZZLES`, so reordering moves every painting after it. The one exception, temporary and
-  described in the skill, is a calm painting inserted among future weeks to spread out busy
-  weeks already queued too close together.
+  `PUZZLES`, so reordering moves every painting after it.
 - Changing where a day hides means re-planning and re-tuning that week, then re-running
   the suite: `npm run plan -- <image>`, `npm run build`, `npx vite preview --port 4173 &`,
   `npm run camouflage -- --solve <image>`. A spot that only reveals itself as unusable once

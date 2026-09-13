@@ -19,10 +19,12 @@ describe('the hint circle', () => {
   it('is the same every time for a day, and differs between days', () => {
     const [a, b] = PUZZLES;
     expect(hintCircle(a)).toEqual(hintCircle(a));
+    // Bucketed at a hundredth of a radian: about 628 directions. At a tenth there are only
+    // 63, which a rotation of more than 126 days cannot beat however well the hash spreads.
     const angles = new Set(
       PUZZLES.map((p) => {
         const c = hintCircle(p);
-        return Math.round(Math.atan2(c.cy - p.target.cy, c.cx - p.target.cx) * 10);
+        return Math.round(Math.atan2(c.cy - p.target.cy, c.cx - p.target.cx) * 100);
       }),
     );
     expect(angles.size).toBeGreaterThan(PUZZLES.length / 2);

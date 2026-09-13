@@ -126,6 +126,41 @@
       "reason": "too-smooth",
       "note": "Rated TOO SMOOTH on the 10500x6298 Commons scan: quietest 3.2, busiest 45.2, median 12.2. Clutter 0.265. Luminous haze over most of the canvas.",
       "added": "2026-09-12"
+    },
+    {
+      "title": "Golden Autumn. Slobodka",
+      "artist": "Isaac Levitan",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 7158x4465 Google Art Project scan: quietest 4.2, busiest 40.0, median 14.4. Clutter 0.382.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "The Heart of the Andes",
+      "artist": "Frederic Edwin Church",
+      "reason": "cannot-hold-a-week",
+      "note": "Rates ok on the 6400x3503 Commons scan (quietest 5.2, busiest 48.2, median 20.6) and reads clutter 0.500, but npm run plan refuses it: the colours are there (blue, grey, sand, white) but no seven hiding places can be two-per-colour, one-per-region, 420px apart and on each day's prominence floor at once. Greens and browns dominate a short wide canvas.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "Bogatyrs",
+      "artist": "Viktor Vasnetsov",
+      "reason": "cannot-hold-a-week",
+      "note": "Rates ok on the 4000x2600 Google Art Project scan (quietest 10.8, busiest 61.1, median 28.4) and reads clutter 0.528, but npm run plan refuses it: the colours are there (black, green, grey, pink, red, sand, white) but no seven hiding places can be two-per-colour, one-per-region, 420px apart and on each day's prominence floor at once.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "The Stonemason's Yard",
+      "artist": "Canaletto",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 6000x4640 Commons scan: quietest 5.2, busiest 47.2, median 14.8. Clutter 0.340, far calmer than the same painter's Grand Canal already in the rotation.",
+      "added": "2026-09-12"
+    },
+    {
+      "title": "The Veteran in a New Field",
+      "artist": "Winslow Homer",
+      "reason": "too-smooth",
+      "note": "Rated TOO SMOOTH on the 5892x3701 Commons scan: quietest 5.3, busiest 33.9, median 12.1. Clutter 0.377.",
+      "added": "2026-09-12"
     }
   ]
 }
