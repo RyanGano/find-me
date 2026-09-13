@@ -46,7 +46,7 @@ export function Shape({
       <path
         d={def.path}
         fill={fill}
-        fillRule={def.fillRule ?? "evenodd"}
+        fillRule={def.fillRule ?? 'evenodd'}
         stroke={stroke}
         strokeWidth={strokeWidth}
         strokeLinejoin="round"

@@ -1,5 +1,5 @@
-import { DEG } from '../game/transform';
 import type { HintCircle } from '../game/hint';
+import { DEG } from '../game/transform';
 import type { Puzzle, Transform } from '../game/types';
 import { Shape } from './Shape';
 
@@ -73,87 +73,87 @@ export function Stage({
           filter inside the zoom would have its radius scaled along with everything
           else, so it would all but vanish at the fitted view. */}
       <div className={`stage-viewport${blurred ? ' is-blurred' : ''}`}>
-      <div
-        className="stage-canvas"
-        style={{ width: puzzle.width, height: puzzle.height, transform: css, '--stage-zoom': zoom } as React.CSSProperties}
-      >
-        <img
-          className="stage-image"
-          // A cached image can already be complete before React attaches onLoad, and a
-          // missed load event used to leave every gesture disabled for good.
-          ref={(node) => {
-            if (node?.complete) onReady();
-          }}
-          src={puzzle.src}
-          width={puzzle.width}
-          height={puzzle.height}
-          alt={`${puzzle.title} by ${puzzle.artist}`}
-          onLoad={onReady}
-          // Even a broken image should leave a usable page rather than a dead one.
-          onError={onReady}
-          draggable={false}
-        />
         <div
-          className="stage-target"
-          style={
-            {
-              left: target.cx - target.size / 2,
-              top: target.cy - target.size / 2,
-              '--shape-blur': `${target.blur ?? 0}px`,
-            } as React.CSSProperties
-          }
+          className="stage-canvas"
+          style={{ width: puzzle.width, height: puzzle.height, transform: css, '--stage-zoom': zoom } as React.CSSProperties}
         >
-          <Shape
-            className="stage-shape"
-            shape={target.shape}
-            size={target.size}
-            angle={target.angle}
-            fill={target.fill}
-            stroke={target.stroke}
-            strokeWidth={target.strokeWidth}
-            opacity={target.opacity}
-            blend={target.blend}
+          <img
+            className="stage-image"
+            // A cached image can already be complete before React attaches onLoad, and a
+            // missed load event used to leave every gesture disabled for good.
+            ref={(node) => {
+              if (node?.complete) onReady();
+            }}
+            src={puzzle.src}
+            width={puzzle.width}
+            height={puzzle.height}
+            alt={`${puzzle.title} by ${puzzle.artist}`}
+            onLoad={onReady}
+            // Even a broken image should leave a usable page rather than a dead one.
+            onError={onReady}
+            draggable={false}
           />
-          {target.cover !== undefined && target.base && (
+          <div
+            className="stage-target"
+            style={
+              {
+                left: target.cx - target.size / 2,
+                top: target.cy - target.size / 2,
+                '--shape-blur': `${target.blur ?? 0}px`,
+              } as React.CSSProperties
+            }
+          >
             <Shape
-              className="stage-under"
+              className="stage-shape"
               shape={target.shape}
               size={target.size}
               angle={target.angle}
-              fill={target.base}
-              opacity={target.cover}
+              fill={target.fill}
+              stroke={target.stroke}
+              strokeWidth={target.strokeWidth}
+              opacity={target.opacity}
+              blend={target.blend}
+            />
+            {target.cover !== undefined && target.base && (
+              <Shape
+                className="stage-under"
+                shape={target.shape}
+                size={target.size}
+                angle={target.angle}
+                fill={target.base}
+                opacity={target.cover}
+              />
+            )}
+          </div>
+          {/* The hint: a dashed circle, so it never reads as the answer ring. Same casing,
+              same screen-constant widths, so it holds on any paint at any zoom. */}
+          {hint && !showRing && (
+            <div
+              className="stage-hint-circle"
+              style={{
+                left: hint.cx - hint.r,
+                top: hint.cy - hint.r,
+                width: hint.r * 2,
+                height: hint.r * 2,
+                borderWidth: ringWidth,
+                '--ring-casing': `${ringCasing}px`,
+              } as React.CSSProperties}
+            />
+          )}
+          {showRing && (
+            <div
+              className="stage-ring"
+              style={{
+                left: target.cx - ringSize / 2,
+                top: target.cy - ringSize / 2,
+                width: ringSize,
+                height: ringSize,
+                borderWidth: ringWidth,
+                '--ring-casing': `${ringCasing}px`,
+              } as React.CSSProperties}
             />
           )}
         </div>
-        {/* The hint: a dashed circle, so it never reads as the answer ring. Same casing,
-            same screen-constant widths, so it holds on any paint at any zoom. */}
-        {hint && !showRing && (
-          <div
-            className="stage-hint-circle"
-            style={{
-              left: hint.cx - hint.r,
-              top: hint.cy - hint.r,
-              width: hint.r * 2,
-              height: hint.r * 2,
-              borderWidth: ringWidth,
-              '--ring-casing': `${ringCasing}px`,
-            } as React.CSSProperties}
-          />
-        )}
-        {showRing && (
-          <div
-            className="stage-ring"
-            style={{
-              left: target.cx - ringSize / 2,
-              top: target.cy - ringSize / 2,
-              width: ringSize,
-              height: ringSize,
-              borderWidth: ringWidth,
-              '--ring-casing': `${ringCasing}px`,
-            } as React.CSSProperties}
-          />
-        )}
-      </div>
       </div>
 
       {blurred && (

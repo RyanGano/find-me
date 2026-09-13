@@ -1,9 +1,9 @@
-import { Shape } from './Shape';
 import { wellFor } from '../game/badge';
-import { useApparentFill } from '../hooks/useApparentFill';
 import { formatTime } from '../game/format';
 import type { MatchState } from '../game/match';
 import type { Puzzle } from '../game/types';
+import { useApparentFill } from '../hooks/useApparentFill';
+import { Shape } from './Shape';
 
 interface Props {
   puzzle: Puzzle;

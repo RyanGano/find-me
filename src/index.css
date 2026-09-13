@@ -1506,7 +1506,6 @@ button.reference:focus-visible {
   border-radius: 6px;
 }
 
-
 /*
  * The play-test bench. It borrows the game's shell wholesale -- the board, the badge,
  * the top bar are the same elements doing the same job -- so what is here is only the

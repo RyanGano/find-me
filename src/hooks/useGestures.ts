@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { gestureFromPointerPair } from '../game/transform';
+import { gestureFromPointerPair, type GestureDelta } from '../game/transform';
 import type { Vec } from '../game/types';
-import type { GestureDelta } from '../game/transform';
 
 interface Options {
   onGesture: (delta: GestureDelta) => void;

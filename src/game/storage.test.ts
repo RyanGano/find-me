@@ -492,7 +492,6 @@ describe('progress', () => {
   });
 });
 
-
 /**
  * The backup copy, which is the whole reason iPhone players stop losing streaks: WebKit
  * sweeps localStorage on its own schedule, and a cookie is the one thing a page can

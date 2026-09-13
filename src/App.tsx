@@ -400,14 +400,6 @@ export default function App() {
   }, [canGiveUp, isPractice, runId, day, clock, gate]);
 
   /**
-   * Stop the clock, show them where it was, and close the day out as played.
-   *
-   * A recorded result rather than nothing at all, because the alternative -- the tab
-   * closed on an unsolved painting -- is the version of this day the player remembers,
-   * and it teaches them nothing about how to look. The streak ends here: a give-up that
-   * kept it would be strictly better than not playing.
-   */
-  /**
    * The hint, or a word of encouragement if it is not open yet -- the same answer the
    * give-up gives an early press. Unlike the give-up, an early press here is not
    * reported: `stuck` means the first reach for the give-up, and a second source would
@@ -452,6 +444,14 @@ export default function App() {
     return () => clearTimeout(id);
   }, [hintNote]);
 
+  /**
+   * Stop the clock, show them where it was, and close the day out as played.
+   *
+   * A recorded result rather than nothing at all, because the alternative -- the tab
+   * closed on an unsolved painting -- is the version of this day the player remembers,
+   * and it teaches them nothing about how to look. The streak ends here: a give-up that
+   * kept it would be strictly better than not playing.
+   */
   const onGiveUp = useCallback(() => {
     setConfirming(false);
     setPlea(null);
@@ -475,7 +475,6 @@ export default function App() {
     const id = setTimeout(() => setPlea(null), 6000);
     return () => clearTimeout(id);
   }, [plea]);
-
 
   // Dismissible, but the flag that remembers it is written to the very storage the
   // warning is about -- so in the case it exists for, it comes back on the next visit.
