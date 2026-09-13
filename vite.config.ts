@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
+import { countWeeks } from './src/game/weekCount.ts';
 
 /**
  * Stamped into the bundle and written to `version.json` beside it. The running page
@@ -7,6 +9,11 @@ import { defineConfig, type Plugin } from 'vite';
  */
 const buildId = new Date().toISOString();
 
+/**
+ * `version.json` also says how many weeks this build's calendar holds, so the deployed
+ * site itself answers "how long until the rotation wraps back to the first week" -- a
+ * painting committed but not yet deployed does not count. See `weekCount.ts`.
+ */
 function buildVersion(): Plugin {
   return {
     name: 'find-me:build-version',
@@ -15,7 +22,7 @@ function buildVersion(): Plugin {
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
-        source: JSON.stringify({ build: buildId }),
+        source: JSON.stringify({ build: buildId, weeks: countWeeks(readFileSync('src/game/puzzles.ts', 'utf8')) }),
       });
     },
   };
