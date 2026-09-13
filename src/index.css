@@ -8,6 +8,10 @@
   /* Ink on the accent. */
   --on-accent: #1a1408;
   --ok: #6fca7a;
+  /* Something is wrong or will be lost: text, a dark ground for it, and that ground's edge. */
+  --danger: #ff8f6b;
+  --danger-bg: #4a1f14;
+  --danger-line: #7a3a24;
   /* The reveal ring, and the toggle that shows it. Deliberately colourless: see
      `.stage-ring`. */
   --reveal: #f7f4ee;
@@ -192,12 +196,12 @@ body,
   font-size: 0.8rem;
   line-height: 1.4;
   color: var(--text);
-  background: #4a1f14;
-  border-bottom: 1px solid #7a3a24;
+  background: var(--danger-bg);
+  border-bottom: 1px solid var(--danger-line);
 }
 
 .storage-note strong {
-  color: #ffb59a;
+  color: var(--danger);
 }
 
 .practice-note {
@@ -338,11 +342,11 @@ body,
 }
 
 .diag dd.ok {
-  color: #7bc86c;
+  color: var(--ok);
 }
 
 .diag dd.bad {
-  color: #ff8f6b;
+  color: var(--danger);
 }
 
 .diag a {
@@ -375,7 +379,7 @@ body,
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #1a1408;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -1587,7 +1591,7 @@ button.reference:focus-visible {
 }
 
 .review-rung.is-on {
-  color: #1a1408;
+  color: var(--on-accent);
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -1615,7 +1619,7 @@ button.reference:focus-visible {
 }
 
 .review-thumb.is-on {
-  color: #1a1408;
+  color: var(--on-accent);
   background: var(--ok);
   border-color: var(--ok);
   font-weight: 600;
@@ -1623,8 +1627,8 @@ button.reference:focus-visible {
 
 .review-thumb.is-off {
   color: var(--text);
-  background: #6b3630;
-  border-color: #6b3630;
+  background: var(--danger-line);
+  border-color: var(--danger-line);
   font-weight: 600;
 }
 
@@ -1773,7 +1777,7 @@ button.reference:focus-visible {
   50% {
     color: var(--text);
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(233, 178, 60, 0.45), var(--shadow);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent), var(--shadow);
   }
 }
 
