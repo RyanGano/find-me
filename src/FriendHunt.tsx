@@ -19,6 +19,7 @@ import { huntTrace, shareResult, SITE_URL } from './game/share';
 import type { Puzzle } from './game/types';
 import { useHunt } from './hooks/useHunt';
 import { HowTo } from './components/HowTo';
+import { HelpIcon, ResetIcon } from './components/Icons';
 
 /** The daily game's how-to flag, read only: reading those rules covers these too. */
 const HOWTO_SEEN = 'find-me:howto-seen';
@@ -256,8 +257,8 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
               </svg>
             </button>
           )}
-          <button type="button" className="btn btn-icon" onClick={reset} title="Reset view">
-            ⟲
+          <button type="button" className="btn btn-icon" onClick={reset} title="Reset view" aria-label="Reset view">
+            <ResetIcon />
           </button>
           {done === null && (
             <button
@@ -280,7 +281,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
             title="How to play"
             aria-label="How to play"
           >
-            ?
+            <HelpIcon />
           </button>
         </div>
       </header>

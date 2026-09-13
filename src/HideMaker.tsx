@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EyeIcon, HelpIcon, ResetIcon } from './components/Icons';
 import { Reporting } from './components/Reporting';
 import { Shape } from './components/Shape';
 import { Stage } from './components/Stage';
@@ -404,11 +405,10 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
               className={`btn btn-icon btn-ring${showRing ? ' is-on' : ''}`}
               onClick={() => setShowRing((prev) => !prev)}
               title={showRing ? 'Hide the ring' : 'Show the ring'}
+              aria-label={showRing ? 'Hide the ring' : 'Show the ring'}
               aria-pressed={showRing}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M6 12.6l4 4 8-9" />
-              </svg>
+              <EyeIcon open={showRing} />
             </button>
           )}
           <button
@@ -416,11 +416,18 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
             className="btn btn-icon"
             onClick={() => fit && setTransform(fit)}
             title="Reset view"
+            aria-label="Reset view"
           >
-            ⟲
+            <ResetIcon />
           </button>
-          <button type="button" className="btn btn-icon" onClick={() => setShowHelp(true)} title="How this works">
-            ?
+          <button
+            type="button"
+            className="btn btn-icon"
+            onClick={() => setShowHelp(true)}
+            title="How this works"
+            aria-label="How this works"
+          >
+            <HelpIcon />
           </button>
         </div>
       </header>

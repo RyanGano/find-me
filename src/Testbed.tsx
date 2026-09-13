@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { ResetIcon } from './components/Icons';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ReviewCard } from './components/ReviewCard';
 import { Stage } from './components/Stage';
@@ -416,8 +417,8 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
               </svg>
             </button>
           )}
-          <button type="button" className="btn btn-icon" onClick={reset} title="Reset view">
-            ⟲
+          <button type="button" className="btn btn-icon" onClick={reset} title="Reset view" aria-label="Reset view">
+            <ResetIcon />
           </button>
           {gaveUpMs === null ? (
             // Shut until the clock is running. Somebody who has not moved the board has

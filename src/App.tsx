@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Credits } from './components/Credits';
 import { HowTo } from './components/HowTo';
+import { EyeIcon, HelpIcon, ResetIcon } from './components/Icons';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
@@ -593,24 +594,24 @@ export default function App() {
             TEST
           </button>
         )}
-        {/* The clock only while there is a hunt to time. Either side of one -- before the
-            first move, and once the day is over -- the same slot is the way into the
-            player's stats. The badge is still the way back to the result. */}
-        {startedAt !== null && done === null ? (
+        {/* The stats button never moves: shut while there is a hunt to time, so the bar
+            does not rearrange itself on the first move, and the clock sits beside it for
+            as long as the hunt runs. The badge is still the way back to the result. */}
+        <button
+          type="button"
+          className={`btn btn-icon btn-stats${showStats ? ' is-on' : ''}`}
+          onClick={() => togglePanel('stats')}
+          disabled={startedAt !== null && done === null}
+          title="Your stats"
+          aria-label="Your stats"
+          aria-pressed={showStats}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M6 18v-6M12 18V6M18 18v-9" />
+          </svg>
+        </button>
+        {startedAt !== null && done === null && (
           <p className={`clock${running ? ' is-running' : ''}`}>{formatTime(clock)}</p>
-        ) : (
-          <button
-            type="button"
-            className={`btn btn-icon btn-stats${showStats ? ' is-on' : ''}`}
-            onClick={() => togglePanel('stats')}
-            title="Your stats"
-            aria-label="Your stats"
-            aria-pressed={showStats}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M6 18v-6M12 18V6M18 18v-9" />
-            </svg>
-          </button>
         )}
         <div className="topbar-actions">
           {done !== null && (
@@ -619,13 +620,12 @@ export default function App() {
               className={`btn btn-icon btn-ring${showRing ? ' is-on' : ''}`}
               onClick={() => setShowRing((prev) => !prev)}
               title={showRing ? 'Hide the reveal ring' : 'Show the reveal ring'}
+              aria-label={showRing ? 'Hide the reveal ring' : 'Show the reveal ring'}
               aria-pressed={showRing}
             >
-              {/* Just the tick - the button's own round border is the circle. Green
-                  while the ring is on the painting, grey once it is off. */}
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M6 12.6l4 4 8-9" />
-              </svg>
+              {/* An eye rather than a tick: a tick read as "done", not "show". Open while
+                  the ring is on the painting, struck through once it is off. */}
+              <EyeIcon open={showRing} />
             </button>
           )}
           {startedAt !== null && done === null && (
@@ -650,8 +650,8 @@ export default function App() {
               </svg>
             </button>
           )}
-          <button type="button" className="btn btn-icon" onClick={reset} title="Reset view">
-            ⟲
+          <button type="button" className="btn btn-icon" onClick={reset} title="Reset view" aria-label="Reset view">
+            <ResetIcon />
           </button>
           {/* Hide one for a friend, offered only once today's hunt is over: before that
               it is a door out of a run in progress, and it would give away that every
@@ -674,8 +674,9 @@ export default function App() {
             className="btn btn-icon"
             onClick={() => togglePanel('howto')}
             title="How to play"
+            aria-label="How to play"
           >
-            ?
+            <HelpIcon />
           </button>
         </div>
       </header>

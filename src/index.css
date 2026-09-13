@@ -414,9 +414,8 @@ body,
   line-height: 1;
 }
 
-/* The ring toggle wears the ring's own colour while the ring is showing, and
-   goes quiet with it. */
-.btn-ring svg {
+/* Every icon in the bar is drawn the same way, at the same size and weight. */
+.btn-icon svg {
   display: block;
   width: 18px;
   height: 18px;
@@ -428,6 +427,13 @@ body,
   stroke-linejoin: round;
 }
 
+.btn-icon:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* The ring toggle wears the ring's own colour while the ring is showing, and
+   goes quiet with it. */
 .btn-ring {
   color: var(--muted);
 }
@@ -437,19 +443,7 @@ body,
   border-color: var(--reveal);
 }
 
-/* Pause borrows the ring toggle's icon sizing; the play triangle is solid. */
-.btn-pause svg {
-  display: block;
-  width: 18px;
-  height: 18px;
-  margin: 0 auto;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
+/* The play triangle is solid. */
 .btn-pause[aria-pressed='true'] svg {
   fill: currentColor;
   stroke-linejoin: round;
