@@ -431,11 +431,11 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
               disabled={startedAt === null}
               title={startedAt === null ? 'Have a look first' : 'Stop the clock and show me'}
             >
-              give up
+              Give up
             </button>
           ) : (
             <button type="button" className="btn btn-primary testbed-rate" onClick={rate}>
-              rate it
+              Rate it
             </button>
           )}
         </div>
@@ -457,7 +457,7 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
         />
 
         {resuming && (
-          <p className="resume-note">continuing — clock held at {formatTime(elapsed)}</p>
+          <p className="resume-note">Continuing — clock held at {formatTime(elapsed)}</p>
         )}
 
         {gaveUpMs !== null && (
@@ -469,7 +469,7 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
             </span>
             {!showRing && !match?.solved && (
               <button type="button" className="btn reveal-show" onClick={() => setShowRing(true)}>
-                still can&rsquo;t see it
+                Still can&rsquo;t see it
               </button>
             )}
           </div>

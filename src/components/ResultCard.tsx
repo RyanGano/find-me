@@ -179,8 +179,8 @@ export function ResultCard({
       )}
       {gaveUp && (
         <p className="result-gaveup">
-          hunted, then shown. It is framed on the board behind this card &mdash; have a
-          look at what you walked past.
+          It&rsquo;s framed on the board behind this card &mdash; have a look at what you
+          walked past.
         </p>
       )}
 

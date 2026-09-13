@@ -438,7 +438,7 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
       {isTestMode() && (
         <p className="test-banner">
           <span className="test-banner-what">
-            test mode <span>— making a hide</span>
+            Test mode <span>— making a hide</span>
           </span>
         </p>
       )}

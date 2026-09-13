@@ -253,7 +253,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
               disabled={startedAt === null}
               title={startedAt === null ? 'Make your first move to start the clock' : 'Stop the clock and show me'}
             >
-              give up
+              Give up
             </button>
           )}
           <button

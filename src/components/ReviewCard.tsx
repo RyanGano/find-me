@@ -89,7 +89,7 @@ export function ReviewCard({ step, of, ms, gaveUp, thing, onSubmit }: Props) {
           onClick={() => setFair(1)}
           aria-pressed={fair === 1}
         >
-          👍 fair
+          👍 Fair
         </button>
         <button
           type="button"
@@ -97,7 +97,7 @@ export function ReviewCard({ step, of, ms, gaveUp, thing, onSubmit }: Props) {
           onClick={() => setFair(-1)}
           aria-pressed={fair === -1}
         >
-          👎 not fair
+          👎 Not fair
         </button>
       </div>
 

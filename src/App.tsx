@@ -749,7 +749,7 @@ export default function App() {
         </p>
       )}
 
-      {isPractice && <p className="practice-note">practice mode — this run is not recorded</p>}
+      {isPractice && <p className="practice-note">Practice mode — this run isn&rsquo;t recorded</p>}
 
       {/* Test mode looks exactly like the real game, which is the point of it and also
           the danger: without this there is nothing on the screen to tell you that the
@@ -759,10 +759,10 @@ export default function App() {
       {isTest && (
         <p className="test-banner">
           <span className="test-banner-what">
-            test mode <span>— separate store, tally not counted</span>
+            Test mode <span>— separate store, tally not counted</span>
           </span>
           <a className="test-banner-exit" href="./">
-            exit
+            Exit
           </a>
         </p>
       )}
@@ -785,7 +785,7 @@ export default function App() {
             resize the stage, and the saved view only fits the box it was framed in. */}
         {resuming && (
           <p className="resume-note">
-            continuing your run — clock held at {formatTime(elapsed)}
+            Continuing your run — clock held at {formatTime(elapsed)}
           </p>
         )}
 
@@ -826,7 +826,7 @@ export default function App() {
                 : 'Not yet — keep looking a little longer'
             }
           >
-            give up
+            Give up
           </button>
         )}
 
@@ -842,7 +842,7 @@ export default function App() {
             onClick={askForHint}
             title={canHint ? 'Show me roughly where to look' : 'Not yet — keep looking a little longer'}
           >
-            hint
+            Hint
           </button>
         )}
 
@@ -871,13 +871,13 @@ export default function App() {
                     askForHint();
                   }}
                 >
-                  give me a hint
+                  Give me a hint
                 </button>
                 <button type="button" className="btn giveup-no" onClick={() => setConfirming(false)}>
-                  keep looking
+                  Keep looking
                 </button>
                 <button type="button" className="btn giveup-yes" onClick={onGiveUp}>
-                  give up
+                  Give up
                 </button>
               </>
             ) : (
@@ -886,10 +886,10 @@ export default function App() {
                   Show you where it is? The day counts as played, but it ends your streak.
                 </span>
                 <button type="button" className="btn giveup-yes" onClick={onGiveUp}>
-                  show me
+                  Show me
                 </button>
                 <button type="button" className="btn giveup-no" onClick={() => setConfirming(false)}>
-                  keep looking
+                  Keep looking
                 </button>
               </>
             )}
