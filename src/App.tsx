@@ -6,6 +6,7 @@ import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
 import { Stats as StatsPanel } from './components/Stats';
 import { UpdateNotice } from './components/UpdateNotice';
+import HideMaker from './HideMaker';
 import { giveUpAfterMs, hintAfterMs } from './game/age';
 import { hintCircle } from './game/hint';
 import { isInAppBrowser } from './game/browser';
@@ -135,6 +136,12 @@ export default function App() {
   // What was said to someone who reached for the way out too early, and a nonce so that
   // pressing again re-arms the same words rather than silently changing nothing.
   const [plea, setPlea] = useState<{ n: number; text: string } | null>(null);
+
+  // Hide one for a friend: a layer over this board rather than a page of its own, so the
+  // only way in is a day that is over. Mounted on first open and then kept, only hidden, so
+  // putting it away loses nothing the setter did.
+  const [making, setMaking] = useState(false);
+  const [madeOnce, setMadeOnce] = useState(false);
 
   // A new build deployed under a page left open. Refreshing keeps the run: leaving the
   // page banks it, and it is handed straight back on the way in.
@@ -275,7 +282,7 @@ export default function App() {
     puzzle,
     resume: saved,
     prior: prior ? { ms: prior.ms, metrics: prior.m, gaveUp: prior.gaveUp } : undefined,
-    blocked: showHowTo || showCredits || showStats,
+    blocked: showHowTo || showCredits || showStats || making,
     runId,
     onStart,
     onSolved,
@@ -306,10 +313,49 @@ export default function App() {
    */
   const newDay = useDayRollover(!isPractice);
   useEffect(() => {
-    if (!newDay || showResult) return;
+    if (!newDay || showResult || making) return;
     if (startedAt !== null && done === null) return;
     location.reload();
-  }, [newDay, showResult, startedAt, done]);
+  }, [newDay, showResult, making, startedAt, done]);
+
+  /**
+   * Back does nothing while the maker is open. A hide can take a long time to set, the
+   * maker is swiped at far more than the board is, and an edge swipe is read as back -- so
+   * the maker closes on its own button and nothing else. Opening it pushes an entry at the
+   * same address for back to spend, and every back that spends it pushes another.
+   */
+  const leavingMaker = useRef(false);
+
+  const openMaker = useCallback(() => {
+    setMaking(true);
+    setMadeOnce(true);
+    history.pushState({ findMeHide: true }, '');
+  }, []);
+
+  const closeMaker = useCallback(() => {
+    // Through history when our entry is on top, so it does not linger for a later back
+    // press to land on; the popstate below is what actually closes the layer.
+    if ((history.state as { findMeHide?: boolean } | null)?.findMeHide) {
+      leavingMaker.current = true;
+      history.back();
+    } else {
+      setMaking(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!making) return;
+    const onPop = () => {
+      if (leavingMaker.current) {
+        leavingMaker.current = false;
+        setMaking(false);
+      } else {
+        history.pushState({ findMeHide: true }, '');
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [making]);
 
   // How everyone else did, asked for only once the run is over -- never before or during a
   // hunt, where a solve rate would be a difficulty hint. A practice run is not counted and
@@ -619,15 +665,17 @@ export default function App() {
               it is a door out of a run in progress, and it would give away that every
               painting on its list is one the calendar has already served. */}
           {done !== null && (
-            <a
+            <button
+              type="button"
               className="btn btn-icon btn-hide"
-              href={isTest ? './?test&hide' : './?hide'}
+              onClick={openMaker}
               title="Hide one for a friend"
+              aria-label="Hide one for a friend"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M5 7h4a2.5 2.5 0 1 1 5 0h4v4a2.5 2.5 0 1 1 0 5v4h-4a2.5 2.5 0 1 0-5 0H5v-4a2.5 2.5 0 1 0 0-5z" />
               </svg>
-            </a>
+            </button>
           )}
           <button
             type="button"
@@ -909,6 +957,12 @@ export default function App() {
       </main>
 
       {updateAvailable && <UpdateNotice />}
+
+      {done !== null && madeOnce && (
+        <div className="hide-layer" hidden={!making}>
+          <HideMaker onClose={closeMaker} />
+        </div>
+      )}
     </div>
   );
 }

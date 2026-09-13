@@ -84,15 +84,16 @@ function markSeen(): void {
 
 /**
  * Hide one for a friend: pick a painting the calendar has already served, tap where the
- * shape goes, set it, and send the link. Reached from the daily board (`?hide`) once the
- * day's puzzle is over, so it is never a way out of a hunt in progress.
+ * shape goes, set it, and send the link. A layer over the daily board, opened from it once
+ * the day's puzzle is over -- it has no address of its own, so it is never a way out of a
+ * hunt in progress and never a way round playing the day. `onClose` puts it away.
  *
  * It writes nothing but a flag saying the help has been read, and the only thing it sends
  * is two of the five hide counters -- the maker was opened, and a link was shared. Those
  * say nothing about the hide: not the painting, not the shape, not where. No storage, and
  * nothing that reaches the run tally.
  */
-export default function HideMaker() {
+export default function HideMaker({ onClose }: { onClose: () => void }) {
   const paintings = useMemo(() => servedPaintings(), []);
   const [painting, setPainting] = useState<Painting>(() => paintings[paintings.length - 1]);
   const [shape, setShape] = useState('star');
@@ -426,16 +427,16 @@ export default function HideMaker() {
           <span className="test-banner-what">
             test mode <span>— making a hide</span>
           </span>
-          <a className="test-banner-exit" href="./?test">
+          <button type="button" className="test-banner-exit" onClick={onClose}>
             back to the game
-          </a>
+          </button>
         </p>
       ) : (
         <p className="practice-note">
           <span className="test-banner-what">hide one for a friend</span>
-          <a className="test-banner-exit" href="./">
+          <button type="button" className="test-banner-exit" onClick={onClose}>
             back to the game
-          </a>
+          </button>
         </p>
       )}
 

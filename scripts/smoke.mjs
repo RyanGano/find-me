@@ -185,10 +185,23 @@ check('the badge turns green on the solve', await page.$('.reference.is-solved')
 
 // `hide one for a friend` is offered only once the day is over, so the way in appears
 // here and nowhere earlier -- the run above already checked it was absent at the start.
-check(
-  'the way in to hiding one opens once the day is done',
-  (await page.getAttribute('.btn-hide', 'href'))?.includes('hide'),
-);
+check('the way in to hiding one opens once the day is done', await page.$('.btn-hide') !== null);
+{
+  // It opens over the board without leaving the address, back does nothing to it, and
+  // only its own button puts it away.
+  const before = page.url();
+  await page.click('.btn-hide');
+  await page.waitForSelector('.hide-maker', { state: 'visible' });
+  check('hiding one keeps the same address', page.url() === before);
+  await page.goBack();
+  await page.waitForTimeout(300);
+  await page.goBack();
+  await page.waitForTimeout(300);
+  check('back does not close the maker', page.url() === before && await page.isVisible('.hide-maker'));
+  await page.getByRole('button', { name: 'back to the game' }).click();
+  await page.waitForSelector('.hide-maker', { state: 'hidden' });
+  check('its own button puts the maker away', page.url() === before && await page.$('.result') !== null);
+}
 
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForSelector('.result');

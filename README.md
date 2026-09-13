@@ -1310,8 +1310,15 @@ anyone.
 The way in is the puzzle piece in the top bar, and it appears **only once the day's own
 puzzle is over** -- solved or given up on. Before that it would be a door out of a hunt in
 progress, and the maker's painting list is every week the calendar has reached, which is a
-thing a player in the middle of today's hunt has no business reading. The address is
-`?hide` and works on its own; `?test&hide` is the same thing inside test mode.
+thing a player in the middle of today's hunt has no business reading. It has **no address
+of its own**: it opens as a layer over the finished board, so there is no link that skips
+the day's puzzle to reach it, and it works the same inside `?test`. **Back does nothing
+while it is open** -- only its own "back to the game" closes it. A hide can take a while to
+set and the maker is swiped at constantly, so an edge swipe read as back must not throw it
+away: opening pushes a history entry at the same address, and each back that spends it
+pushes another. The layer stays mounted once closed, so the puzzle piece brings the hide
+back as it was left. It once lived at `?hide`, which lost a hide to every stray back-swipe
+and let anyone open it without playing.
 
 - **The link is the puzzle.** `src/game/hide.ts` packs the hide as bits into the URL
   fragment (`#h=`), which is never sent to the host or a referrer. It is not secret, only

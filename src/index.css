@@ -1756,6 +1756,23 @@ button.reference:focus-visible {
   stroke-linejoin: round;
 }
 
+/* The maker sits over the daily board, which stays mounted underneath it. */
+.hide-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+}
+
+.hide-layer[hidden] {
+  display: none;
+}
+
+button.test-banner-exit {
+  background: none;
+  cursor: pointer;
+}
+
 .hide-maker .topbar-actions {
   margin-left: auto;
 }
