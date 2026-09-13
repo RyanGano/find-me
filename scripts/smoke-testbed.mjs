@@ -13,8 +13,8 @@
  *
  * Usage: node scripts/smoke-testbed.mjs [url] [outDir]
  */
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { checks, launch } from './lib/smoke.mjs';
 import { openRound } from '../src/game/rounds.ts';
 
 /**
@@ -35,25 +35,7 @@ const URL = process.argv[2] ?? 'http://localhost:4173/';
 const OUT = process.argv[3] ?? '.scratch/shots-testbed';
 mkdirSync(OUT, { recursive: true });
 
-const CHANNELS = ['chrome', 'msedge', undefined];
-const failures = [];
-
-function check(name, ok, detail = '') {
-  console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` -- ${detail}` : ''}`);
-  if (!ok) failures.push(name);
-}
-
-async function launch() {
-  let last;
-  for (const channel of CHANNELS) {
-    try {
-      return await chromium.launch({ channel, args: ['--force-device-scale-factor=1'] });
-    } catch (err) {
-      last = err;
-    }
-  }
-  throw last;
-}
+const { check, failures } = checks();
 
 const browser = await launch();
 const errors = [];
