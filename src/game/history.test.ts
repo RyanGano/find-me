@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DayTally } from './count';
 import { weekdayOf } from './daily';
-import { byWeekday, recentMarks, RECENT_WEEKS } from './history';
+import { byWeekday, extremes, recentMarks, RECENT_WEEKS } from './history';
 import type { HistoryDay } from './storage';
 
 // Day 0 is a Wednesday, so day 5 is the first Monday and day 11 the first Sunday.
@@ -79,5 +79,23 @@ describe('recentMarks', () => {
     const marks = recentMarks([], 1).flat();
     expect(marks).toContain('none');
     expect(marks.filter((m) => m === 'missed')).toHaveLength(1); // day 0 only
+  });
+});
+
+describe('extremes', () => {
+  it('says nothing until there are two solves to tell apart', () => {
+    expect(extremes([])).toBeNull();
+    expect(extremes([solved(MON, 30000)])).toBeNull();
+    expect(extremes([solved(MON, 30000), lost(MON + 1, 90000)])).toBeNull();
+  });
+
+  it('picks the fastest and slowest solve, with the day each was on', () => {
+    const days = [solved(MON, 30000), solved(MON + 1, 12000), solved(MON + 6, 200000)];
+    expect(extremes(days)).toEqual({ fastest: days[1], slowest: days[2] });
+  });
+
+  it('keeps give-ups out of the slowest, as `best` does', () => {
+    const days = [solved(MON, 30000), solved(MON + 1, 60000), lost(MON + 2, 900000)];
+    expect(extremes(days)?.slowest).toEqual(days[1]);
   });
 });

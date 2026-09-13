@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchTallies, type DayTally } from '../game/count';
-import { dayIndex } from '../game/daily';
+import { dayIndex, weekdayOf } from '../game/daily';
 import { RAMP } from '../game/difficulty';
-import { formatRoughTime } from '../game/format';
+import { formatRoughTime, formatTime } from '../game/format';
 import { galleryWall, notesFor, type Frame, type WallWeek } from '../game/gallery';
-import { byWeekday, recentMarks, type Mark } from '../game/history';
+import { byWeekday, extremes, recentMarks, type Mark } from '../game/history';
 import { getHistory, getStats } from '../game/storage';
 import { StatTotals } from './StatTotals';
 import { WeekShare } from './WeekShare';
@@ -52,6 +52,7 @@ export function Stats({ onDismiss }: Props) {
   const week = useMemo(() => byWeekday(history.days, tallies), [history, tallies]);
   const marks = useMemo(() => recentMarks(history.days, today), [history, today]);
   const wall = useMemo(() => galleryWall(history.days, today), [history, today]);
+  const range = useMemo(() => extremes(history.days), [history]);
   // One painting, taken over the panel the way the age explanation takes over the card.
   const [open, setOpen] = useState<Frame | null>(null);
 
@@ -117,6 +118,20 @@ export function Stats({ onDismiss }: Props) {
           )}
 
           <StatTotals stats={stats} />
+          {/* Each time says which weekday it was set on: a Monday and a Sunday are not
+              the same hunt, and a bare fastest time would pretend they were. */}
+          {range && (
+            <dl className="result-stats">
+              <div>
+                <dt>fastest · {RAMP[weekdayOf(range.fastest.day)].label.slice(0, 3)}</dt>
+                <dd>{formatTime(range.fastest.ms)}</dd>
+              </div>
+              <div>
+                <dt>slowest · {RAMP[weekdayOf(range.slowest.day)].label.slice(0, 3)}</dt>
+                <dd>{formatTime(range.slowest.ms)}</dd>
+              </div>
+            </dl>
+          )}
           {history.unnamed > 0 && (
             <p className="stats-note">
               Played includes {history.unnamed} earlier {history.unnamed === 1 ? 'day' : 'days'}.

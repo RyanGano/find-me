@@ -56,6 +56,23 @@ export function byWeekday(days: HistoryDay[], tallies: Map<number, DayTally>): W
   });
 }
 
+/**
+ * The player's fastest and slowest solves, each with the day it was set on so the panel can
+ * say which weekday -- one time means little without the rung it was set against. Null
+ * until there are two solves to tell apart; give-ups are left out, as they are from `best`.
+ */
+export function extremes(days: HistoryDay[]): { fastest: HistoryDay; slowest: HistoryDay } | null {
+  const solved = days.filter((d) => !d.gaveUp);
+  if (solved.length < 2) return null;
+  let fastest = solved[0];
+  let slowest = solved[0];
+  for (const d of solved) {
+    if (d.ms < fastest.ms) fastest = d;
+    if (d.ms > slowest.ms) slowest = d;
+  }
+  return { fastest, slowest };
+}
+
 /** How many weeks the recent strip shows, this one included. */
 export const RECENT_WEEKS = 4;
 
