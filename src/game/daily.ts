@@ -35,6 +35,11 @@ export function dayIndex(now: Date = new Date()): number {
   return Math.round((localMidnight(now) - localMidnight(EPOCH)) / DAY_MS);
 }
 
+/** The local calendar date a day number fell on: the inverse of `dayIndex`. */
+export function dateOfDay(index: number): Date {
+  return new Date(EPOCH.getFullYear(), EPOCH.getMonth(), EPOCH.getDate() + index);
+}
+
 /** The number shown to players and in shared results: day 0 is puzzle #1. */
 export function puzzleNumber(index: number): number {
   return index + 1;

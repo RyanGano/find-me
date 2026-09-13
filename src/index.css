@@ -1204,6 +1204,15 @@ button.reference:focus-visible {
   margin: 4px 0 8px;
 }
 
+/* The date under fastest and slowest: its own quiet line, not shouted in capitals. */
+.stats-when {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.72rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .howto p.stats-note {
   margin: 0 0 8px;
   font-size: 0.8rem;

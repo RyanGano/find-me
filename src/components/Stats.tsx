@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchTallies, type DayTally } from '../game/count';
-import { dayIndex, weekdayOf } from '../game/daily';
+import { dateOfDay, dayIndex } from '../game/daily';
 import { RAMP } from '../game/difficulty';
 import { formatRoughTime, formatTime } from '../game/format';
 import { galleryWall, notesFor, type Frame, type WallWeek } from '../game/gallery';
@@ -118,16 +118,17 @@ export function Stats({ onDismiss }: Props) {
           )}
 
           <StatTotals stats={stats} />
-          {/* Each time says which weekday it was set on: a Monday and a Sunday are not
-              the same hunt, and a bare fastest time would pretend they were. */}
+          {/* Each time says the day it was set on: a Monday and a Sunday are not the same
+              hunt, and a bare fastest time would pretend they were. Written out rather
+              than behind a tooltip, which a phone never shows. */}
           {range && (
             <dl className="result-stats">
               <div>
-                <dt>fastest · {RAMP[weekdayOf(range.fastest.day)].label.slice(0, 3)}</dt>
+                <dt>fastest <span className="stats-when">{dateLabel(range.fastest.day)}</span></dt>
                 <dd>{formatTime(range.fastest.ms)}</dd>
               </div>
               <div>
-                <dt>slowest · {RAMP[weekdayOf(range.slowest.day)].label.slice(0, 3)}</dt>
+                <dt>slowest <span className="stats-when">{dateLabel(range.slowest.day)}</span></dt>
                 <dd>{formatTime(range.slowest.ms)}</dd>
               </div>
             </dl>
@@ -244,6 +245,11 @@ function WallNotes({ week }: { week: WallWeek }) {
       ))}
     </dl>
   );
+}
+
+/** A day number as the date a player would say: "Thu, Sep 3". */
+function dateLabel(day: number): string {
+  return dateOfDay(day).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function wallLabel(week: WallWeek): string {

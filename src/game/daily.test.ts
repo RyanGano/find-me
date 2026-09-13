@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayIndex, EPOCH, msUntilTomorrow, puzzleForDay, selectPuzzle, weekday } from './daily';
+import { dateOfDay, dayIndex, EPOCH, msUntilTomorrow, puzzleForDay, selectPuzzle, weekday } from './daily';
 import { DAYS_PER_WEEK, RAMP } from './difficulty';
 import { PUZZLES } from './puzzles';
 import { targetDisplaySize } from './match';
@@ -163,5 +163,14 @@ describe('puzzle data', () => {
       const needed = targetDisplaySize(900, 700) / p.target.size;
       expect(needed / fitScale, p.id).toBeGreaterThan(3);
     }
+  });
+});
+
+describe('dateOfDay', () => {
+  it('names the day a number fell on, and dayIndex reads it back', () => {
+    expect(dateOfDay(0)).toEqual(EPOCH);
+    expect(dateOfDay(8)).toEqual(new Date(2026, 8, 3));
+    // Across both clock changes, where a day is not 24 hours long.
+    for (let i = 0; i < 400; i++) expect(dayIndex(dateOfDay(i))).toBe(i);
   });
 });
