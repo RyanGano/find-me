@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Credits } from './components/Credits';
 import { HowTo } from './components/HowTo';
 import { EyeIcon, HelpIcon, ResetIcon } from './components/Icons';
 import { ReferenceCard } from './components/ReferenceCard';
@@ -128,7 +127,6 @@ export default function App() {
   // wherever the stats are, which is whenever a result has just been written.
   const [sundayWeek, setSundayWeek] = useState(() => sundayFrame(day, isPractice));
 
-  const [showCredits, setShowCredits] = useState(false);
   const [showStats, setShowStats] = useState(false);
   // Up between pressing the way out and meaning it. Giving up is not a thing to do by
   // accident on a phone, and it is the one button here that cannot be taken back.
@@ -276,7 +274,7 @@ export default function App() {
     puzzle,
     resume: saved,
     prior: prior ? { ms: prior.ms, metrics: prior.m, gaveUp: prior.gaveUp } : undefined,
-    blocked: showHowTo || showCredits || showStats || making,
+    blocked: showHowTo || showStats || making,
     runId,
     onStart,
     onSolved,
@@ -509,13 +507,12 @@ export default function App() {
   // Every panel goes away the same way: a tap on the board behind it. Whichever one is
   // up is put away by its own means -- the how-to still counts as read, so it does not
   // come back at the player tomorrow.
-  const anyPanel = showResult || showCredits || showHowTo || showStats;
+  const anyPanel = showResult || showHowTo || showStats;
   const dismissPanels = useCallback(() => {
     if (showResult) closeResult();
-    if (showCredits) setShowCredits(false);
     if (showHowTo) dismissHowTo();
     if (showStats) setShowStats(false);
-  }, [showResult, closeResult, showCredits, showHowTo, dismissHowTo, showStats]);
+  }, [showResult, closeResult, showHowTo, dismissHowTo, showStats]);
 
   /**
    * Reported once per page load, the first time the stats panel is opened -- which is what
@@ -539,45 +536,30 @@ export default function App() {
   // the button belonging to the panel already up just puts it away, rather than closing
   // it and opening it again in the same tap.
   const togglePanel = useCallback(
-    (panel: 'result' | 'credits' | 'howto' | 'stats') => {
+    (panel: 'result' | 'howto' | 'stats') => {
       const wasOpen = {
         result: showResult,
-        credits: showCredits,
         howto: showHowTo,
         stats: showStats,
       }[panel];
       dismissPanels();
       if (wasOpen) return;
       if (panel === 'result') setShowResult(true);
-      else if (panel === 'credits') setShowCredits(true);
       else if (panel === 'stats') {
         setShowStats(true);
         noteStatsOpened();
       } else setShowHowTo(true);
     },
-    [showResult, showCredits, showHowTo, showStats, dismissPanels, noteStatsOpened],
+    [showResult, showHowTo, showStats, dismissPanels, noteStatsOpened],
   );
 
   return (
     <div className="app">
       <header className="topbar">
-        {/* The only way to ask what the painting is. It looks like the title and mostly
-            behaves like one; most players will never think to press it, which is the
-            point -- the header has no room for a button that answers a question hardly
-            anyone asks mid-hunt, and every solve names the painting on the result card
-            anyway. The weekday used to sit here too, and took a third of the bar to
-            tell people something they either already knew or did not care about; the
-            how-to panel still names the rung, which is where it was doing real work. */}
+        {/* Just the title. It used to open a credits panel, but nothing said it was a
+            button, and the result card and the gallery already name every painting. */}
         <h1 className="title">
-          <button
-            type="button"
-            className="title-btn"
-            onClick={() => togglePanel('credits')}
-            title="About the painting"
-          >
-            Find Me
-          </button>{' '}
-          <span className="title-day">#{puzzleNumber(day)}</span>
+          Find Me <span className="title-day">#{puzzleNumber(day)}</span>
         </h1>
         {/* Small enough to read as a label on the title rather than a banner, but it is
             the one thing in the bar that is a colour of its own, so it gets noticed --
@@ -910,8 +892,6 @@ export default function App() {
           solvedMs={solvedMs ?? (gaveUpMs !== null && match?.solved ? gaveUpMs : null)}
           onReopen={() => togglePanel('result')}
         />
-
-        {showCredits && <Credits puzzle={puzzle} onDismiss={() => setShowCredits(false)} />}
 
         {showStats && <StatsPanel onDismiss={() => setShowStats(false)} />}
 

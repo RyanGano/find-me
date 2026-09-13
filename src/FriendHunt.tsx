@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Credits } from './components/Credits';
 import { ReferenceCard } from './components/ReferenceCard';
 import { Reporting } from './components/Reporting';
 import { Stage } from './components/Stage';
@@ -139,7 +138,6 @@ function BadLink({ reason }: { reason: BrokenReason }) {
  */
 function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; title: string; named: boolean }) {
   const [showCard, setShowCard] = useState(false);
-  const [showCredits, setShowCredits] = useState(false);
   const [shared, setShared] = useState<string | null>(null);
   const [showReporting, setShowReporting] = useState(false);
   // A friend's link is often somebody's first sight of Find Me, so it opens on the rules
@@ -148,7 +146,6 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
 
   const onSolved = useCallback(() => {
     countHide('found');
-    setShowCredits(false);
     setShowCard(true);
   }, []);
 
@@ -174,7 +171,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
     puzzle,
     runId: puzzle.id,
     onSolved,
-    blocked: showCard || showCredits || showReporting || showHowTo,
+    blocked: showCard || showReporting || showHowTo,
   });
 
   const closeHowTo = useCallback(() => {
@@ -218,19 +215,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
     <div className="app">
       <header className="topbar">
         <h1 className="title friend-title" title={named ? title : undefined}>
-          {/* As on the daily game: the way to ask what the painting is. */}
-          <button
-            type="button"
-            className="title-btn"
-            onClick={() => {
-              setShowCard(false);
-              setShowCredits((open) => !open);
-            }}
-            title="About the painting"
-          >
-            Find Me
-          </button>{' '}
-          <span className="title-day">{named ? title : 'from a friend'}</span>
+          Find Me <span className="title-day">{named ? title : 'from a friend'}</span>
         </h1>
         {startedAt !== null && (
           <p className={`clock${running ? ' is-running' : ''}`}>{formatTime(clock)}</p>
@@ -323,8 +308,6 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
           onReopen={() => setShowCard(true)}
         />
 
-        {showCredits && <Credits puzzle={puzzle} onDismiss={() => setShowCredits(false)} />}
-
         {showHowTo && (
           <>
             <div className="scrim" onClick={closeHowTo} />
@@ -349,11 +332,10 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
                   ? `The ringed ${puzzle.thing} is the one your friend hid in ${quoted}.`
                   : `You found the ${puzzle.thing} your friend hid in ${quoted}.`}
               </p>
-              {named && (
-                <p className="howto-note">
-                  on {puzzle.title} by {puzzle.artist}
-                </p>
-              )}
+              {/* The painting's credit, which used to be one tap away on the title. */}
+              <p className="howto-note">
+                {named ? `On ${puzzle.title} by ${puzzle.artist}` : `By ${puzzle.artist}`}
+              </p>
               {huntTrace(metrics) && <p className="hide-trace">{huntTrace(metrics)}</p>}
               {/* Two, so they sit on one line on a phone. There is no third for looking
                   around the painting because there does not need to be one: the scrim is

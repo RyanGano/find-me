@@ -98,7 +98,7 @@ Don't resize it, don't add it, and don't leave it in `.source-images/`.
 
 Safe territory, if you're asked to suggest candidates: landscape, seascape, cityscape,
 still life, architecture, clothed portraiture, and abstraction. Every painting must also
-be **public domain** and scanned from Wikimedia Commons — the credits panel says so.
+be **public domain** and scanned from Wikimedia Commons — How to play says so.
 
 ## Rule 3 — a rotation, not a run
 

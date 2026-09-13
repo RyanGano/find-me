@@ -85,6 +85,7 @@ export function HowTo({ thing, rung, friend, onDismiss }: Props) {
           What&rsquo;s reported
         </button>
       </p>
+      <p className="howto-note">All artwork is in the public domain; the scans come from Wikimedia Commons.</p>
 
       <div className="howto-foot">
         <button type="button" className="btn btn-primary" onClick={onDismiss}>

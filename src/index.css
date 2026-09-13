@@ -83,33 +83,6 @@ body,
   font-weight: 500;
 }
 
-/* The words "Find Me" are the only way to ask what the painting is. At rest they are
-   the title and nothing else; the underline arrives only for a pointer or a keyboard,
-   so the header stays quiet while remaining reachable to anyone who goes looking. */
-.title-btn {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  border-radius: 4px;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 3px;
-  transition: text-decoration-color 0.15s ease-out;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.title-btn:hover {
-  text-decoration-color: var(--muted);
-}
-
-.title-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
 .clock {
   margin: 0;
   font-variant-numeric: tabular-nums;
@@ -753,24 +726,6 @@ button.reference:focus-visible {
 }
 
 .howto-note {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-/* The credit line reuses the how-to panel's shell; only the line itself is its own. */
-.credits-art {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0 0 12px;
-  font-size: 0.95rem;
-}
-
-.credits-art strong {
-  color: var(--ok);
-}
-
-.credits-art span {
   color: var(--muted);
   font-size: 0.85rem;
 }
