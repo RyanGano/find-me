@@ -3,6 +3,7 @@ import { estimateAge, type AgePart } from '../game/age';
 import { msUntilTomorrow } from '../game/daily';
 import { formatCountdown, formatTime } from '../game/format';
 import type { DayTally } from '../game/count';
+import type { Frame } from '../game/gallery';
 import type { RunMetrics } from '../game/metrics';
 import {
   buildAgeDataText,
@@ -16,6 +17,7 @@ import {
 } from '../game/share';
 import type { Stats } from '../game/storage';
 import type { Puzzle } from '../game/types';
+import { WeekShare } from './WeekShare';
 
 interface Props {
   day: number;
@@ -39,6 +41,11 @@ interface Props {
    * quietly replace it.
    */
   retuned?: boolean;
+  /**
+   * The week this Sunday finishes, when the player found at least one day of it: offered
+   * as a picture to share beside the day's own result. Absent every other day.
+   */
+  week?: Frame | null;
   /** The share button was pressed, for the tally. */
   onShared: () => void;
   onReplay: () => void;
@@ -54,6 +61,7 @@ export function ResultCard({
   metrics,
   tally,
   retuned,
+  week,
   onShared,
   onReplay,
 }: Props) {
@@ -242,6 +250,11 @@ export function ResultCard({
           {isPractice ? 'Play again' : 'Free roam'}
         </button>
       </div>
+      {week && !isPractice && (
+        <div className="result-actions">
+          <WeekShare frame={week} label="Share your week" onShared={onShared} />
+        </div>
+      )}
 
       {!isPractice && countdown && <p className="result-next">Next puzzle in {countdown}</p>}
     </div>

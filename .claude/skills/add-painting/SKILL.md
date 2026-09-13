@@ -273,6 +273,12 @@ dimensions and moves every hiding place in its week. That has happened once alre
 
 Note the reported output dimensions — they go in the seed verbatim, and a test pins them.
 
+Then make its thumbnail for the gallery wall, which a test also requires:
+
+```bash
+npm run thumbs -- NAME
+```
+
 Now apply **Rule 4**: measure `clutter` on the new asset and check it against the busy weeks
 in the lineup. That decides whether a busy painting is mistimed. If it is, delete the asset and the
 `resize-images.mjs` line before choosing another painting.

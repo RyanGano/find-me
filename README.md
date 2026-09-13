@@ -827,6 +827,37 @@ They are also never in the share text. `notes.test.ts` holds every shipped day t
 one (a painting may be exempted by name in `WITHOUT_NOTES`), to two sentences and 160
 characters, and to US English.
 
+### The gallery
+
+The stats panel opens on a wall of every painting the player has found at least one day
+of, newest first, with that week's seven days marked underneath -- found, not found, not
+played. A week with every day found gets a gold frame. Tapping a painting shows it larger
+with a **Share this week** button, and Sunday's result card offers the same thing as
+**Share your week** once the week holds a find. Either one shares a picture: the
+painting, its title and artist, the seven marks and the address, through the phone's
+share sheet where it takes files and as a download where it does not.
+
+A streak is gone after one missed day; the wall only grows. So it shows only what the
+player has: a week of give-ups hangs nothing, and a missed week has no empty frame,
+because an old day cannot be played again.
+
+- **Derived, never stored.** `galleryWall` in `gallery.ts` is a pure function of
+  `getHistory()` and the calendar, so it comes back from the cookie mirror with
+  everything else.
+- **One frame per painting.** The calendar comes round again; a painting that has had
+  several weeks hangs once, with the best of them (most finds, then fewest give-ups, then
+  the latest).
+- **The opening week starts on Thursday.** Nobody kept a result from day 0, so
+  `FIRST_KEPT_DAY` is 1 and four finds make that week full.
+- **No hiding places.** The card renderer, `weekCard.ts`, is handed a title, an artist,
+  a year and seven marks, and `gallery.test.ts` holds it to never importing a puzzle or a
+  target. A finished week is not a safe week to spoil.
+- **Thumbnails** are made by `npm run thumbs` from the committed assets, not the source
+  scans, which are deleted once a painting ships. Every painting in the rotation must
+  have one; `gallery.test.ts` checks.
+- **Counting.** Sharing from Sunday's card sends the same `shared` beacon as sharing the
+  result. Sharing from the wall sends nothing, because there is no run to key it to.
+
 ## How it is built
 
 The whole game is one similarity transform. `src/game/transform.ts` maps image-space

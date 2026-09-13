@@ -3,8 +3,10 @@ import { fetchTallies, type DayTally } from '../game/count';
 import { dayIndex } from '../game/daily';
 import { RAMP } from '../game/difficulty';
 import { formatTime } from '../game/format';
+import { galleryWall, type Frame, type WallWeek } from '../game/gallery';
 import { byWeekday, recentMarks, type Mark } from '../game/history';
 import { getHistory, getStats } from '../game/storage';
+import { WeekShare } from './WeekShare';
 
 interface Props {
   onDismiss: () => void;
@@ -54,6 +56,31 @@ export function Stats({ onDismiss }: Props) {
 
   const week = useMemo(() => byWeekday(history.days, tallies), [history, tallies]);
   const marks = useMemo(() => recentMarks(history.days, today), [history, today]);
+  const wall = useMemo(() => galleryWall(history.days, today), [history, today]);
+  // One painting, taken over the panel the way the age explanation takes over the card.
+  const [open, setOpen] = useState<Frame | null>(null);
+
+  if (open) {
+    return (
+      <div className="howto stats" role="dialog" aria-label={open.title}>
+        <h2>{open.title}</h2>
+        <p className="stats-note">
+          {open.artist} &middot; {open.year}
+        </p>
+        <div className={`gallery-picture${open.week.full ? ' is-full' : ''}`}>
+          <img src={open.thumb} alt={open.title} width={open.width} height={open.height} />
+        </div>
+        <WallMarks week={open.week} labeled />
+        {open.week.full && <p className="stats-note">Every day of the week found.</p>}
+        <div className="howto-foot">
+          <button type="button" className="btn btn-primary" onClick={() => setOpen(null)}>
+            Back
+          </button>
+          <WeekShare frame={open} label="Share this week" />
+        </div>
+      </div>
+    );
+  }
 
   const empty = history.days.length === 0 && history.unnamed === 0;
   const solvedCount = week.reduce((n, w) => n + w.solved, 0);
@@ -72,6 +99,27 @@ export function Stats({ onDismiss }: Props) {
         </p>
       ) : (
         <>
+          {wall.length > 0 && (
+            <>
+              <h3>Your gallery</h3>
+              <ul className="gallery">
+                {wall.map((f) => (
+                  <li key={f.image}>
+                    <button
+                      type="button"
+                      className={`gallery-frame${f.week.full ? ' is-full' : ''}`}
+                      onClick={() => setOpen(f)}
+                      aria-label={`${f.title}, ${wallLabel(f.week)}`}
+                    >
+                      <img src={f.thumb} alt="" loading="lazy" decoding="async" />
+                    </button>
+                    <WallMarks week={f.week} />
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
           <dl className="result-stats">
             <div><dt>played</dt><dd>{stats.played}</dd></div>
             <div><dt>streak</dt><dd>{stats.streak}</dd></div>
@@ -146,6 +194,32 @@ export function Stats({ onDismiss }: Props) {
       </div>
     </div>
   );
+}
+
+/** A week's seven marks under a painting, Monday first. */
+function WallMarks({ week, labeled }: { week: WallWeek; labeled?: boolean }) {
+  return (
+    <div
+      className={`gallery-marks${labeled ? ' is-labeled' : ''}`}
+      role="img"
+      aria-label={wallLabel(week)}
+    >
+      {labeled &&
+        RAMP.map((r) => (
+          <span key={r.key} className="stats-head">
+            {r.label[0]}
+          </span>
+        ))}
+      {week.marks.map((m, i) => (
+        <span key={i} className={`stats-mark is-${m}`} title={MARK_LABEL[m]} />
+      ))}
+    </div>
+  );
+}
+
+function wallLabel(week: WallWeek): string {
+  if (week.full) return 'every day found';
+  return week.gaveUp > 0 ? `${week.found} found, ${week.gaveUp} not found` : `${week.found} found`;
 }
 
 /** The strip, said in words for a screen reader. */

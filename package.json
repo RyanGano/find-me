@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "preview": "vite preview",
     "images": "node scripts/resize-images.mjs",
+    "thumbs": "node scripts/make-thumbs.mjs",
     "plan": "vite-node scripts/plan-weeks.mjs",
     "rate": "vite-node scripts/rate-painting.mjs",
     "camouflage": "vite-node scripts/tune-camouflage.mjs",

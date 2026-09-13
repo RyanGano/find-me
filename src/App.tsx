@@ -11,7 +11,8 @@ import { hintCircle } from './game/hint';
 import { isInAppBrowser } from './game/browser';
 import { count, fetchTally, newRunId, type DayTally } from './game/count';
 import { isTestMode } from './game/testMode';
-import { puzzleNumber, selectPuzzle } from './game/daily';
+import { puzzleNumber, selectPuzzle, weekdayOf } from './game/daily';
+import { frameFor, weekOf, type Frame } from './game/gallery';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
 import type { RunMetrics } from './game/metrics';
@@ -19,6 +20,7 @@ import { openRound } from './game/rounds';
 import {
   clearProgress,
   getDayState,
+  getHistory,
   getProgress,
   getStats,
   isPersistent,
@@ -73,6 +75,13 @@ function setFlag(key: string): void {
   }
 }
 
+/** The week a Sunday finishes, as a frame to share -- or null on any other day. */
+function sundayFrame(day: number, isPractice: boolean): Frame | null {
+  if (isPractice || weekdayOf(day) !== 6) return null;
+  const week = weekOf(getHistory().days, day, day);
+  return week.found > 0 ? frameFor(week) : null;
+}
+
 export default function App() {
   const selection = useMemo(() => selectPuzzle(window.location.search), []);
   const { puzzle, index: day, isPractice } = selection;
@@ -114,6 +123,9 @@ export default function App() {
   // while they look at the painting itself.
   const [showRing, setShowRing] = useState(true);
   const [stats, setStats] = useState<Stats>(() => getStats(day));
+  // Sunday's card also offers the week as a picture, once it holds a find. Read again
+  // wherever the stats are, which is whenever a result has just been written.
+  const [sundayWeek, setSundayWeek] = useState(() => sundayFrame(day, isPractice));
 
   const [showCredits, setShowCredits] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -203,6 +215,7 @@ export default function App() {
         count(id, day, 'solved', ms);
       }
       setStats(getStats(day));
+      setSundayWeek(sundayFrame(day, isPractice));
     },
     [isPractice, day, puzzle.version, puzzle.spot],
   );
@@ -414,6 +427,7 @@ export default function App() {
       count(runId, day, 'gave-up', ms);
     }
     setStats(getStats(day));
+    setSundayWeek(sundayFrame(day, isPractice));
   }, [giveUp, isPractice, day, puzzle.version, puzzle.spot, runId]);
 
   // The plea has said its piece; it should not sit on the painting for the rest of the
@@ -887,6 +901,7 @@ export default function App() {
             metrics={metrics}
             tally={isPractice ? null : tally}
             retuned={retuned}
+            week={sundayWeek}
             onShared={onShared}
             onReplay={replay}
           />
