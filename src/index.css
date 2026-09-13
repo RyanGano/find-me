@@ -993,14 +993,17 @@ button.reference:focus-visible {
 /* ---------- update notice ---------- */
 
 /*
- * Bottom-right, above everything, and deliberately small: a new build is worth
- * mentioning, never worth interrupting a hunt for.
+ * The middle of the board, above everything on it: in a bottom corner it went unseen and
+ * covered the hint button on a phone. Still small -- a new build is worth mentioning,
+ * never worth interrupting a hunt for.
  */
 .update-notice {
-  position: fixed;
-  right: max(12px, env(safe-area-inset-right));
-  bottom: max(12px, env(safe-area-inset-bottom));
-  z-index: 20;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1017,7 +1020,6 @@ button.reference:focus-visible {
 @keyframes update-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
 }
 

@@ -922,9 +922,8 @@ export default function App() {
             onHide={openMaker}
           />
         )}
+        {updateAvailable && <UpdateNotice />}
       </main>
-
-      {updateAvailable && <UpdateNotice />}
 
       {done !== null && madeOnce && (
         <div className="hide-layer" hidden={!making}>
