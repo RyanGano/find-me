@@ -45,6 +45,15 @@ describe('the note on the result card', () => {
   });
 });
 
+describe('the totals on the result card', () => {
+  it('shows played and streak, and no best time', () => {
+    const html = card({});
+    expect(html).toContain('played');
+    expect(html).toContain('streak');
+    expect(html).not.toContain('best');
+  });
+});
+
 describe('sharing the week from the result card', () => {
   const week = frameFor(weekOf([{ day: 11, ms: 5000, gaveUp: false }], 11, 11));
 

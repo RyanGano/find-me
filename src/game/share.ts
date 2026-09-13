@@ -25,7 +25,25 @@ export function speedBar(ms: number): string {
  */
 const TRACE_GLYPHS: Record<string, string> = { v: '🔍', p: '🟨', f: '🟩', g: '🏳️', h: '💡' };
 
-/** What each glyph means, for the one place the player is shown a key. */
+/** What each glyph means, said when the player taps it on the result card. */
+const TRACE_WORDS: Record<string, string> = {
+  v: 'passed it',
+  p: 'nearly',
+  f: 'got it',
+  g: 'gave up',
+  h: 'took a hint',
+};
+
+/** The trace as separate events, each with its glyph and what it means. */
+export function huntEvents(
+  metrics: RunMetrics | null | undefined,
+): { glyph: string; meaning: string }[] {
+  return [...(metrics?.trace ?? '')]
+    .filter((c) => TRACE_GLYPHS[c])
+    .map((c) => ({ glyph: TRACE_GLYPHS[c], meaning: TRACE_WORDS[c] }));
+}
+
+/** What each glyph means, as one line. */
 export const TRACE_KEY = '🔍 passed it · 🟨 nearly · 🟩 got it';
 
 /** The key for one run: the hint is only explained on a run that took one. */

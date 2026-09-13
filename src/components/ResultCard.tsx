@@ -9,11 +9,10 @@ import {
   buildAgeDataText,
   buildGaveUpText,
   buildShareText,
-  huntTrace,
+  huntEvents,
   shareResult,
   speedBar,
   tallyLine,
-  traceKey,
 } from '../game/share';
 import type { Stats } from '../game/storage';
 import { isTestMode } from '../game/testMode';
@@ -89,7 +88,9 @@ export function ResultCard({
     [gaveUp, puzzle, ms, metrics],
   );
 
-  const trace = huntTrace(metrics);
+  const events = huntEvents(metrics);
+  // Which trace glyph has its meaning open. One at a time; tapping anywhere else shuts it.
+  const [tip, setTip] = useState<number | null>(null);
   const whyShown = !gaveUp && age !== null && parts.length > 0;
 
   const share = async () => {
@@ -163,6 +164,7 @@ export function ResultCard({
       className="result"
       role="dialog"
       aria-label={gaveUp ? 'Puzzle given up' : 'Puzzle solved'}
+      onClick={() => setTip(null)}
     >
       <p className="result-eyebrow">{puzzle.emoji} {gaveUp ? 'not found' : 'found'}</p>
       <p className={`result-time${gaveUp ? ' is-quiet' : ''}`}>{formatTime(ms)}</p>
@@ -171,9 +173,31 @@ export function ResultCard({
           came back for -- where it was -- which is already framed on the board behind
           this card. */}
       {/* The hunt trace, exactly as the share text will carry it, so the player sees
-          what they are about to post. A run from before the trace keeps its speed bar. */}
-      {trace ? (
-        <p className="result-bar" aria-label="How the hunt went">{trace}</p>
+          what they are about to post. Each glyph says what it means when tapped. A run
+          from before the trace keeps its speed bar. */}
+      {events.length > 0 ? (
+        <p className="result-bar" aria-label="How the hunt went">
+          {events.map((e, i) => (
+            <button
+              key={i}
+              type="button"
+              className="result-glyph"
+              aria-label={e.meaning}
+              aria-expanded={tip === i}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                setTip(tip === i ? null : i);
+              }}
+            >
+              {e.glyph}
+              {tip === i && (
+                <span className="result-tip" role="tooltip">
+                  {e.meaning}
+                </span>
+              )}
+            </button>
+          ))}
+        </p>
       ) : (
         !gaveUp && <p className="result-bar">{speedBar(ms)}</p>
       )}
@@ -198,6 +222,10 @@ export function ResultCard({
               i
             </button>
           </p>
+          {/* What the number was made of. Only the two signals furthest from par are
+              named: the whole list is a wall of jargon, and the interesting thing about a
+              run is always the one or two ways it was unusual. */}
+          {whyShown && <p className="result-age-why">{whyLine(parts)}</p>}
         </div>
       )}
 
@@ -210,6 +238,10 @@ export function ResultCard({
         </p>
       )}
 
+      {!isPractice && (
+        <StatTotals stats={stats} />
+      )}
+
       <p className="result-art">
         <strong>{puzzle.title}</strong>
         <span>
@@ -217,38 +249,22 @@ export function ResultCard({
         </span>
       </p>
 
-      {/* Folded rather than dropped: the card was crowded, but this is the only place
-          most players will ever meet these -- few of them find the gallery. */}
-      {(whyShown || trace || puzzle.note) && (
-        <details className="result-more">
-          <summary>More</summary>
-          {/* What the number was made of. Only the two signals furthest from par are
-              named: the whole list is a wall of jargon, and the interesting thing about a
-              run is always the one or two ways it was unusual. */}
-          {whyShown && <p className="result-age-why">{whyLine(parts)}</p>}
-          {trace && <p className="result-trace-key">{traceKey(metrics)}</p>}
-          {/* The same after a give-up as after a find: the reward for looking at a painting
-              is not only for the players who found the shape in it. Never in the share
-              text, and never on screen during a hunt: this card only exists once the hunt
-              has ended. */}
-          {puzzle.note && (
-            <p className="result-note">
-              {puzzle.note}
-              {puzzle.source && (
-                <>
-                  {' '}
-                  <a href={puzzle.source} target="_blank" rel="noopener noreferrer">
-                    More about this painting
-                  </a>
-                </>
-              )}
-            </p>
+      {/* The same after a give-up as after a find: the reward for looking at a painting
+          is not only for the players who found the shape in it. Never in the share text,
+          and never on screen during a hunt: this card only exists once the hunt has
+          ended. */}
+      {puzzle.note && (
+        <p className="result-note">
+          {puzzle.note}
+          {puzzle.source && (
+            <>
+              {' '}
+              <a href={puzzle.source} target="_blank" rel="noopener noreferrer">
+                More about this painting
+              </a>
+            </>
           )}
-        </details>
-      )}
-
-      {!isPractice && (
-        <StatTotals stats={stats} />
+        </p>
       )}
 
       <div className="result-actions">

@@ -807,11 +807,37 @@ button.reference:focus-visible {
   letter-spacing: 2px;
 }
 
-/* What the trace's squares mean, on the card only: the share text stays the line. */
-.result-trace-key {
-  margin: -6px 0 10px;
-  font-size: 12px;
-  color: var(--muted);
+/* Each glyph of the trace is a button that says what it means when tapped. */
+.result-glyph {
+  position: relative;
+  border: 0;
+  background: none;
+  padding: 4px 3px;
+  margin: -4px -2px;
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.result-glyph:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.result-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.75rem;
+  letter-spacing: normal;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* The second reading of the same result, so it sits with the clock rather than down
@@ -887,47 +913,6 @@ button.reference:focus-visible {
   color: inherit;
   text-decoration: underline;
   white-space: nowrap;
-}
-
-/* The folded extras: why the age came out as it did, what the trace means, and the
-   note about the painting. Quiet until opened. */
-.result-more {
-  margin: -6px 0 14px;
-}
-
-.result-more summary {
-  display: inline-block;
-  font-size: 0.8rem;
-  color: var(--muted);
-  cursor: pointer;
-  list-style: none;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-.result-more summary::-webkit-details-marker {
-  display: none;
-}
-
-.result-more summary::after {
-  content: ' ▾';
-}
-
-.result-more[open] summary::after {
-  content: ' ▴';
-}
-
-.result-more summary:hover {
-  color: var(--text);
-}
-
-.result-more summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.result-more[open] > :not(summary) {
-  margin-top: 8px;
 }
 
 .result-stats {

@@ -1,13 +1,14 @@
-import { formatTime } from '../game/format';
 import type { Stats } from '../game/storage';
 
-/** Played, streak and best in a row: the same three on the result card and the stats panel. */
+/**
+ * Played and streak in a row: the same two on the result card and the stats panel. No best
+ * time -- the days differ too much in difficulty for one fastest time to mean anything.
+ */
 export function StatTotals({ stats }: { stats: Stats }) {
   return (
     <dl className="result-stats">
       <div><dt>played</dt><dd>{stats.played}</dd></div>
       <div><dt>streak</dt><dd>{stats.streak}</dd></div>
-      <div><dt>best</dt><dd>{stats.best === null ? '—' : formatTime(stats.best)}</dd></div>
     </dl>
   );
 }
