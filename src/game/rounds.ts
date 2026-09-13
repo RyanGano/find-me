@@ -75,31 +75,6 @@ export const ROUNDS: Round[] = [
   },
 ];
 
-/**
- * A round that is always open, and only to `?test`.
- *
- * It exists so the daily game's TEST button can be seen doing its job on a day when no
- * real round is running. It is kept out of `ROUNDS` on purpose: `/?beta` alone can never
- * serve it, it cannot overlap a real round, and the bench records every hunt on it as a
- * dry run because it is reached by name rather than by being today's round.
- */
-export const TEST_ROUND: Round = {
-  id: 'test-practice',
-  opens: '2026-01-01',
-  closes: '2099-12-31',
-  asks: 'Does the TEST button on the daily game lead somewhere that works?',
-  expect: 'Two quick hunts on paintings you have not seen in the game.',
-  days: ['cafe-mon', 'proverbs-mon'],
-};
-
-/**
- * The round the daily game invites a player to. `?test` always has one, so the button
- * can be checked; everyone else is invited only while a real round is open.
- */
-export function inviteRound(test: boolean, now: Date = new Date()): Round | undefined {
-  return test ? TEST_ROUND : openRound(now);
-}
-
 function localDate(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -116,7 +91,7 @@ export function openRound(now: Date = new Date()): Round | undefined {
 }
 
 export function roundById(id: string): Round | undefined {
-  return [...ROUNDS, TEST_ROUND].find((r) => r.id === id);
+  return ROUNDS.find((r) => r.id === id);
 }
 
 /** The puzzles of a round, in order. Throws on an id that is not on the bench. */

@@ -17,7 +17,7 @@ import { frameFor, weekOf, type Frame } from './game/gallery';
 import { RAMP } from './game/difficulty';
 import { formatTime } from './game/format';
 import type { RunMetrics } from './game/metrics';
-import { inviteRound } from './game/rounds';
+import { openRound } from './game/rounds';
 import {
   clearProgress,
   getDayState,
@@ -158,18 +158,13 @@ export default function App() {
    *
    * Read once, at mount, and read only -- the bench is offered from here, never touched
    * from here, so the daily game still cannot write a tester's row and a tester id is
-   * still minted only by someone who actually opens `/?beta`. `?test` always has a round,
-   * reached by name so every hunt on it is recorded as a dry run.
+   * still minted only by someone who actually opens `/?beta`.
    */
   const invite = useMemo(() => {
-    const round = inviteRound(isTest);
+    const round = openRound();
     if (!round) return undefined;
-    return {
-      hunts: round.days.length,
-      done: isDone(round.id),
-      href: isTest ? `/?beta=${round.id}` : '/?beta',
-    };
-  }, [isTest]);
+    return { hunts: round.days.length, done: isDone(round.id) };
+  }, []);
 
   /**
    * Whether this browser will still have the player's streak tomorrow, and why not.
@@ -697,7 +692,7 @@ export default function App() {
               <>
                 A play-testing round is open: {invite.hunts} short hunts on paintings that
                 are not in the game.{' '}
-                <a href={invite.href} target="_blank" rel="noopener noreferrer">
+                <a href="/?beta" target="_blank" rel="noopener noreferrer">
                   Try them in a new tab
                 </a>
                 .
