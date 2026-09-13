@@ -1057,28 +1057,42 @@ button.reference:focus-visible {
 /* ---------- update notice ---------- */
 
 /*
- * The middle of the board, above everything on it: in a bottom corner it went unseen and
- * covered the hint button on a phone. Still small -- a new build is worth mentioning,
- * never worth interrupting a hunt for.
+ * Nearly the whole screen, over everything: a small dark pill in the middle of a dark
+ * painting went unseen, and running an old build is worth interrupting a hunt for. The
+ * scrim dims the page so the card cannot be mistaken for part of the board, and the
+ * accent border and filled button are the loudest things on screen.
  */
-.update-notice {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 6;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px 7px 15px;
-  font-size: 0.82rem;
-  color: var(--muted);
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  box-shadow: var(--shadow);
+.update-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
   animation: update-in 0.25s ease-out;
+}
+
+.update-notice {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 560px;
+  min-height: min(78vh, 560px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 56px 32px 48px;
+  text-align: center;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 @keyframes update-in {
@@ -1088,24 +1102,67 @@ button.reference:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .update-notice {
+  .update-scrim {
     animation: none;
   }
 }
 
+.update-title {
+  margin: 0;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.update-body {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 .update-refresh {
+  margin-top: 8px;
   font: inherit;
-  color: var(--accent);
-  background: transparent;
-  border: 1px solid var(--line);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--on-accent);
+  background: var(--accent);
+  border: 0;
   border-radius: 999px;
-  padding: 3px 12px;
+  padding: 14px 44px;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: filter 0.15s;
 }
 
 .update-refresh:hover {
-  border-color: var(--accent);
+  filter: brightness(1.1);
+}
+
+.update-refresh:focus-visible,
+.update-close:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.update-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  font: inherit;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.update-close:hover {
+  color: var(--text);
 }
 
 .update-refresh:focus-visible {
