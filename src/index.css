@@ -111,7 +111,7 @@ body,
 }
 
 .clock {
-  margin: 0 auto 0 0;
+  margin: 0;
   font-variant-numeric: tabular-nums;
   font-size: 1.05rem;
   color: var(--muted);
@@ -125,9 +125,12 @@ body,
   border-color: var(--accent);
 }
 
+/* Pushed to the right on its own, so the bar holds its shape whatever sits beside the
+   title -- the clock, the stats button, or nothing yet. */
 .topbar-actions {
   display: flex;
   gap: 6px;
+  margin-left: auto;
 }
 
 /* Only there while a play-testing round is open. Deliberately quiet -- it is the only
@@ -1097,10 +1100,7 @@ button.reference:focus-visible {
 
 /* ---------- stats ---------- */
 
-/* Sits where the clock does when there is no hunt to time, so it takes the clock's
-   job of pushing the buttons over to the right. */
 .btn-stats {
-  margin: 0 auto 0 0;
   color: var(--muted);
 }
 

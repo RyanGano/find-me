@@ -18,6 +18,28 @@ import {
 import { huntTrace, shareResult, SITE_URL } from './game/share';
 import type { Puzzle } from './game/types';
 import { useHunt } from './hooks/useHunt';
+import { HowTo } from './components/HowTo';
+
+/** The daily game's how-to flag, read only: reading those rules covers these too. */
+const HOWTO_SEEN = 'find-me:howto-seen';
+/** Set here, and not the daily one: the daily rules say more than a friend's hunt needs. */
+const FRIEND_HOWTO_SEEN = 'find-me:friend-howto-seen';
+
+function seen(key: string): boolean {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function markSeen(key: string): void {
+  try {
+    localStorage.setItem(key, '1');
+  } catch {
+    // Nothing kept on this browser; the rules come back next time.
+  }
+}
 
 /**
  * A hide a friend set, opened from the link it travels in.
@@ -119,6 +141,9 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
   const [showCredits, setShowCredits] = useState(false);
   const [shared, setShared] = useState<string | null>(null);
   const [showReporting, setShowReporting] = useState(false);
+  // A friend's link is often somebody's first sight of Find Me, so it opens on the rules
+  // for anyone who has not read them here or on the daily game.
+  const [showHowTo, setShowHowTo] = useState(() => !seen(HOWTO_SEEN) && !seen(FRIEND_HOWTO_SEEN));
 
   const onSolved = useCallback(() => {
     countHide('found');
@@ -144,7 +169,18 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
     togglePause,
     reset,
     giveUp,
-  } = useHunt({ puzzle, runId: puzzle.id, onSolved, blocked: showCard || showCredits || showReporting });
+  } = useHunt({
+    puzzle,
+    runId: puzzle.id,
+    onSolved,
+    blocked: showCard || showCredits || showReporting || showHowTo,
+  });
+
+  const closeHowTo = useCallback(() => {
+    markSeen(FRIEND_HOWTO_SEEN);
+    setShowHowTo(false);
+    stageRef.current?.focus();
+  }, [stageRef]);
 
   const done = solvedMs ?? gaveUpMs;
   // A setter's name is quoted, since it can read as part of the sentence -- "hid in Eric's
@@ -195,9 +231,9 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
           </button>{' '}
           <span className="title-day">{named ? title : 'from a friend'}</span>
         </h1>
-        <p className={`clock${running ? ' is-running' : ''}`}>
-          {startedAt === null ? 'ready' : formatTime(clock)}
-        </p>
+        {startedAt !== null && (
+          <p className={`clock${running ? ' is-running' : ''}`}>{formatTime(clock)}</p>
+        )}
         <div className="topbar-actions">
           {startedAt !== null && done === null && (
             <button
@@ -229,11 +265,23 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
               className="btn testbed-giveup"
               onClick={onGiveUp}
               disabled={startedAt === null}
-              title={startedAt === null ? 'Have a look first' : 'Stop the clock and show me'}
+              title={startedAt === null ? 'Make your first move to start the clock' : 'Stop the clock and show me'}
             >
               give up
             </button>
           )}
+          <button
+            type="button"
+            className="btn btn-icon"
+            onClick={() => {
+              setShowCard(false);
+              setShowHowTo((open) => !open);
+            }}
+            title="How to play"
+            aria-label="How to play"
+          >
+            ?
+          </button>
         </div>
       </header>
 
@@ -275,6 +323,13 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
         />
 
         {showCredits && <Credits puzzle={puzzle} onDismiss={() => setShowCredits(false)} />}
+
+        {showHowTo && (
+          <>
+            <div className="scrim" onClick={closeHowTo} />
+            <HowTo friend thing={puzzle.thing} onDismiss={closeHowTo} />
+          </>
+        )}
 
         {showReporting && (
           <>
