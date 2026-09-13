@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EyeIcon, HelpIcon, ResetIcon } from './components/Icons';
+import { Marquee } from './components/Marquee';
 import { Reporting } from './components/Reporting';
 import { Shape } from './components/Shape';
 import { Stage } from './components/Stage';
@@ -400,7 +401,9 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
         <button type="button" className="btn btn-back" onClick={onClose}>
           <span aria-hidden="true">‹</span> Back
         </button>
-        <h1 className="title">Hide one for a friend</h1>
+        <h1 className="title">
+          <Marquee>Hide one for a friend</Marquee>
+        </h1>
         <div className="topbar-actions">
           {spot && (
             <button

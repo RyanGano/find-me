@@ -19,6 +19,7 @@ import type { Puzzle } from './game/types';
 import { useHunt } from './hooks/useHunt';
 import { HowTo } from './components/HowTo';
 import { HelpIcon, ResetIcon } from './components/Icons';
+import { Marquee } from './components/Marquee';
 
 /** The daily game's how-to flag, read only: reading those rules covers these too. */
 const HOWTO_SEEN = 'find-me:howto-seen';
@@ -215,7 +216,9 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
     <div className="app">
       <header className="topbar">
         <h1 className="title friend-title" title={named ? title : undefined}>
-          Find Me <span className="title-day">{named ? title : 'from a friend'}</span>
+          <Marquee>
+            Find Me <span className="title-day">{named ? title : 'from a friend'}</span>
+          </Marquee>
         </h1>
         {startedAt !== null && (
           <p className={`clock${running ? ' is-running' : ''}`}>{formatTime(clock)}</p>
@@ -272,7 +275,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
       </header>
 
       <p className="practice-note">
-        <span className="test-banner-what">A hide from a friend — not part of your streak</span>
+        <Marquee>A hide from a friend</Marquee>
         <button
           type="button"
           className="test-banner-exit"

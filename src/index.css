@@ -284,6 +284,63 @@ body,
   }
 }
 
+/* ---------- a line too long for its bar ---------- */
+
+.marquee {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* In a bar that centres its words, take the text's own width and give it up only as the
+   bar runs out of room. */
+.practice-note .marquee,
+.test-banner .marquee {
+  flex: 0 1 auto;
+}
+
+.marquee-inner {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.marquee.is-over {
+  cursor: pointer;
+}
+
+.marquee.is-over .marquee-inner {
+  animation: marquee var(--marquee-time, 6s) ease-in-out infinite alternate;
+}
+
+@keyframes marquee {
+  0%,
+  20% {
+    transform: translateX(0);
+  }
+  80%,
+  100% {
+    transform: translateX(var(--marquee-shift, 0));
+  }
+}
+
+.marquee.is-open {
+  white-space: normal;
+}
+
+.marquee.is-open .marquee-inner {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee.is-over .marquee-inner {
+    animation: none;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 /* ---------- ?diag ---------- */
 
 .diag {
@@ -1878,9 +1935,6 @@ button.test-banner-exit {
 
 .hide-maker .title {
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .hide-hint {
@@ -2183,13 +2237,10 @@ button.test-banner-exit {
   font-variant-numeric: tabular-nums;
 }
 
-/* A friend's name for their hide can run to fifty characters; on a phone it is cut short
-   in the bar rather than pushing the clock and buttons off it. */
+/* A friend's name for their hide can run to fifty characters; on a phone it scrolls in
+   the bar (see `Marquee`) rather than pushing the clock and buttons off it. */
 .friend-title {
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .friend-title ~ .clock,

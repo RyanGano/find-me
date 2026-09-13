@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HowTo } from './components/HowTo';
 import { EyeIcon, HelpIcon, ResetIcon } from './components/Icons';
+import { Marquee } from './components/Marquee';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
 import { Stage } from './components/Stage';
@@ -704,7 +705,11 @@ export default function App() {
         </p>
       )}
 
-      {isPractice && <p className="practice-note">Practice mode — this run isn&rsquo;t recorded</p>}
+      {isPractice && (
+        <p className="practice-note">
+          <Marquee>Practice mode — not recorded</Marquee>
+        </p>
+      )}
 
       {/* Test mode looks exactly like the real game, which is the point of it and also
           the danger: without this there is nothing on the screen to tell you that the
