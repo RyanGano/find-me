@@ -89,6 +89,7 @@ export function ResultCard({
   );
 
   const trace = huntTrace(metrics);
+  const whyShown = !gaveUp && age !== null && parts.length > 0;
 
   const share = async () => {
     const text = gaveUp
@@ -172,10 +173,7 @@ export function ResultCard({
       {/* The hunt trace, exactly as the share text will carry it, so the player sees
           what they are about to post. A run from before the trace keeps its speed bar. */}
       {trace ? (
-        <>
-          <p className="result-bar" aria-label="How the hunt went">{trace}</p>
-          <p className="result-trace-key">{traceKey(metrics)}</p>
-        </>
+        <p className="result-bar" aria-label="How the hunt went">{trace}</p>
       ) : (
         !gaveUp && <p className="result-bar">{speedBar(ms)}</p>
       )}
@@ -200,10 +198,6 @@ export function ResultCard({
               i
             </button>
           </p>
-          {/* What the number was made of. Only the two signals furthest from par are
-              named: the whole list is a wall of jargon, and the interesting thing about a
-              run is always the one or two ways it was unusual. */}
-          {parts.length > 0 && <p className="result-age-why">{whyLine(parts)}</p>}
         </div>
       )}
 
@@ -223,21 +217,34 @@ export function ResultCard({
         </span>
       </p>
 
-      {/* The same after a give-up as after a find: the reward for looking at a painting is
-          not only for the players who found the shape in it. Never in the share text, and
-          never on screen during a hunt: this card only exists once the hunt has ended. */}
-      {puzzle.note && (
-        <p className="result-note">
-          {puzzle.note}
-          {puzzle.source && (
-            <>
-              {' '}
-              <a href={puzzle.source} target="_blank" rel="noopener noreferrer">
-                More on Commons
-              </a>
-            </>
+      {/* Folded rather than dropped: the card was crowded, but this is the only place
+          most players will ever meet these -- few of them find the gallery. */}
+      {(whyShown || trace || puzzle.note) && (
+        <details className="result-more">
+          <summary>More</summary>
+          {/* What the number was made of. Only the two signals furthest from par are
+              named: the whole list is a wall of jargon, and the interesting thing about a
+              run is always the one or two ways it was unusual. */}
+          {whyShown && <p className="result-age-why">{whyLine(parts)}</p>}
+          {trace && <p className="result-trace-key">{traceKey(metrics)}</p>}
+          {/* The same after a give-up as after a find: the reward for looking at a painting
+              is not only for the players who found the shape in it. Never in the share
+              text, and never on screen during a hunt: this card only exists once the hunt
+              has ended. */}
+          {puzzle.note && (
+            <p className="result-note">
+              {puzzle.note}
+              {puzzle.source && (
+                <>
+                  {' '}
+                  <a href={puzzle.source} target="_blank" rel="noopener noreferrer">
+                    More on Commons
+                  </a>
+                </>
+              )}
+            </p>
           )}
-        </p>
+        </details>
       )}
 
       {!isPractice && (
