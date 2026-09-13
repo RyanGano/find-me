@@ -128,9 +128,7 @@ export function Stats({ onDismiss }: Props) {
           </dl>
           {history.unnamed > 0 && (
             <p className="stats-note">
-              Played includes {history.unnamed} older{' '}
-              {history.unnamed === 1 ? 'day' : 'days'} this browser still counts but can no
-              longer show.
+              Played includes {history.unnamed} earlier {history.unnamed === 1 ? 'day' : 'days'}.
             </p>
           )}
 

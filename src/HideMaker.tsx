@@ -490,8 +490,7 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
                 <li>
                   Set its color, size, angle and visibility. <strong>Auto</strong> picks a color
                   from the paint underneath. Pinch or scroll to zoom in, and turn the ring off to
-                  see how well it hides. There <em>are</em> guards in place to keep you from
-                  sharing an impossible puzzle.
+                  see how well it hides.
                 </li>
                 <li>
                   Give it a name with <strong>✎ Name</strong> if you like. Without one it goes by

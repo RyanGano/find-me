@@ -130,9 +130,8 @@ export function ResultCard({
         </p>
         <p className="howto-note">
           This is for fun. It is not a real measure of your age, and it is not very
-          accurate &mdash; some fast players are older than some slow ones. Nothing about
-          you is stored or sent. The number is worked out on your device, from this run
-          only.
+          accurate &mdash; some fast players are older than some slow ones. It&rsquo;s worked
+          out on your device, from this run only, and nothing is sent.
         </p>
         <div className="howto-foot">
           <button
@@ -205,8 +204,8 @@ export function ResultCard({
 
       {retuned && (
         <p className="result-retuned">
-          This puzzle changed after you played it. Your time stands.{' '}
-          <a href={`./?puzzle=${puzzle.id}`}>Try the new one</a> — it isn&rsquo;t recorded.
+          Today&rsquo;s puzzle was updated — your time still counts.{' '}
+          <a href={`./?puzzle=${puzzle.id}`}>Try the new version</a> (practice).
         </p>
       )}
 
@@ -238,7 +237,7 @@ export function ResultCard({
                 <>
                   {' '}
                   <a href={puzzle.source} target="_blank" rel="noopener noreferrer">
-                    More on Commons
+                    More about this painting
                   </a>
                 </>
               )}
@@ -260,7 +259,7 @@ export function ResultCard({
           {status === 'copied' ? 'Copied!' : status === 'failed' ? 'Copy failed' : 'Share result'}
         </button>
         <button type="button" className="btn" onClick={onReplay}>
-          {isPractice ? 'Play again' : 'Free roam'}
+          {isPractice ? 'Play again' : 'Look around'}
         </button>
       </div>
       {/* The way into hiding one, said in words: the puzzle-piece in the bar is easy to
