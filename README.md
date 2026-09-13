@@ -1244,6 +1244,10 @@ outlives a single run, so the rows cannot be grouped by person even in principle
 runs are never counted.
 
 `What's reported` in the how-to panel says as much to the player, and switches it off.
+A browser that will not save the choice -- website data blocked -- still has it honored
+for as long as the page is open, and the switch says the choice will not outlast that;
+before this, a refused write read back as "never asked" and the beacons kept going out
+under a switch that said off.
 Switching it off also stops the reads below: a player who has asked not to be counted is
 not asking the server anything either, so they go without everyone else's numbers, and
 the note tells them so.

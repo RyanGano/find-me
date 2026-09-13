@@ -79,8 +79,18 @@ function endpoint(): string {
   return import.meta.env.VITE_COUNT_URL ?? '';
 }
 
+/**
+ * A choice this browser would not keep, held for as long as the page is open.
+ *
+ * A browser that refuses storage used to read as "never asked": the switch said off, and
+ * every beacon still went out, because the read fell back to counted. Now the choice is
+ * kept here whenever it could not be saved, and it wins over whatever storage says.
+ */
+let unsaved: boolean | null = null;
+
 /** False once the player has asked not to be counted. Storage failures count as opted in. */
 export function isCounted(): boolean {
+  if (unsaved !== null) return unsaved;
   try {
     return localStorage.getItem(OPT_OUT) === null;
   } catch {
@@ -88,13 +98,21 @@ export function isCounted(): boolean {
   }
 }
 
-export function setCounted(on: boolean): void {
+/**
+ * Record the choice. True when it was saved for good; false when it holds only until the
+ * page is closed, which is what the switch tells the player.
+ */
+export function setCounted(on: boolean): boolean {
+  let saved = false;
   try {
     if (on) localStorage.removeItem(OPT_OUT);
     else localStorage.setItem(OPT_OUT, '1');
+    saved = (localStorage.getItem(OPT_OUT) === null) === on;
   } catch {
-    // Storage disabled: the choice cannot be remembered, but nothing breaks.
+    // Storage disabled: kept below for this page instead.
   }
+  unsaved = saved ? null : on;
+  return saved;
 }
 
 /**

@@ -238,6 +238,29 @@ describe('fetchTallies', () => {
   });
 });
 
+describe('opting out on a browser that will not save it', () => {
+  it('honors the choice for the page, and says it was not saved', () => {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('SecurityError');
+      },
+    });
+    expect(isCounted()).toBe(true);
+    expect(setCounted(false)).toBe(false);
+    expect(isCounted()).toBe(false);
+    count('run-1', 42, 'start');
+    countHide('opened');
+    expect(posts).toHaveLength(0);
+    expect(beacons).toHaveLength(0);
+
+    // Once storage works again, a saved choice takes over from the page's.
+    installStorage();
+    expect(setCounted(true)).toBe(true);
+    expect(isCounted()).toBe(true);
+  });
+});
+
 describe('opting out', () => {
   it('starts counted, and remembers being turned off and on again', () => {
     expect(isCounted()).toBe(true);

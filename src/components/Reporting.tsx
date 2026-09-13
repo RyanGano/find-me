@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isInAppBrowser } from '../game/browser';
 import { isCounted, setCounted } from '../game/count';
 
 interface Props {
@@ -15,11 +16,15 @@ interface Props {
  */
 export function Reporting({ onBack }: Props) {
   const [on, setOn] = useState(isCounted);
+  // Said once the switch has been pressed, and only where the choice will not last: a
+  // browser that refused to save it, or another app's browser that forgets it on closing.
+  const [lasts, setLasts] = useState<'saved' | 'page' | 'app'>('saved');
 
   const toggle = () => {
     const next = !on;
-    setCounted(next);
+    const saved = setCounted(next);
     setOn(next);
+    setLasts(!saved ? 'page' : isInAppBrowser() ? 'app' : 'saved');
   };
 
   return (
@@ -63,6 +68,13 @@ export function Reporting({ onBack }: Props) {
           Report my runs: <strong>{on ? 'On' : 'Off'}</strong>
         </span>
       </button>
+      {lasts !== 'saved' && (
+        <p className="howto-note switch-note" role="status">
+          {lasts === 'page'
+            ? 'This browser won’t save your choice, so it’s only remembered until you close Find Me.'
+            : 'This app’s browser forgets your choice when it closes, so it’s only remembered until then.'}
+        </p>
+      )}
       <p className="howto-note">
         With reporting off, nothing above is sent, you won&rsquo;t see how everyone else did,
         and your hides are shared as longer links.
