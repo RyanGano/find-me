@@ -134,11 +134,14 @@ export function Stats({ onDismiss }: Props) {
             </p>
           )}
 
-          <h3>Every week so far, by day</h3>
-          <p className="stats-note">
-            Your typical time for a day of the week
-            {anyOthers ? ' compared to everyone else’s' : ''}.
-          </p>
+          <h3>Your typical time by weekday</h3>
+          {/* Held back until there is something to draw: seven rows of "not played yet"
+              was most of the panel for a new player. */}
+          {solvedCount < THIN ? (
+            <p className="stats-note">Find a few more and your times for each weekday show up here.</p>
+          ) : (
+          <>
+          {anyOthers && <p className="stats-note">Compared to everyone else&rsquo;s.</p>}
           <ul className="stats-week">
             {week.map((w) => (
               <li key={w.weekday}>
@@ -170,8 +173,7 @@ export function Stats({ onDismiss }: Props) {
               <span className="stats-key-bar" /> you <span className="stats-key-tick" /> everyone
             </p>
           )}
-          {solvedCount < THIN && (
-            <p className="stats-note">A few more days and this starts to show your week.</p>
+          </>
           )}
 
           <h3>Last four weeks</h3>
@@ -185,6 +187,12 @@ export function Stats({ onDismiss }: Props) {
               <span key={i} className={`stats-mark is-${m}`} title={MARK_LABEL[m]} />
             ))}
           </div>
+          <p className="stats-legend" aria-hidden="true">
+            <span className="stats-mark legend-mark is-solved" /> found
+            <span className="stats-mark legend-mark is-gave-up" /> not found
+            <span className="stats-mark legend-mark is-missed" /> not played
+            <span className="stats-mark legend-mark is-today" /> today
+          </p>
         </>
       )}
 

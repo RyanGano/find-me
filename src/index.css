@@ -1209,6 +1209,18 @@ button.reference:focus-visible {
   background: var(--text);
 }
 
+/* The four-weeks key: the grid's own marks, small, each before its word. */
+.legend-mark {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+.legend-mark:not(:first-child) {
+  margin-left: 8px;
+}
+
 .stats-recent {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
