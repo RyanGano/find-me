@@ -939,6 +939,7 @@ export default function App() {
             week={sundayWeek}
             onShared={onShared}
             onReplay={replay}
+            onHide={openMaker}
           />
         )}
       </main>

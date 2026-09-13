@@ -50,6 +50,8 @@ interface Props {
   /** The share button was pressed, for the tally. */
   onShared: () => void;
   onReplay: () => void;
+  /** Open the hide maker. */
+  onHide?: () => void;
 }
 
 export function ResultCard({
@@ -65,6 +67,7 @@ export function ResultCard({
   week,
   onShared,
   onReplay,
+  onHide,
 }: Props) {
   const [status, setStatus] = useState<'idle' | 'shared' | 'copied' | 'failed'>('idle');
   const [dataStatus, setDataStatus] = useState<'idle' | 'shared' | 'copied' | 'failed'>(
@@ -253,9 +256,16 @@ export function ResultCard({
           {isPractice ? 'Play again' : 'Free roam'}
         </button>
       </div>
-      {week && !isPractice && (
+      {/* The way into hiding one, said in words: the puzzle-piece in the bar is easy to
+          miss, and the card is where a player looks once the day is done. */}
+      {(onHide || (week && !isPractice)) && (
         <div className="result-actions">
-          <WeekShare frame={week} label="Share your week" onShared={onShared} />
+          {onHide && (
+            <button type="button" className="btn" onClick={onHide}>
+              Hide one for a friend
+            </button>
+          )}
+          {week && !isPractice && <WeekShare frame={week} label="Share your week" onShared={onShared} />}
         </div>
       )}
 

@@ -71,6 +71,10 @@ export function HowTo({ thing, rung, friend, onDismiss }: Props) {
             This painting stays all week, with something different to find in it each day and
             each day harder than the last. Today is <strong>{rung}</strong>.
           </p>
+          <p className="howto-note">
+            Once today&rsquo;s is done, <strong>hide one for a friend</strong>: set your own
+            puzzle in a painting and send it as a link.
+          </p>
         </>
       )}
       {/* Reporting is on unless the player turns it off, so the first screen they see says
