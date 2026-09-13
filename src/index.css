@@ -681,6 +681,9 @@ button.reference:focus-visible {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   animation: panel-in 0.25s ease-out;
+  /* Panels are text to read, not a painting to move: let a pinch zoom them where the
+     browser allows it. The board and the bar keep `none`. */
+  touch-action: pan-y pinch-zoom;
 }
 
 @keyframes panel-in {
