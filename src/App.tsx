@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HowTo } from './components/HowTo';
-import { EyeIcon, HelpIcon, ResetIcon } from './components/Icons';
+import { EyeIcon, HelpIcon, HideIcon, PauseIcon, ResetIcon, StatsIcon } from './components/Icons';
 import { Marquee } from './components/Marquee';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ResultCard } from './components/ResultCard';
@@ -9,14 +9,14 @@ import { Stats as StatsPanel } from './components/Stats';
 import { UpdateNotice } from './components/UpdateNotice';
 import HideMaker from './HideMaker';
 import { giveUpAfterMs, hintAfterMs } from './game/age';
-import { hintCircle } from './game/hint';
 import { isInAppBrowser } from './game/browser';
 import { count, fetchTally, newRunId, type DayTally } from './game/count';
-import { isTestMode } from './game/testMode';
 import { puzzleNumber, selectPuzzle, weekdayOf } from './game/daily';
-import { frameFor, weekOf, type Frame } from './game/gallery';
 import { RAMP } from './game/difficulty';
+import { hasFlag, HOWTO_SEEN, setFlag } from './game/flags';
 import { formatTime } from './game/format';
+import { frameFor, weekOf, type Frame } from './game/gallery';
+import { hintCircle } from './game/hint';
 import type { RunMetrics } from './game/metrics';
 import { openRound } from './game/rounds';
 import {
@@ -33,6 +33,8 @@ import {
   type Stats,
 } from './game/storage';
 import { isDone } from './game/testbedStore';
+import { isTestMode } from './game/testMode';
+import { IDENTITY } from './game/transform';
 import { useDayRollover } from './hooks/useDayRollover';
 import { useHunt, type LeftRun } from './hooks/useHunt';
 import { useUpdateAvailable } from './hooks/useUpdateAvailable';
@@ -51,33 +53,9 @@ function plead(left: number): string {
   return 'Nearly. A few more seconds and it’s yours — you’re closer than you think.';
 }
 
-const HOWTO_SEEN = 'find-me:howto-seen';
-
 /** How long before the hint or the give-up opens its button starts to fill. */
 const ARM_MS = 10_000;
 const WARNING_SEEN = 'find-me:storage-warning-seen';
-
-/**
- * `localStorage` on its own, wrapped so a browser that refuses to hand it over cannot
- * take the whole page down with it. Reading `localStorage` throws outright -- not
- * returns null -- when a browser is set to block all website data, which is exactly the
- * setting a player who loses their streak is most likely to be running.
- */
-function flag(key: string): boolean {
-  try {
-    return localStorage.getItem(key) !== null;
-  } catch {
-    return false;
-  }
-}
-
-function setFlag(key: string): void {
-  try {
-    localStorage.setItem(key, '1');
-  } catch {
-    // Nothing is being kept on this browser; `storagePersists` already says so.
-  }
-}
 
 /** The week a Sunday finishes, as a frame to share -- or null on any other day. */
 function sundayFrame(day: number, isPractice: boolean): Frame | null {
@@ -150,9 +128,8 @@ export default function App() {
   const updateAvailable = useUpdateAvailable();
 
   const [showHowTo, setShowHowTo] = useState(
-    () => !prior && !saved && !isPractice && !flag(HOWTO_SEEN),
+    () => !prior && !saved && !isPractice && !hasFlag(HOWTO_SEEN),
   );
-
 
   /**
    * The play-testing invitation at the top of How to play, which is only there -- and the
@@ -189,7 +166,7 @@ export default function App() {
     if (isInAppBrowser()) return 'in-app';
     return isPersistent() ? null : 'blocked';
   });
-  const [warningSeen, setWarningSeen] = useState(() => flag(WARNING_SEEN));
+  const [warningSeen, setWarningSeen] = useState(() => hasFlag(WARNING_SEEN));
   // Which browser to send them to: Safari is no answer on an Android phone.
   const platform = useMemo(() => {
     const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
@@ -594,9 +571,7 @@ export default function App() {
           aria-label="Your stats"
           aria-pressed={showStats}
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M6 18v-6M12 18V6M18 18v-9" />
-          </svg>
+          <StatsIcon />
         </button>
         {startedAt !== null && done === null && (
           <p className={`clock${running ? ' is-running' : ''}`}>{formatTime(clock)}</p>
@@ -625,17 +600,7 @@ export default function App() {
               aria-label={paused ? 'Resume' : 'Pause'}
               aria-pressed={paused}
             >
-              {/* Two bars while running, a play triangle while held. */}
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                {paused ? (
-                  <path d="M9 6.5l9 5.5-9 5.5z" />
-                ) : (
-                  <>
-                    <path d="M9.5 6v12" />
-                    <path d="M14.5 6v12" />
-                  </>
-                )}
-              </svg>
+              <PauseIcon paused={paused} />
             </button>
           )}
           <button type="button" className="btn btn-icon" onClick={reset} title="Reset view" aria-label="Reset view">
@@ -652,9 +617,7 @@ export default function App() {
               title="Hide one for a friend"
               aria-label="Hide one for a friend"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M5 7h4a2.5 2.5 0 1 1 5 0h4v4a2.5 2.5 0 1 1 0 5v4h-4a2.5 2.5 0 1 0-5 0H5v-4a2.5 2.5 0 1 0 0-5z" />
-              </svg>
+              <HideIcon />
             </button>
           )}
           {/* Highlighted while a play-testing round is open and unanswered here: the
@@ -731,7 +694,7 @@ export default function App() {
         <Stage
           stageRef={stageRef}
           puzzle={puzzle}
-          transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
+          transform={transform ?? IDENTITY}
           fitScale={fitScale}
           showRing={done !== null && showRing}
           hint={hinted && done === null ? circle : null}

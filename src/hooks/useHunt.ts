@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { evaluate, targetDisplaySize } from '../game/match';
 import { finish, hint, newTracker, sample, tookHint, type RunMetrics, type Tracker } from '../game/metrics';
-import { compose, constrainPan, fitTransform } from '../game/transform';
+import { compose, constrainPan, fitTransform, type GestureDelta } from '../game/transform';
 import type { Puzzle, Transform } from '../game/types';
-import type { GestureDelta } from '../game/transform';
+import { useElementSize, type Size } from './useElementSize';
 import { useGestures } from './useGestures';
-
-export interface Size {
-  w: number;
-  h: number;
-}
 
 /**
  * How big the shape is shown after a give-up, as a fraction of the size a match needs.
@@ -109,7 +104,8 @@ export function useHunt(session: HuntSession) {
   });
 
   const stageRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState<Size | null>(null);
+  // The stage box drives both the fitted view and the target size.
+  const size = useElementSize(stageRef);
   const [transform, setTransform] = useState<Transform | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -146,18 +142,6 @@ export function useHunt(session: HuntSession) {
    * which is where the hint is written down, so a run left and resumed keeps its circle.
    */
   const [hinted, setHinted] = useState(() => tookHint(resume?.k?.m));
-
-  // Track the stage box; it drives both the fitted view and the target size.
-  useEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      if (width > 0 && height > 0) setSize({ w: width, h: height });
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   const fit = useCallback(
     (s: Size) => fitTransform(puzzle.width, puzzle.height, s.w, s.h),
@@ -432,10 +416,10 @@ export function useHunt(session: HuntSession) {
   }, [size, reveal]);
 
   /**
-   * Stop the clock for good and show them the shape. Returns how long they hunted, and the run's
-   * trace with it. How long is the number worth keeping, which
-   * is the number worth keeping: how long somebody looked before deciding a day was
-   * hopeless says more about that day than any rating from the people who finished.
+   * Stop the clock for good and show them the shape. Returns how long they hunted, and the
+   * run's trace with it. How long is the number worth keeping: how long somebody looked
+   * before deciding a day was hopeless says more about that day than any rating from the
+   * people who finished.
    */
   const giveUp = useCallback(() => {
     // A run that has not started cannot be given up on. A tester who has not moved the

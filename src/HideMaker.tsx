@@ -4,33 +4,35 @@ import { Marquee } from './components/Marquee';
 import { Reporting } from './components/Reporting';
 import { Shape } from './components/Shape';
 import { Stage } from './components/Stage';
+import { countHide, shortHideLink } from './game/count';
+import { hasFlag, setFlag } from './game/flags';
 import {
   clampHide,
   cleanName,
   colourFor,
+  hexToHsv,
   HIDE_NAME_MAX,
   HIDE_OPACITY,
   HIDE_SIZE,
-  hexToHsv,
   hideLink,
+  hidePuzzle,
   hideShareText,
   hsvToHex,
   limitName,
   minOpacityFor,
   paintStats,
-  hidePuzzle,
   servedPaintings,
   type Hide,
   type Hsv,
   type Painting,
   type PaintStats,
 } from './game/hide';
-import { countHide, shortHideLink } from './game/count';
-import { isTestMode } from './game/testMode';
-import { shareResult, SITE_URL } from './game/share';
 import { SHAPES } from './game/shapes';
-import { compose, constrainPan, fitTransform, invert, type GestureDelta } from './game/transform';
+import { shareResult, SITE_URL } from './game/share';
+import { isTestMode } from './game/testMode';
+import { compose, constrainPan, fitTransform, IDENTITY, invert, type GestureDelta } from './game/transform';
 import type { Transform } from './game/types';
+import { useElementSize } from './hooks/useElementSize';
 import { useGestures } from './hooks/useGestures';
 
 const HELP_SEEN = 'find-me:hide-help-seen';
@@ -69,22 +71,6 @@ function shapeCover(
   return Float32Array.from({ length: box * box }, (_, i) => alpha[i * 4 + 3] / 255);
 }
 
-function seen(): boolean {
-  try {
-    return localStorage.getItem(HELP_SEEN) !== null;
-  } catch {
-    return false;
-  }
-}
-
-function markSeen(): void {
-  try {
-    localStorage.setItem(HELP_SEEN, '1');
-  } catch {
-    // Nothing kept on this browser; the help simply comes back next time.
-  }
-}
-
 /**
  * Hide one for a friend: pick a painting the calendar has already served, tap where the
  * shape goes, set it, and send the link. A layer over the daily board, opened from it once
@@ -114,7 +100,7 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
   // through gray.
   const [mixing, setMixing] = useState(false);
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(SWATCHES[0]));
-  const [showHelp, setShowHelp] = useState(() => !seen());
+  const [showHelp, setShowHelp] = useState(() => !hasFlag(HELP_SEEN));
   // Opened from the help, and back to it again.
   const [showReporting, setShowReporting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -164,19 +150,8 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
   // ---- the view: the game's own gestures, with a tap to place ----
 
   const stageRef = useRef<HTMLDivElement>(null);
-  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const box = useElementSize(stageRef);
   const [transform, setTransform] = useState<Transform | null>(null);
-
-  useEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      if (width > 0 && height > 0) setBox({ w: width, h: height });
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   const fit = useMemo(
     () => (box ? fitTransform(painting.width, painting.height, box.w, box.h) : null),
@@ -364,7 +339,7 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
   const custom = !auto && !SWATCHES.includes(chosenFill);
 
   const closeHelp = useCallback(() => {
-    markSeen();
+    setFlag(HELP_SEEN);
     setShowHelp(false);
   }, []);
 
@@ -450,7 +425,7 @@ export default function HideMaker({ onClose }: { onClose: () => void }) {
         <Stage
           stageRef={stageRef}
           puzzle={puzzle}
-          transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
+          transform={transform ?? IDENTITY}
           fitScale={fit?.scale ?? 1}
           showRing={Boolean(spot) && showRing}
           blurred={false}

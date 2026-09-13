@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ResetIcon } from './components/Icons';
+import { PauseIcon, ResetIcon } from './components/Icons';
 import { ReferenceCard } from './components/ReferenceCard';
 import { ReviewCard } from './components/ReviewCard';
 import { Stage } from './components/Stage';
@@ -18,6 +18,7 @@ import {
   saveBenchProgress,
   testerId,
 } from './game/testbedStore';
+import { IDENTITY } from './game/transform';
 import type { Puzzle } from './game/types';
 import { useHunt, type LeftRun } from './hooks/useHunt';
 
@@ -405,16 +406,7 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
               aria-label={paused ? 'Resume' : 'Pause'}
               aria-pressed={paused}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                {paused ? (
-                  <path d="M9 6.5l9 5.5-9 5.5z" />
-                ) : (
-                  <>
-                    <path d="M9.5 6v12" />
-                    <path d="M14.5 6v12" />
-                  </>
-                )}
-              </svg>
+              <PauseIcon paused={paused} />
             </button>
           )}
           <button type="button" className="btn btn-icon" onClick={reset} title="Reset view" aria-label="Reset view">
@@ -445,7 +437,7 @@ function BenchHunt({ puzzle, round, tester, step, of, onDone }: HuntProps) {
         <Stage
           stageRef={stageRef}
           puzzle={puzzle}
-          transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
+          transform={transform ?? IDENTITY}
           fitScale={fitScale}
           showRing={showRing}
           // Unblurred once the run is over however it ended, including a give-up before

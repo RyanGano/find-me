@@ -225,8 +225,3 @@ export const TESTBED_IMAGES = WEEKS.map((w) => ({
   source: w.source,
   sourceWidth: w.sourceWidth,
 }));
-
-/** A testbed puzzle by id, or undefined. Ids are distinct from every shipped one. */
-export function testbedPuzzle(id: string): Puzzle | undefined {
-  return TESTBED_PUZZLES.find((p) => p.id === id);
-}

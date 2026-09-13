@@ -24,6 +24,39 @@ export function ResetIcon() {
   );
 }
 
+/** Two bars while the clock runs, a play triangle while it is held. */
+export function PauseIcon({ paused }: { paused: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      {paused ? (
+        <path d="M9 6.5l9 5.5-9 5.5z" />
+      ) : (
+        <>
+          <path d="M9.5 6v12" />
+          <path d="M14.5 6v12" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+export function StatsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6 18v-6M12 18V6M18 18v-9" />
+    </svg>
+  );
+}
+
+/** Hide one for a friend: a puzzle piece. */
+export function HideIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M5 7h4a2.5 2.5 0 1 1 5 0h4v4a2.5 2.5 0 1 1 0 5v4h-4a2.5 2.5 0 1 0-5 0H5v-4a2.5 2.5 0 1 0 0-5z" />
+    </svg>
+  );
+}
+
 export function HelpIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { estimateAge, type AgePart } from '../game/age';
+import type { DayTally } from '../game/count';
 import { msUntilTomorrow } from '../game/daily';
 import { formatCountdown, formatTime } from '../game/format';
-import type { DayTally } from '../game/count';
 import type { Frame } from '../game/gallery';
 import type { RunMetrics } from '../game/metrics';
 import {
@@ -18,6 +18,7 @@ import {
 import type { Stats } from '../game/storage';
 import { isTestMode } from '../game/testMode';
 import type { Puzzle } from '../game/types';
+import { StatTotals } from './StatTotals';
 import { WeekShare } from './WeekShare';
 
 interface Props {
@@ -247,11 +248,7 @@ export function ResultCard({
       )}
 
       {!isPractice && (
-        <dl className="result-stats">
-          <div><dt>played</dt><dd>{stats.played}</dd></div>
-          <div><dt>streak</dt><dd>{stats.streak}</dd></div>
-          <div><dt>best</dt><dd>{stats.best === null ? '—' : formatTime(stats.best)}</dd></div>
-        </dl>
+        <StatTotals stats={stats} />
       )}
 
       <div className="result-actions">

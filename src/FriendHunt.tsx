@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { HowTo } from './components/HowTo';
+import { HelpIcon, PauseIcon, ResetIcon } from './components/Icons';
+import { Marquee } from './components/Marquee';
 import { ReferenceCard } from './components/ReferenceCard';
 import { Reporting } from './components/Reporting';
 import { Stage } from './components/Stage';
 import { countHide, fetchHide, type BrokenReason } from './game/count';
+import { hasFlag, HOWTO_SEEN, setFlag } from './game/flags';
 import { formatTime } from './game/format';
 import {
   decodeHide,
@@ -15,32 +19,15 @@ import {
   type Decoded,
 } from './game/hide';
 import { huntTrace, shareResult, SITE_URL } from './game/share';
+import { IDENTITY } from './game/transform';
 import type { Puzzle } from './game/types';
 import { useHunt } from './hooks/useHunt';
-import { HowTo } from './components/HowTo';
-import { HelpIcon, ResetIcon } from './components/Icons';
-import { Marquee } from './components/Marquee';
 
-/** The daily game's how-to flag, read only: reading those rules covers these too. */
-const HOWTO_SEEN = 'find-me:howto-seen';
-/** Set here, and not the daily one: the daily rules say more than a friend's hunt needs. */
+/**
+ * Set here, and not the daily one: the daily rules say more than a friend's hunt needs.
+ * The daily game's `HOWTO_SEEN` is only read, since reading those rules covers these too.
+ */
 const FRIEND_HOWTO_SEEN = 'find-me:friend-howto-seen';
-
-function seen(key: string): boolean {
-  try {
-    return localStorage.getItem(key) !== null;
-  } catch {
-    return false;
-  }
-}
-
-function markSeen(key: string): void {
-  try {
-    localStorage.setItem(key, '1');
-  } catch {
-    // Nothing kept on this browser; the rules come back next time.
-  }
-}
 
 /**
  * A hide a friend set, opened from the link it travels in.
@@ -143,7 +130,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
   const [showReporting, setShowReporting] = useState(false);
   // A friend's link is often somebody's first sight of Find Me, so it opens on the rules
   // for anyone who has not read them here or on the daily game.
-  const [showHowTo, setShowHowTo] = useState(() => !seen(HOWTO_SEEN) && !seen(FRIEND_HOWTO_SEEN));
+  const [showHowTo, setShowHowTo] = useState(() => !hasFlag(HOWTO_SEEN) && !hasFlag(FRIEND_HOWTO_SEEN));
 
   const onSolved = useCallback(() => {
     countHide('found');
@@ -176,12 +163,13 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
   });
 
   const closeHowTo = useCallback(() => {
-    markSeen(FRIEND_HOWTO_SEEN);
+    setFlag(FRIEND_HOWTO_SEEN);
     setShowHowTo(false);
     stageRef.current?.focus();
   }, [stageRef]);
 
   const done = solvedMs ?? gaveUpMs;
+  const trace = huntTrace(metrics);
   // A setter's name is quoted, since it can read as part of the sentence -- "hid in Eric's
   // favorite painting" -- where a painting's title never does.
   const quoted = named ? `“${title}”` : title;
@@ -193,7 +181,6 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
 
   const share = useCallback(async () => {
     if (done === null) return;
-    const trace = huntTrace(metrics);
     const lines = [
       gaveUpMs !== null
         ? `I gave up on your ${puzzle.emoji} after ${formatTime(done)}`
@@ -210,7 +197,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
     // have to stay on one line down to a 320px phone. "Try again" is also the truer
     // word -- the button still works, so it is an invitation, not a verdict.
     setShared(result === 'copied' ? 'Copied' : result === 'failed' ? 'Try again' : 'Shared');
-  }, [done, gaveUpMs, link, metrics, puzzle.emoji, title]);
+  }, [done, gaveUpMs, link, trace, puzzle.emoji, title]);
 
   return (
     <div className="app">
@@ -233,16 +220,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
               aria-label={paused ? 'Resume' : 'Pause'}
               aria-pressed={paused}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                {paused ? (
-                  <path d="M9 6.5l9 5.5-9 5.5z" />
-                ) : (
-                  <>
-                    <path d="M9.5 6v12" />
-                    <path d="M14.5 6v12" />
-                  </>
-                )}
-              </svg>
+              <PauseIcon paused={paused} />
             </button>
           )}
           <button type="button" className="btn btn-icon" onClick={reset} title="Reset view" aria-label="Reset view">
@@ -292,7 +270,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
         <Stage
           stageRef={stageRef}
           puzzle={puzzle}
-          transform={transform ?? { x: 0, y: 0, scale: 1, rot: 0 }}
+          transform={transform ?? IDENTITY}
           fitScale={fitScale}
           showRing={gaveUpMs !== null}
           blurred={paused || (startedAt === null && done === null)}
@@ -339,7 +317,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
               <p className="howto-note">
                 {named ? `On ${puzzle.title} by ${puzzle.artist}` : `By ${puzzle.artist}`}
               </p>
-              {huntTrace(metrics) && <p className="hide-trace">{huntTrace(metrics)}</p>}
+              {trace && <p className="hide-trace">{trace}</p>}
               {/* Two, so they sit on one line on a phone. There is no third for looking
                   around the painting because there does not need to be one: the scrim is
                   the whole board, so a tap on the picture puts the card away, and the

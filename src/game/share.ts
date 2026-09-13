@@ -1,7 +1,7 @@
 import { PAR_AGE, SPREAD } from './age';
 import type { DayTally } from './count';
 import { RAMP } from './difficulty';
-import { formatTime } from './format';
+import { formatRoughTime, formatTime } from './format';
 import type { RunMetrics } from './metrics';
 import type { Puzzle } from './types';
 
@@ -79,10 +79,7 @@ export function buildShareText(
  */
 export function tallyLine({ played, solved, medianMs }: DayTally): string {
   const pct = Math.round((100 * solved) / Math.max(1, played));
-  const secs = Math.round(medianMs / 1000);
-  const typical =
-    secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-  return `${pct}% of players found it today · typically in ${typical}`;
+  return `${pct}% of players found it today · typically in ${formatRoughTime(medianMs)}`;
 }
 
 /**

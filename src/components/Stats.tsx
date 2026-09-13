@@ -2,20 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchTallies, type DayTally } from '../game/count';
 import { dayIndex } from '../game/daily';
 import { RAMP } from '../game/difficulty';
-import { formatTime } from '../game/format';
+import { formatRoughTime } from '../game/format';
 import { galleryWall, notesFor, type Frame, type WallWeek } from '../game/gallery';
 import { byWeekday, recentMarks, type Mark } from '../game/history';
 import { getHistory, getStats } from '../game/storage';
+import { StatTotals } from './StatTotals';
 import { WeekShare } from './WeekShare';
 
 interface Props {
   onDismiss: () => void;
-}
-
-/** A median to the second, like the tally line: nothing here is worth a tenth. */
-function rough(ms: number): string {
-  const secs = Math.round(ms / 1000);
-  return secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
 }
 
 const MARK_LABEL: Record<Mark, string> = {
@@ -121,11 +116,7 @@ export function Stats({ onDismiss }: Props) {
             </>
           )}
 
-          <dl className="result-stats">
-            <div><dt>played</dt><dd>{stats.played}</dd></div>
-            <div><dt>streak</dt><dd>{stats.streak}</dd></div>
-            <div><dt>best</dt><dd>{stats.best === null ? '—' : formatTime(stats.best)}</dd></div>
-          </dl>
+          <StatTotals stats={stats} />
           {history.unnamed > 0 && (
             <p className="stats-note">
               Played includes {history.unnamed} earlier {history.unnamed === 1 ? 'day' : 'days'}.
@@ -138,40 +129,40 @@ export function Stats({ onDismiss }: Props) {
           {solvedCount < THIN ? (
             <p className="stats-note">Find a few more and your times for each weekday show up here.</p>
           ) : (
-          <>
-          {anyOthers && <p className="stats-note">Compared to everyone else&rsquo;s.</p>}
-          <ul className="stats-week">
-            {week.map((w) => (
-              <li key={w.weekday}>
-                <span className="stats-day">{RAMP[w.weekday].label.slice(0, 3)}</span>
-                <span className="stats-track" aria-hidden="true">
-                  {w.medianMs !== null && (
-                    <span className="stats-bar" style={{ width: pct(w.medianMs) }} />
-                  )}
-                  {w.othersMs !== null && (
-                    <span className="stats-tick" style={{ left: pct(w.othersMs) }} />
-                  )}
-                </span>
-                <span className="stats-time">{w.medianMs === null ? '—' : rough(w.medianMs)}</span>
-                <span className="stats-sub">
-                  {w.solved + w.gaveUp === 0
-                    ? 'not played yet'
-                    : [
-                        w.gaveUp > 0 && `${w.gaveUp} not found`,
-                        w.othersMs !== null && `everyone ${rough(w.othersMs)}`,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                </span>
-              </li>
-            ))}
-          </ul>
-          {anyOthers && (
-            <p className="stats-legend" aria-hidden="true">
-              <span className="stats-key-bar" /> you <span className="stats-key-tick" /> everyone
-            </p>
-          )}
-          </>
+            <>
+              {anyOthers && <p className="stats-note">Compared to everyone else&rsquo;s.</p>}
+              <ul className="stats-week">
+                {week.map((w) => (
+                  <li key={w.weekday}>
+                    <span className="stats-day">{RAMP[w.weekday].label.slice(0, 3)}</span>
+                    <span className="stats-track" aria-hidden="true">
+                      {w.medianMs !== null && (
+                        <span className="stats-bar" style={{ width: pct(w.medianMs) }} />
+                      )}
+                      {w.othersMs !== null && (
+                        <span className="stats-tick" style={{ left: pct(w.othersMs) }} />
+                      )}
+                    </span>
+                    <span className="stats-time">{w.medianMs === null ? '—' : formatRoughTime(w.medianMs)}</span>
+                    <span className="stats-sub">
+                      {w.solved + w.gaveUp === 0
+                        ? 'not played yet'
+                        : [
+                            w.gaveUp > 0 && `${w.gaveUp} not found`,
+                            w.othersMs !== null && `everyone ${formatRoughTime(w.othersMs)}`,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {anyOthers && (
+                <p className="stats-legend" aria-hidden="true">
+                  <span className="stats-key-bar" /> you <span className="stats-key-tick" /> everyone
+                </p>
+              )}
+            </>
           )}
 
           <h3>Last four weeks</h3>
