@@ -6,6 +6,7 @@ import {
   colourFor,
   decodeHide,
   encodeHide,
+  HIDE_CODE_LENGTH,
   HIDE_NAME_MAX,
   HIDE_OPACITY,
   HIDE_SIZE,
@@ -21,6 +22,8 @@ import {
   minOpacityFor,
   paintStats,
   servedPaintings,
+  SHAPE_CODES,
+  withCheck,
   type Hide,
 } from './hide';
 import { PUZZLES } from './puzzles';
@@ -43,6 +46,9 @@ function sample(over: Partial<Hide> = {}): Hide {
   };
 }
 
+const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/** A layout 1 or 2 link, as sent before layout 3. */
 function pack(value: unknown): string {
   return btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -73,7 +79,50 @@ describe('friend hides', () => {
     const code = encodeHide(sample());
     expect(code).not.toContain(first.image);
     expect(code).not.toContain('star');
-    expect(code).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(code).toMatch(/^[0-9A-HJKMNP-TV-Z]+$/);
+  });
+
+  it('packs an unnamed hide into a code short enough to type', () => {
+    expect(encodeHide(sample())).toHaveLength(HIDE_CODE_LENGTH);
+    expect(HIDE_CODE_LENGTH).toBe(20);
+  });
+
+  it('reads a code however it was typed', () => {
+    const code = encodeHide(sample({ name: 'Mine' }));
+    const typed = code.toLowerCase().replace(/0/g, 'O').replace(/1/g, 'l').replace(/(.{5})/g, '$1-');
+    expect(decodeHide(typed, NOW)).toEqual(decodeHide(code, NOW));
+    expect(decodeHide(code, NOW).ok).toBe(true);
+  });
+
+  it('refuses a mistyped or cut-short code rather than opening another hide', () => {
+    const code = encodeHide(sample({ name: 'Mine' }));
+    for (let i = 1; i < code.length; i++) {
+      const swapped = code[i] === 'A' ? 'B' : 'A';
+      const typo = code.slice(0, i) + swapped + code.slice(i + 1);
+      expect(decodeHide(typo, NOW), `symbol ${i}`).toEqual({ ok: false, reason: 'malformed' });
+    }
+    for (const cut of [code.slice(0, -1), code.slice(0, HIDE_CODE_LENGTH - 1)]) {
+      expect(decodeHide(cut, NOW)).toEqual({ ok: false, reason: 'malformed' });
+    }
+  });
+
+  it('gives every shape a code of its own, and fits the calendar in the layout', () => {
+    expect(new Set(SHAPE_CODES).size).toBe(SHAPE_CODES.length);
+    expect(SHAPE_CODES.length).toBeLessThanOrEqual(64);
+    for (const shape of Object.keys(SHAPES)) expect(SHAPE_CODES, shape).toContain(shape);
+    expect(PUZZLES.length / 7).toBeLessThanOrEqual(256);
+    for (const p of PUZZLES) {
+      expect(p.width, p.id).toBeLessThan(4096);
+      expect(p.height, p.id).toBeLessThan(8192);
+    }
+  });
+
+  it('refuses a week this page does not know yet', () => {
+    const code = encodeHide(sample());
+    // Symbols 1 and 2 carry the week's eight bits and the top two of the shape's.
+    const second = ALPHABET[0b11100 | (ALPHABET.indexOf(code[2]) & 0b11)];
+    const edited = withCheck(code[0] + 'Z' + second + code.slice(3, -1));
+    expect(decodeHide(edited, NOW)).toEqual({ ok: false, reason: 'painting' });
   });
 
   it('reads the hide out of a fragment and puts it on the real site', () => {
@@ -89,14 +138,17 @@ describe('friend hides', () => {
     }
   });
 
-  it('packs an unnamed hide exactly as links were packed before names', () => {
-    const code = encodeHide(sample({ name: '   ' }));
-    const packed = JSON.parse(atob(code.replace(/-/g, '+').replace(/_/g, '/')));
-    expect(packed).toEqual([1, first.image, 'star', 400, 600, 50, -30, 'a1b2c3', 70]);
-    // And one made before names still opens, with no name on it.
-    const old = decodeHide(pack(packed), NOW);
-    expect(old.ok).toBe(true);
-    if (old.ok) expect('name' in old.hide).toBe(false);
+  it('still opens a link packed as JSON before layout 3', () => {
+    const old = decodeHide(pack([1, first.image, 'star', 400, 600, 50, -30, 'a1b2c3', 70]), NOW);
+    expect(old).toEqual({ ok: true, hide: sample(), painting: first });
+    const named = decodeHide(pack([2, first.image, 'star', 400, 600, 50, -30, 'a1b2c3', 70, 'Mine']), NOW);
+    expect(named).toEqual({ ok: true, hide: sample({ name: 'Mine' }), painting: first });
+    // And it goes back out in the new layout.
+    expect(encodeHide(sample())).toMatch(/^3/);
+  });
+
+  it('drops a blank name rather than packing it', () => {
+    expect(encodeHide(sample({ name: '   ' }))).toBe(encodeHide(sample()));
   });
 
   it('round-trips a name, emoji and quotes included', () => {
@@ -146,8 +198,9 @@ describe('friend hides', () => {
   });
 
   it('refuses a link from a newer build', () => {
-    const code = pack([HIDE_VERSION + 1, first.image, 'star', 1, 1, 50, 0, 'aabbcc', 70]);
-    expect(decodeHide(code, NOW)).toEqual({ ok: false, reason: 'future' });
+    const code = encodeHide(sample());
+    const newer = withCheck(ALPHABET[HIDE_VERSION + 1] + code.slice(1, -1));
+    expect(decodeHide(newer, NOW)).toEqual({ ok: false, reason: 'future' });
   });
 
   it('holds size and opacity to the limits whatever the link says', () => {

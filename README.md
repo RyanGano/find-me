@@ -1244,10 +1244,18 @@ progress, and the maker's painting list is every week the calendar has reached, 
 thing a player in the middle of today's hunt has no business reading. The address is
 `?hide` and works on its own; `?test&hide` is the same thing inside test mode.
 
-- **The link is the puzzle.** `src/game/hide.ts` packs the hide into base64 in the URL
+- **The link is the puzzle.** `src/game/hide.ts` packs the hide as bits into the URL
   fragment (`#h=`), which is never sent to the host or a referrer. It is not secret, only
   not readable at a glance. A link from a newer build, a cut-short one, or one naming a
   painting this page does not know gets a friendly card rather than a broken board.
+- **Short enough to type.** Layout 3 packs the fixed fields into 91 bits -- the week the
+  painting ran, a shape number from the append-only `SHAPE_CODES`, position, size, angle,
+  fill and opacity, each wider than its limit so moving a limit never changes what a link
+  means -- and a name follows as UTF-8. It is written in Crockford base32 with one check
+  symbol on the end: an unnamed hide is 20 characters where the JSON it replaced was
+  about 60. Case does not matter, I and L read as 1 and O as 0, and a single wrong symbol
+  is refused rather than opening as some other hide. Layouts 1 and 2 (base64 JSON, the
+  second with a name on the end) still open for now and are due to be dropped.
 - **A name is optional.** The setter can give a hide a name of up to 50 characters behind
   the **✎ Name** button on the painting row, folded away so the controls are no taller for
   those who skip it. It replaces the painting's title in the friend's top bar, their result

@@ -30,8 +30,8 @@ const restore = parseRestore(window.location.search);
 // branch in it at all -- nothing about a round can reach a player who is not on one.
 const testbed = params.has('beta');
 
-// `#h=` is a hide a friend set: the whole puzzle is in the fragment, which is never sent
-// to the host. It plays for anyone -- test mode or not -- and records nothing.
+// `#h=` is a hide a friend set: the whole puzzle is packed into the fragment, which is
+// never sent to the host. It plays for anyone -- test mode or not -- and records nothing.
 const hide = hideFromHash(window.location.hash);
 // A link pasted into a tab that is already open only changes the fragment, which does
 // not reload the page -- so reload it, or the link would appear to do nothing.

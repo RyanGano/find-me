@@ -13,6 +13,9 @@ import type { Puzzle } from './types';
  * fragment is never sent to the host or put in a referrer, so the answer only ever lives
  * in the link and in the page reading it.
  *
+ * The hide is packed as bits and written in a base32 anyone can type from a screen: an
+ * unnamed hide is twenty characters, where the JSON it replaced was about sixty.
+ *
  * Nothing about a friend hide is recorded or counted. It is not a day, it has no
  * calendar slot, and it never reaches `storage.ts` or `count.ts`.
  */
@@ -34,11 +37,11 @@ export interface Hide {
 /**
  * Bumped when the packed layout changes; a link from a newer build is refused politely.
  *
- * 2 is 1 with the name on the end, and only a named hide is packed as 2: an unnamed link
- * stays byte for byte what it was, so it still opens on a page cached from before names.
- * A named one sent to such a page gets "made on a newer version" rather than "cut short".
+ * 1 and 2 were base64 JSON, 2 being 1 with the name on the end. 3 is the bit-packed
+ * layout in `LAYOUT`. A page cached from before 3 reads a new link as cut short, since it
+ * cannot tell base32 from broken base64; the update prompt clears that within a load.
  */
-export const HIDE_VERSION = 2;
+export const HIDE_VERSION = 3;
 
 /** The longest name a hide may carry, in characters (code points, so an emoji is one). */
 export const HIDE_NAME_MAX = 50;
@@ -127,38 +130,112 @@ export function clampHide(h: Hide, painting: Pick<Painting, 'width' | 'height'>)
   return name ? { ...held, name } : held;
 }
 
-function toBase64Url(text: string): string {
-  const bytes = new TextEncoder().encode(text);
-  let bin = '';
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
+/**
+ * Every shape a link can name, by its place in this list. Append only: a shape's number is
+ * baked into every link already sent, so a retired shape keeps its slot (and its links
+ * are refused as malformed) and a new one goes on the end. Six bits, so 64 at most.
+ */
+export const SHAPE_CODES: readonly string[] = [
+  'snowflake', 'star', 'key', 'bolt', 'crescent', 'heart', 'arrow', 'clover',
+  'fish', 'anchor', 'triangle', 'blossom', 'cross', 'diamond', 'droplet', 'leaf',
+  'house', 'crown', 'spade', 'tree', 'note', 'bell', 'umbrella', 'hourglass',
+  'bone', 'sun', 'cloud', 'apple', 'sailboat', 'butterfly', 'puzzle',
+];
 
-function fromBase64Url(code: string): string {
-  const b64 = code.replace(/-/g, '+').replace(/_/g, '/');
-  const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
-  return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+/**
+ * Layout 3, in bits, in this order; a name follows as UTF-8 to the end. The painting is
+ * the week it ran (`PUZZLES` only ever grows at the end, so a week keeps its number). Each
+ * field is wider than the limits need -- size and opacity are packed raw, not offset from
+ * `HIDE_SIZE` and `HIDE_OPACITY` -- so moving a limit never changes what a link means.
+ * Height gets 13 bits because a tall painting at 2600 wide can pass 4096.
+ */
+const LAYOUT = [
+  ['version', 5],
+  ['week', 8],
+  ['shape', 6],
+  ['cx', 12],
+  ['cy', 13],
+  ['size', 7],
+  ['angle', 9],
+  ['fill', 24],
+  ['opacity', 7],
+] as const;
+
+type Field = (typeof LAYOUT)[number][0];
+
+const FIXED_BITS = LAYOUT.reduce((sum, [, width]) => sum + width, 0);
+
+/**
+ * Crockford's base32: no I, L, O or U. What a person reads off a screen is folded back
+ * onto it before decoding -- any case, I and L as 1, O as 0, dashes and spaces ignored.
+ */
+const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/** An unnamed hide: every fixed field, plus the check symbol. */
+export const HIDE_CODE_LENGTH = Math.ceil(FIXED_BITS / 5) + 1;
+
+function fold(code: string): string {
+  return code.toUpperCase().replace(/[\s-]/g, '').replace(/[IL]/g, '1').replace(/O/g, '0');
 }
 
 /**
- * The hide as a fragment value. Base64 of a packed array: not secret, only not readable
- * at a glance in a message preview.
+ * One symbol over the rest, so a mistyped or cut-short link is refused instead of opening
+ * as some other hide. The multiplier is odd, so any single wrong symbol changes it.
+ */
+function checkSymbol(values: readonly number[]): number {
+  return values.reduce((acc, v) => (acc * 31 + v + 1) % 32, 0);
+}
+
+/** `data` with its check symbol on the end. Exported for tests that edit a code by hand. */
+export function withCheck(data: string): string {
+  const values = Array.from(fold(data), (c) => ALPHABET.indexOf(c));
+  return data + ALPHABET[checkSymbol(values)];
+}
+
+function pushBits(bits: number[], value: number, width: number): void {
+  for (let i = width - 1; i >= 0; i--) bits.push(Math.floor(value / 2 ** i) % 2);
+}
+
+function readBits(bits: readonly number[], at: number, width: number): number {
+  let value = 0;
+  for (let i = 0; i < width; i++) value = value * 2 + bits[at + i];
+  return value;
+}
+
+/** Held to what `width` bits can carry; a value outside is clamped, not wrapped. */
+function field(value: number, width: number): number {
+  return clamp(Math.round(value), 0, 2 ** width - 1);
+}
+
+/**
+ * The hide as a fragment value: not secret, only not readable at a glance in a message
+ * preview.
  */
 export function encodeHide(h: Hide): string {
-  const name = cleanName(h.name ?? '');
-  const packed: (string | number)[] = [
-    name ? 2 : 1,
-    h.image,
-    h.shape,
-    Math.round(h.cx),
-    Math.round(h.cy),
-    Math.round(h.size),
-    Math.round(h.angle),
-    h.fill.replace(/^#/, '').toLowerCase(),
-    Math.round(h.opacity * 100),
-  ];
-  if (name) packed.push(name);
-  return toBase64Url(JSON.stringify(packed));
+  const index = PUZZLES.findIndex((p) => p.image === h.image);
+  if (index < 0) throw new Error(`No week runs on ${h.image}`);
+  const shape = SHAPE_CODES.indexOf(h.shape);
+  if (shape < 0) throw new Error(`Shape ${h.shape} has no code`);
+
+  const values: Record<Field, number> = {
+    version: HIDE_VERSION,
+    week: Math.floor(index / 7),
+    shape,
+    cx: h.cx,
+    cy: h.cy,
+    size: h.size,
+    angle: (((Math.round(h.angle) + 180) % 360) + 360) % 360,
+    fill: parseInt(h.fill.replace(/^#/, ''), 16),
+    opacity: h.opacity * 100,
+  };
+  const bits: number[] = [];
+  for (const [name, width] of LAYOUT) pushBits(bits, field(values[name], width), width);
+  for (const byte of new TextEncoder().encode(cleanName(h.name ?? ''))) pushBits(bits, byte, 8);
+  while (bits.length % 5) bits.push(0);
+
+  let data = '';
+  for (let i = 0; i < bits.length; i += 5) data += ALPHABET[readBits(bits, i, 5)];
+  return withCheck(data);
 }
 
 export type Decoded =
@@ -176,14 +253,81 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * make an impossible puzzle.
  */
 export function decodeHide(code: string, now: Date = new Date()): Decoded {
+  // Every layout 1 and 2 link is base64 of a JSON array, and so begins `Wz`; a layout 3
+  // link begins with its version, `3`.
+  if (code.startsWith('Wz')) return decodeLegacy(code, now);
+
+  const chars = fold(code);
+  const values = Array.from(chars, (c) => ALPHABET.indexOf(c));
+  if (values.length < HIDE_CODE_LENGTH || values.includes(-1)) return { ok: false, reason: 'malformed' };
+  // Judged before the check symbol, which a later layout is free to compute differently.
+  if (values[0] > HIDE_VERSION) return { ok: false, reason: 'future' };
+  if (values[0] !== HIDE_VERSION || checkSymbol(values.slice(0, -1)) !== values.at(-1)) {
+    return { ok: false, reason: 'malformed' };
+  }
+
+  const bits: number[] = [];
+  for (const v of values.slice(0, -1)) pushBits(bits, v, 5);
+  const read = {} as Record<Field, number>;
+  let at = 0;
+  for (const [name, width] of LAYOUT) {
+    read[name] = readBits(bits, at, width);
+    at += width;
+  }
+  // Whatever is left after the fixed fields is the name, less at most four bits of padding.
+  const bytes: number[] = [];
+  for (; at + 8 <= bits.length; at += 8) bytes.push(readBits(bits, at, 8));
+  let name: string;
+  try {
+    name = new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(bytes));
+  } catch {
+    return { ok: false, reason: 'malformed' };
+  }
+
+  const shape = SHAPE_CODES[read.shape];
+  if (!shape || !Object.hasOwn(SHAPES, shape)) return { ok: false, reason: 'malformed' };
+  const week = PUZZLES[read.week * 7];
+  if (!week) return { ok: false, reason: 'painting' };
+
+  return finish(
+    {
+      image: week.image,
+      shape,
+      cx: read.cx,
+      cy: read.cy,
+      size: read.size,
+      angle: read.angle - 180,
+      fill: `#${read.fill.toString(16).padStart(6, '0')}`,
+      opacity: read.opacity / 100,
+      name,
+    },
+    now,
+  );
+}
+
+/** A hide read out of any layout, checked against the calendar and held to the limits. */
+function finish(h: Hide, now: Date): Decoded {
+  const painting = servedPaintings(new Date(now.getTime() + DAY_MS)).find((p) => p.image === h.image);
+  if (!painting) return { ok: false, reason: 'painting' };
+  return { ok: true, hide: clampHide(h, painting), painting };
+}
+
+/**
+ * Layouts 1 and 2: base64 of a JSON array. Kept only so links sent before layout 3 still
+ * open while they are fresh; due to be removed from 2026-09-14, with the tests that pack
+ * JSON by hand.
+ */
+function decodeLegacy(code: string, now: Date): Decoded {
   let packed: unknown;
   try {
-    packed = JSON.parse(fromBase64Url(code));
+    const b64 = code.replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
+    packed = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
   } catch {
     return { ok: false, reason: 'malformed' };
   }
   if (!Array.isArray(packed) || typeof packed[0] !== 'number') return { ok: false, reason: 'malformed' };
-  if (packed[0] > HIDE_VERSION) return { ok: false, reason: 'future' };
+  if (packed[0] > 2) return { ok: false, reason: 'future' };
   if (!((packed[0] === 1 && packed.length === 9) || (packed[0] === 2 && packed.length === 10))) {
     return { ok: false, reason: 'malformed' };
   }
@@ -202,14 +346,7 @@ export function decodeHide(code: string, now: Date = new Date()): Decoded {
     return { ok: false, reason: 'malformed' };
   }
 
-  const painting = servedPaintings(new Date(now.getTime() + DAY_MS)).find((p) => p.image === image);
-  if (!painting) return { ok: false, reason: 'painting' };
-
-  const hide = clampHide(
-    { image, shape, cx, cy, size, angle, fill: `#${fill}`, opacity: opacity / 100, name },
-    painting,
-  );
-  return { ok: true, hide, painting };
+  return finish({ image, shape, cx, cy, size, angle, fill: `#${fill}`, opacity: opacity / 100, name }, now);
 }
 
 /** What a hide goes by: its own name, or the painting's when it was not given one. */
