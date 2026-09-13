@@ -65,7 +65,8 @@ export const ROUNDS: Round[] = [
   {
     id: 'r2-busyness',
     opens: '2026-09-07',
-    closes: '2026-09-28',
+    // Planned to run to 2026-09-28; closed early once it had enough answers.
+    closes: '2026-09-11',
     asks: 'Does a Monday feel like a Monday whatever the painting?',
     expect:
       'Two paintings the daily game has already been through. The shape is somewhere ' +
