@@ -8,10 +8,13 @@ export function formatTime(ms: number): string {
   return `${minutes}:${seconds.toFixed(1).padStart(4, '0')}`;
 }
 
+/** Time until the next puzzle, said the way a person would: "2h 05m", "21m 09s", "45s". */
 export function formatCountdown(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
+  if (m > 0) return `${m}m ${String(s).padStart(2, '0')}s`;
+  return `${s}s`;
 }

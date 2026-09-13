@@ -50,8 +50,10 @@ describe('formatTime', () => {
 
 describe('formatCountdown', () => {
   it('renders hh:mm:ss', () => {
-    expect(formatCountdown(0)).toBe('00:00:00');
-    expect(formatCountdown(3661000)).toBe('01:01:01');
+    expect(formatCountdown(0)).toBe('0s');
+    expect(formatCountdown(45900)).toBe('45s');
+    expect(formatCountdown(125000)).toBe('2m 05s');
+    expect(formatCountdown(3661000)).toBe('1h 01m');
   });
 });
 
