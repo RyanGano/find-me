@@ -20,6 +20,7 @@
  * no `sendBeacon` -- none of it is allowed to cost the player their run.
  */
 
+import { hideLink, readShortCode, shortLink, type Hide } from './hide';
 import { isTestMode } from './testMode';
 
 const OPT_OUT = 'find-me:no-count';
@@ -249,11 +250,18 @@ function readTally(body: unknown): DayTally | null {
  * calendar slot, and none of this travels near the run tally. A hide is still never a
  * play.
  */
-export type HideEvent = 'opened' | 'made' | 'hunted' | 'found' | 'told';
+export type HideEvent = 'opened' | 'made' | 'hunted' | 'found' | 'told' | 'broken';
+
+/** Why a hide link did not open: the reasons `decodeHide`, `storedHide` and `fetchHide` give. */
+export type BrokenReason = 'malformed' | 'future' | 'painting' | 'unknown' | 'unreachable';
 
 export interface HidePayload {
   kind: 'hide';
   event: HideEvent;
+  /** On `made`: the share went out as the long `#h=` link, because no short code was had. */
+  long?: true;
+  /** On `broken`: why the link did not open. */
+  reason?: BrokenReason;
   /**
    * A random id minted on this page load and never kept, so the server can write each
    * event once rather than counting a double-tap on share as two. It groups the events of
@@ -268,12 +276,14 @@ export interface HidePayload {
 let pageId: string | null = null;
 
 /** Report one thing somebody did with the hide feature. Silent on every failure. */
-export function countHide(event: HideEvent): void {
+export function countHide(event: HideEvent, extra: { long?: true; reason?: BrokenReason } = {}): void {
   const url = endpoint();
   if (!url || !isCounted()) return;
 
   pageId ??= newRunId();
   const payload: HidePayload = { kind: 'hide', event, page: pageId };
+  if (event === 'made' && extra.long) payload.long = true;
+  if (event === 'broken' && extra.reason) payload.reason = extra.reason;
   if (isTestMode()) payload.dry = true;
 
   try {
@@ -286,5 +296,118 @@ export function countHide(event: HideEvent): void {
     }).catch(() => {});
   } catch {
     // Blocked, offline, or refused. Nothing the setter or finder is doing is affected.
+  }
+}
+
+/** What a stored hide is posted as. The hide's own fields, and nothing about who set it. */
+export interface StorePayload {
+  kind: 'store';
+  image: string;
+  shape: string;
+  cx: number;
+  cy: number;
+  size: number;
+  angle: number;
+  fill: string;
+  opacity: number;
+  name?: string;
+  /** A hide made under `?test`, which every reader leaves out. */
+  dry?: true;
+}
+
+/**
+ * The link a setter sends: a short `?p=` code when the hide could be stored, else the long
+ * `#h=` link, which always works.
+ *
+ * Storing a hide is sending the player's data, so it follows the same switch as every
+ * beacon, checked on every share: with counting off, or no endpoint, nothing is sent at
+ * all -- not even an attempt -- and the long link comes straight back. Otherwise the
+ * server has `timeoutMs` to answer with a code, and anything short of that is the long link.
+ */
+export async function shortHideLink(
+  hide: Hide,
+  site: string,
+  timeoutMs = 1500,
+): Promise<{ link: string; short: boolean }> {
+  const long = { link: hideLink(hide, site), short: false };
+  const url = endpoint();
+  if (!url || !isCounted()) return long;
+
+  const payload: StorePayload = {
+    kind: 'store',
+    image: hide.image,
+    shape: hide.shape,
+    cx: hide.cx,
+    cy: hide.cy,
+    size: hide.size,
+    angle: hide.angle,
+    fill: hide.fill,
+    opacity: hide.opacity,
+  };
+  if (hide.name) payload.name = hide.name;
+  if (isTestMode()) payload.dry = true;
+
+  const ctrl = typeof AbortController === 'function' ? new AbortController() : undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => {
+      ctrl?.abort();
+      resolve(null);
+    }, timeoutMs);
+  });
+  try {
+    const asked = (async () => {
+      const res = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        mode: 'cors',
+        signal: ctrl?.signal,
+      });
+      if (!res.ok) return null;
+      const body: unknown = await res.json();
+      const code = body && typeof body === 'object' ? (body as { code?: unknown }).code : undefined;
+      return typeof code === 'string' ? readShortCode(code) : null;
+    })().catch(() => null);
+    const code = await Promise.race([asked, timeout]);
+    return code ? { link: shortLink(code, site), short: true } : long;
+  } catch {
+    return long;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export type Fetched = { ok: true; body: unknown } | { ok: false; reason: 'unknown' | 'unreachable' };
+
+/**
+ * A stored hide by its code, for whoever was sent it.
+ *
+ * Not behind the counting switch: this is how the puzzle is delivered, not a report about
+ * the player. So it carries the code and nothing else -- no page id, no run id, no `dry`,
+ * no custom header, no cookie and no referrer -- and the server keeps nothing about it.
+ * A code that cannot be one never reaches the network.
+ */
+export async function fetchHide(raw: string, timeoutMs = 5000): Promise<Fetched> {
+  const code = readShortCode(raw);
+  if (!code) return { ok: false, reason: 'unknown' };
+  const url = endpoint();
+  if (!url) return { ok: false, reason: 'unreachable' };
+  const ctrl = typeof AbortController === 'function' ? new AbortController() : undefined;
+  const timer = ctrl && setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${url}?hide=${code}`, {
+      mode: 'cors',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
+      signal: ctrl?.signal,
+    });
+    if (res.status === 404) return { ok: false, reason: 'unknown' };
+    if (!res.ok) return { ok: false, reason: 'unreachable' };
+    return { ok: true, body: await res.json() };
+  } catch {
+    return { ok: false, reason: 'unreachable' };
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }

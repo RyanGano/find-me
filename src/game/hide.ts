@@ -16,8 +16,11 @@ import type { Puzzle } from './types';
  * The hide is packed as bits and written in a base32 anyone can type from a screen: an
  * unnamed hide is twenty characters, where the JSON it replaced was about sixty.
  *
- * Nothing about a friend hide is recorded or counted. It is not a day, it has no
- * calendar slot, and it never reaches `storage.ts` or `count.ts`.
+ * A hide can also be stored on the tally server behind an eight-symbol code (`?p=`), when
+ * the setter's browser is counted and the server answers; `shortHideLink` in `count.ts`
+ * does that and falls back to the long link otherwise. The stored row is the hide's
+ * fields and nothing about who made it. A hide is still not a day: it has no calendar
+ * slot, and it never reaches `storage.ts` or the run tally.
  */
 export interface Hide {
   /** Asset id of the painting -- one the calendar has already served. */
@@ -314,8 +317,18 @@ function finish(h: Hide, now: Date): Decoded {
 
 /**
  * Layouts 1 and 2: base64 of a JSON array. Kept only so links sent before layout 3 still
- * open while they are fresh; due to be removed from 2026-09-14, with the tests that pack
- * JSON by hand.
+ * open while they are fresh; due to be removed from 2026-09-14.
+ *
+ * Removing it is exactly this, and nothing else -- short codes and layout 3 stay:
+ * - this function, and the `Wz` branch at the top of `decodeHide` that calls it;
+ * - the sentence about 1 and 2 in the comment on `HIDE_VERSION` (the number stays 3);
+ * - in `hide.test.ts`: the `pack` helper; the tests "still opens a link packed as JSON
+ *   before layout 3" and "refuses a name in the wrong place"; the `pack(...)` cases in
+ *   "refuses a malformed link politely" (keep `''` and `'not base64 !!'`); and the two
+ *   `pack(...)` decodes at the end of "cleans a name, however the link was edited" (keep
+ *   the `cleanName`/`limitName` assertions above them);
+ * - in README.md, "Layouts 1 and 2 ... still open for now and are due to be dropped" under
+ *   "Hide one for a friend", and the layout 1/2 sentences in "A name is optional".
  */
 function decodeLegacy(code: string, now: Date): Decoded {
   let packed: unknown;
@@ -373,6 +386,64 @@ export function hideFromHash(hash: string): string | null {
 /** The link a hide travels in. Always the real site, so it plays for anyone. */
 export function hideLink(h: Hide, site: string): string {
   return `${site}#h=${encodeHide(h)}`;
+}
+
+/**
+ * A stored hide's code: eight symbols of the same Crockford base32 as layout 3, minted at
+ * random by the server. 32^8 is about 1.1 trillion, so the codes cannot be walked.
+ */
+export const SHORT_CODE_LENGTH = 8;
+
+/** The layout a stored hide's row is in. The reader only ever understands this one. */
+export const STORED_HIDE_SCHEMA = 1;
+
+/** A code however it was typed, folded onto the alphabet -- or null if it cannot be one. */
+export function readShortCode(raw: string): string | null {
+  const code = fold(raw);
+  if (code.length !== SHORT_CODE_LENGTH) return null;
+  return Array.from(code).every((c) => ALPHABET.includes(c)) ? code : null;
+}
+
+/** `ERF46H2K` as `ERF4-6H2K`, the way it is shown and sent. */
+export function formatShortCode(code: string): string {
+  return `${code.slice(0, 4)}-${code.slice(4)}`;
+}
+
+/** The value of `p` in a query string, if there is one. Judged later, so a mistyped one says so. */
+export function shortCodeFromSearch(search: string): string | null {
+  return new URLSearchParams(search).get('p') || null;
+}
+
+/** The short link a stored hide travels in. */
+export function shortLink(code: string, site: string): string {
+  return `${site}?p=${formatShortCode(code)}`;
+}
+
+/**
+ * A stored hide as the server hands it back, checked the way a decoded link is: a known
+ * shape, a painting the calendar has reached, and the limits held.
+ */
+export function storedHide(body: unknown, now: Date = new Date()): Decoded {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return { ok: false, reason: 'malformed' };
+  const { schema, image, shape, cx, cy, size, angle, fill, opacity, name } = body as Record<string, unknown>;
+  if (typeof schema === 'number' && schema > STORED_HIDE_SCHEMA) return { ok: false, reason: 'future' };
+  const numbers = [cx, cy, size, angle, opacity];
+  if (
+    schema !== STORED_HIDE_SCHEMA ||
+    typeof image !== 'string' ||
+    typeof shape !== 'string' ||
+    !Object.hasOwn(SHAPES, shape) ||
+    typeof fill !== 'string' ||
+    !/^#[0-9a-f]{6}$/.test(fill) ||
+    (name !== undefined && typeof name !== 'string') ||
+    !numbers.every((n) => typeof n === 'number' && Number.isFinite(n))
+  ) {
+    return { ok: false, reason: 'malformed' };
+  }
+  return finish(
+    { image, shape, cx: cx as number, cy: cy as number, size: size as number, angle: angle as number, fill, opacity: opacity as number, name: (name as string | undefined) ?? '' },
+    now,
+  );
 }
 
 /**

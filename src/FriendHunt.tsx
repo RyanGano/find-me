@@ -2,9 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Credits } from './components/Credits';
 import { ReferenceCard } from './components/ReferenceCard';
 import { Stage } from './components/Stage';
-import { countHide } from './game/count';
+import { countHide, fetchHide, type BrokenReason } from './game/count';
 import { formatTime } from './game/format';
-import { decodeHide, hideLink, hidePuzzle, hideTitle, type Decoded } from './game/hide';
+import {
+  decodeHide,
+  hideLink,
+  hidePuzzle,
+  hideTitle,
+  readShortCode,
+  shortLink,
+  storedHide,
+  type Decoded,
+} from './game/hide';
 import { huntTrace, shareResult, SITE_URL } from './game/share';
 import type { Puzzle } from './game/types';
 import { useHunt } from './hooks/useHunt';
@@ -22,24 +31,61 @@ import { useHunt } from './hooks/useHunt';
  */
 export default function FriendHunt({ code }: { code: string }) {
   const decoded = useMemo<Decoded>(() => decodeHide(code), [code]);
-  // Counted only once the link has turned out to be playable, so a cut-short link is not
-  // a hunt somebody opened.
-  const opened = decoded.ok;
+  return <Opened result={decoded} link={decoded.ok ? hideLink(decoded.hide, SITE_URL) : ''} />;
+}
+
+type Result = Decoded | { ok: false; reason: 'unknown' | 'unreachable' };
+
+/**
+ * A hide stored behind a short code (`?p=`), fetched by that code alone. The fetch is made
+ * whether or not this browser is counted -- it is how the puzzle arrives -- and the beacons
+ * after it are behind the switch like every other. Sharing back sends the same short link,
+ * rather than storing the hide a second time.
+ */
+export function StoredHunt({ code }: { code: string }) {
+  const [result, setResult] = useState<Result | null>(null);
   useEffect(() => {
-    if (opened) countHide('hunted');
-  }, [opened]);
-  if (!decoded.ok) return <BadLink reason={decoded.reason} />;
+    let live = true;
+    void fetchHide(code).then((fetched) => {
+      if (live) setResult(fetched.ok ? storedHide(fetched.body) : fetched);
+    });
+    return () => {
+      live = false;
+    };
+  }, [code]);
+  if (!result) {
+    return (
+      <div className="app testbed">
+        <div className="howto testbed-card" role="status">
+          <p>Loading the hide…</p>
+        </div>
+      </div>
+    );
+  }
+  const read = readShortCode(code);
+  return <Opened result={result} link={read ? shortLink(read, SITE_URL) : ''} />;
+}
+
+function Opened({ result, link }: { result: Result; link: string }) {
+  // Counted only once the link has turned out to be playable, so a cut-short link is not
+  // a hunt somebody opened -- it is a broken one, counted as that, with why.
+  const reason = result.ok ? null : result.reason;
+  useEffect(() => {
+    if (reason === null) countHide('hunted');
+    else countHide('broken', { reason });
+  }, [reason]);
+  if (!result.ok) return <BadLink reason={result.reason} />;
   return (
     <Hunt
-      puzzle={hidePuzzle(decoded.hide, decoded.painting)}
-      link={hideLink(decoded.hide, SITE_URL)}
-      title={hideTitle(decoded.hide, decoded.painting)}
-      named={Boolean(decoded.hide.name)}
+      puzzle={hidePuzzle(result.hide, result.painting)}
+      link={link}
+      title={hideTitle(result.hide, result.painting)}
+      named={Boolean(result.hide.name)}
     />
   );
 }
 
-function BadLink({ reason }: { reason: 'malformed' | 'future' | 'painting' }) {
+function BadLink({ reason }: { reason: BrokenReason }) {
   return (
     <div className="app testbed">
       <div className="howto testbed-card" role="dialog" aria-label="This link does not open">
@@ -49,7 +95,11 @@ function BadLink({ reason }: { reason: 'malformed' | 'future' | 'painting' }) {
             ? 'It was made on a newer version of Find Me than this page. Reload, and if that does not do it, try again in a little while.'
             : reason === 'painting'
               ? 'It is set on a painting this page does not know yet. Try again tomorrow.'
-              : 'The link looks cut short or mistyped. Ask for it to be sent again, whole.'}
+              : reason === 'unreachable'
+                ? 'Find Me could not be reached to fetch it. Check your connection, then reload to try again.'
+                : reason === 'unknown'
+                  ? 'No hide goes by that code. Check it was typed right, or ask for the link again.'
+                  : 'The link looks cut short or mistyped. Ask for it to be sent again, whole.'}
         </p>
         <p className="howto-note">
           In the meantime, today&rsquo;s puzzle is at <a href="/">findme.ryangano.com</a>.

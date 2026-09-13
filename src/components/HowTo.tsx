@@ -41,11 +41,18 @@ export function HowTo({ thing, rung, onDismiss }: Props) {
           won&rsquo;t see how everyone else did.
         </p>
         <p className="howto-note">
-          For <em>hide one for a friend</em> it records five counts, to see whether anyone
-          uses it: that the maker was opened, that a hide was shared, that a hide was
-          opened, that one was found, and that a finder shared their result back. Which
-          painting, which shape and where it was hidden are not recorded and never leave
-          the link.
+          For <em>hide one for a friend</em> it records a few counts, to see whether anyone
+          uses it: that the maker was opened, that a hide was shared and whether it went as
+          a short link, that a hide was opened, that one was found, that a finder shared
+          their result back, and why a hide link did not open. None of these say which hide.
+        </p>
+        <p className="howto-note">
+          When you share a hide, it is saved on our server so its link can be short: its
+          painting, shape, position, color and name, and nothing about who made it. With
+          counting off, your hides are shared as long links instead and nothing is saved. A
+          short link someone sends you still opens with counting off; the server is asked
+          for that hide and nothing else, and nothing about you or how you played it is
+          kept.
         </p>
         <div className="howto-foot">
           <button type="button" className="btn btn-primary" onClick={() => setShowPrivacy(false)}>

@@ -225,7 +225,9 @@ against the day's own difficulty rung to produce the "Find Me Age".
 **Counting is anonymous by construction.** `src/game/count.ts` posts at most three
 beacons per run keyed by a random id minted when the clock starts and forgotten when the
 run ends — no account, no cookie, nothing that outlives a run. It fails silently and is a
-no-op without `VITE_COUNT_URL`. Practice runs are never counted.
+no-op without `VITE_COUNT_URL`. Practice runs are never counted. `shortHideLink` stores a
+shared hide behind a short `?p=` code only when the player is counted, and `fetchHide` reads
+one back for anyone, carrying the code and nothing else.
 
 **One hunt, two callers.** `src/hooks/useHunt.ts` is the run state machine -- blur/pause,
 clock, gestures, match, solve, banking -- and knows nothing about storage or reporting; it

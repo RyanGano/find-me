@@ -22,7 +22,7 @@ import {
   type Painting,
   type PaintStats,
 } from './game/hide';
-import { countHide } from './game/count';
+import { countHide, shortHideLink } from './game/count';
 import { isTestMode } from './game/testMode';
 import { shareResult, SITE_URL } from './game/share';
 import { SHAPES } from './game/shapes';
@@ -362,17 +362,30 @@ export default function HideMaker() {
     setShowHelp(false);
   }, []);
 
+  // The link last minted for a hide, so pressing share again on the same hide reuses it
+  // rather than storing a second row -- and goes straight to the share sheet, which a
+  // phone may refuse after the wait for the first code has used up the tap.
+  const minted = useRef<{ key: string; link: string } | null>(null);
+  const [sharing, setSharing] = useState(false);
+
   const share = useCallback(async () => {
-    if (!hide) return;
-    const link = hideLink(hide, SITE_URL);
-    const text = hideShareText(hide, painting, link);
-    // Counted on the press, like a share of a daily result: what is being asked is
-    // whether people reach for it, and a share sheet that is dismissed never comes back
-    // to say so.
-    countHide('made');
-    const result = await shareResult(text);
+    if (!hide || sharing) return;
+    const key = hideLink(hide, SITE_URL);
+    let link = minted.current?.key === key ? minted.current.link : null;
+    if (link === null) {
+      setSharing(true);
+      const got = await shortHideLink(hide, SITE_URL);
+      setSharing(false);
+      link = got.link;
+      minted.current = { key, link };
+      // Counted on the press, like a share of a daily result: what is being asked is
+      // whether people reach for it, and a share sheet that is dismissed never comes back
+      // to say so. `long` says the short code could not be had.
+      countHide('made', got.short ? {} : { long: true });
+    }
+    const result = await shareResult(hideShareText(hide, painting, link));
     setStatus(result === 'copied' ? 'Link copied' : result === 'failed' ? link : 'Shared');
-  }, [hide, painting]);
+  }, [hide, painting, sharing]);
 
   return (
     <div className="app hide-maker">
@@ -476,8 +489,10 @@ export default function HideMaker() {
                 <li>Press share and send the link. They hunt for it just like the daily puzzle.</li>
               </ul>
               <p className="howto-note">
-                The hide itself is saved and sent nowhere — the whole puzzle lives in the link.
-                All the site counts is that somebody made one.
+                To keep the link short, the hide is saved on the Find Me server — its painting,
+                shape, position, color and name, and nothing about who made it. With counting
+                switched off it is saved nowhere, and the link is a longer one that carries the
+                whole puzzle.
               </p>
               <button type="button" className="btn btn-primary" onClick={closeHelp}>
                 Got it
@@ -680,8 +695,8 @@ export default function HideMaker() {
         {/* The warning sits beside the button rather than above it, so the controls keep
             their height whether it shows or not and the board above them never resizes. */}
         <div className="hide-share">
-          <button type="button" className="btn btn-primary" onClick={share} disabled={!hide || blends}>
-            Share
+          <button type="button" className="btn btn-primary" onClick={share} disabled={!hide || blends || sharing}>
+            {sharing ? 'Saving…' : 'Share'}
           </button>
           {blends ? (
             <span className="hide-warning" role="status">

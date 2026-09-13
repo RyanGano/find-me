@@ -1229,7 +1229,20 @@ step that matters is the one between them: whether the links get opened. Each is
 once per page load, keyed by a random id minted on that load and never kept, which is why
 a double-tap on share is one share and why nothing joins the two ends of a hide together.
 `countHide` in `src/game/count.ts` is all of it, and it is switched off by the same opt-out
-as everything else.
+as everything else. Two readings ride on those counters: a share records whether it went out
+as a long link because no short code could be had, and a hide link that will not open is
+counted as `broken`, with why (cut short, newer build, painting not served, no hide by that
+code, or the server could not be reached) -- so a rise in mistyped codes or failed reads
+shows up.
+
+A shared hide is also **saved on the server so its link can be short** (`?p=XXXX-XXXX`, see
+"Hide one for a friend"). What is saved is the hide -- its painting, shape, position, size,
+angle, paint and name -- under a random code, and nothing about who made it: no run id, no
+page id, nothing that joins it to a counter. With counting switched off, `shortHideLink`
+sends nothing at all and the setter shares the long `#h=` link instead, so that is what the
+switch costs. A short link someone else sends still opens with counting off: `fetchHide`
+asks for that code and nothing else (no page id, no cookie, no referrer), the server keeps
+nothing about the request, and none of the finder's counters are sent.
 
 ## Hide one for a friend
 
@@ -1255,7 +1268,21 @@ thing a player in the middle of today's hunt has no business reading. The addres
   symbol on the end: an unnamed hide is 20 characters where the JSON it replaced was
   about 60. Case does not matter, I and L read as 1 and O as 0, and a single wrong symbol
   is refused rather than opening as some other hide. Layouts 1 and 2 (base64 JSON, the
-  second with a name on the end) still open for now and are due to be dropped.
+  second with a name on the end) still open for now and are due to be dropped; the comment
+  on `decodeLegacy` lists exactly what goes with them.
+- **Or a short code.** When the setter's browser is counted, share first posts the hide to
+  the tally server and gets back a random eight-symbol code in the same alphabet -- 32^8,
+  about 1.1 trillion, so the codes cannot be walked -- and the link becomes
+  `?p=XXXX-XXXX`, short enough to read aloud. If counting is off, there is no endpoint, or
+  the server does not answer within 1.5s, share sends the long link as before. The stored
+  row keeps the hide's fields rather than a packed string, with a schema number, so a
+  layout change is a one-off migration of rows instead of a decoder carried forever, and a
+  hide can be fixed or taken down after it is sent. Opening a code fetches it by the code
+  alone and runs it through `storedHide`, which applies the same shape, calendar and limit
+  checks as a link. An unknown code gets its own card ("no hide goes by that code"), and so
+  does a server that cannot be reached; neither is "cut short". A finder who shares back
+  sends the short link they opened rather than storing the hide again. The cost is that a
+  short link only opens while the server does, which is why the long link stays.
 - **A name is optional.** The setter can give a hide a name of up to 50 characters behind
   the **✎ Name** button on the painting row, folded away so the controls are no taller for
   those who skip it. It replaces the painting's title in the friend's top bar, their result
@@ -1293,9 +1320,9 @@ thing a player in the middle of today's hunt has no business reading. The addres
   touches `find-me:v1`, the backup cookie or a streak, and `hide.test.ts` fails the build
   if the hide files import any of them. The five counters under "Counting" above are the
   one exception, and they are the reason the test now checks *what* is imported from the
-  tally rather than banning it outright: `countHide` and nothing else, so a later edit that
-  reached for `count` -- which would write a row keyed to a puzzle day, the one thing a
-  hide is not -- fails there.
+  tally rather than banning it outright: `countHide`, `shortHideLink` and `fetchHide` and
+  nothing else, so a later edit that reached for `count` -- which would write a row keyed to
+  a puzzle day, the one thing a hide is not -- fails there.
 - **Sharing back sends the hide, not the front door.** The result card at the end of a
   friend hunt shares the link that was opened, so the person who was sent a hide can pass
   the same hunt on rather than a link to today's puzzle.

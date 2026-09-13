@@ -6,12 +6,17 @@ import {
   isCounted,
   MAX_TALLY_DAYS,
   countHide,
+  fetchHide,
   newRunId,
   setCounted,
+  shortHideLink,
   TALLY_FLOOR,
   type CountPayload,
   type HidePayload,
+  type StorePayload,
 } from './count';
+import { hideLink, type Hide } from './hide';
+import { PUZZLES } from './puzzles';
 
 const URL = 'https://example.invalid/api/count';
 
@@ -285,5 +290,120 @@ describe('countHide', () => {
     vi.stubEnv('VITE_COUNT_URL', '');
     countHide('opened');
     expect(posts).toHaveLength(0);
+  });
+
+  it('says when a share fell back to the long link, and why a link did not open', () => {
+    countHide('made', { long: true });
+    countHide('broken', { reason: 'unknown' });
+    countHide('hunted', { long: true, reason: 'unknown' });
+    const [made, broken, hunted] = hides();
+    expect(made.long).toBe(true);
+    expect(broken.reason).toBe('unknown');
+    expect(Object.keys(hunted).sort()).toEqual(['event', 'kind', 'page']);
+  });
+});
+
+describe('shortHideLink', () => {
+  const HIDE: Hide = { image: PUZZLES[0].image, shape: 'star', cx: 400, cy: 600, size: 50, angle: -30, fill: '#a1b2c3', opacity: 0.7 };
+  const SITE = 'https://example.test/';
+  const long = hideLink(HIDE, SITE);
+
+  function answer(respond: () => Promise<unknown>) {
+    const asked: { url: string; init: RequestInit }[] = [];
+    vi.stubGlobal('fetch', (url: string, init: RequestInit) => {
+      asked.push({ url, init });
+      return respond();
+    });
+    return asked;
+  }
+
+  it('stores the hide and hands back a short link', async () => {
+    const asked = answer(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ code: 'ERF46H2K' }) }));
+    expect(await shortHideLink({ ...HIDE, name: 'Mine' }, SITE)).toEqual({ link: `${SITE}?p=ERF4-6H2K`, short: true });
+    expect(asked).toHaveLength(1);
+    expect(asked[0].url).toBe(URL);
+    const body = JSON.parse(asked[0].init.body as string) as StorePayload;
+    // The hide's own fields, and nothing that could say who set it.
+    expect(body).toEqual({ kind: 'store', ...HIDE, name: 'Mine' });
+  });
+
+  it('makes no request at all with counting off or no endpoint', async () => {
+    const asked = answer(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ code: 'ERF46H2K' }) }));
+    setCounted(false);
+    expect(await shortHideLink(HIDE, SITE)).toEqual({ link: long, short: false });
+    setCounted(true);
+    vi.stubEnv('VITE_COUNT_URL', '');
+    expect(await shortHideLink(HIDE, SITE)).toEqual({ link: long, short: false });
+    expect(asked).toHaveLength(0);
+  });
+
+  it('falls back to the long link when the post fails, is refused, or answers nonsense', async () => {
+    for (const respond of [
+      () => Promise.reject(new Error('blocked')),
+      () => Promise.resolve({ ok: false, json: () => Promise.resolve({}) }),
+      () => Promise.resolve({ ok: true, json: () => Promise.resolve({ code: 'nope' }) }),
+      () => Promise.resolve({ ok: true, json: () => Promise.reject(new Error('not json')) }),
+    ]) {
+      const asked = answer(respond);
+      expect(await shortHideLink(HIDE, SITE)).toEqual({ link: long, short: false });
+      expect(asked).toHaveLength(1);
+    }
+  });
+
+  it('falls back to the long link when the server is slow', async () => {
+    const asked = answer(() => new Promise(() => {}));
+    expect(await shortHideLink(HIDE, SITE, 20)).toEqual({ link: long, short: false });
+    expect(asked).toHaveLength(1);
+  });
+});
+
+describe('fetchHide', () => {
+  function serve(status: number, body: unknown = {}) {
+    const asked: { url: string; init: RequestInit }[] = [];
+    vi.stubGlobal('fetch', (url: string, init: RequestInit) => {
+      asked.push({ url, init });
+      return Promise.resolve({ ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) });
+    });
+    return asked;
+  }
+
+  it('asks for the code and nothing else, counted or not', async () => {
+    setCounted(false);
+    const asked = serve(200, { schema: 1 });
+    expect(await fetchHide('erf4-6h2k')).toEqual({ ok: true, body: { schema: 1 } });
+    expect(asked).toHaveLength(1);
+    expect(asked[0].url).toBe(`${URL}?hide=ERF46H2K`);
+    const { signal, ...init } = asked[0].init;
+    expect(signal).toBeDefined();
+    expect(init).toEqual({ mode: 'cors', credentials: 'omit', referrerPolicy: 'no-referrer' });
+  });
+
+  it('never sends a counter while a hide is fetched and hunted with counting off', async () => {
+    setCounted(false);
+    const asked = serve(200, { schema: 1 });
+    await fetchHide('ERF46H2K');
+    for (const event of ['hunted', 'found', 'told', 'broken'] as const) countHide(event, { reason: 'unknown' });
+    expect(asked).toHaveLength(1);
+    expect(beacons).toHaveLength(0);
+  });
+
+  it('never reaches the network with a code that cannot be one', async () => {
+    const asked = serve(200);
+    expect(await fetchHide('ERF4-6H2')).toEqual({ ok: false, reason: 'unknown' });
+    expect(await fetchHide('#h=3ABC')).toEqual({ ok: false, reason: 'unknown' });
+    expect(asked).toHaveLength(0);
+  });
+
+  it('tells an unknown code from a server that could not be reached', async () => {
+    serve(404);
+    expect(await fetchHide('ERF46H2K')).toEqual({ ok: false, reason: 'unknown' });
+    serve(503);
+    expect(await fetchHide('ERF46H2K')).toEqual({ ok: false, reason: 'unreachable' });
+    vi.stubGlobal('fetch', () => Promise.reject(new Error('offline')));
+    expect(await fetchHide('ERF46H2K')).toEqual({ ok: false, reason: 'unreachable' });
+    const asked = serve(200);
+    vi.stubEnv('VITE_COUNT_URL', '');
+    expect(await fetchHide('ERF46H2K')).toEqual({ ok: false, reason: 'unreachable' });
+    expect(asked).toHaveLength(0);
   });
 });

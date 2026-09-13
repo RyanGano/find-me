@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import Testbed from './Testbed';
 import { Diagnostics } from './components/Diagnostics';
-import FriendHunt from './FriendHunt';
-import { hideFromHash } from './game/hide';
+import FriendHunt, { StoredHunt } from './FriendHunt';
+import { hideFromHash, shortCodeFromSearch } from './game/hide';
 import { parseRestore } from './game/restore';
 import { Restore } from './Restore';
 import HideMaker from './HideMaker';
@@ -39,6 +39,10 @@ window.addEventListener('hashchange', () => {
   if (hideFromHash(window.location.hash) !== hide) window.location.reload();
 });
 
+// `?p=` is a hide stored on the tally server behind a short code. The page fetches it by
+// that code alone, whether or not this browser is counted, and plays it like a `#h=` link.
+const stored = shortCodeFromSearch(window.location.search);
+
 // `?hide` makes one. The daily board offers it once the day's puzzle is over -- never
 // during a hunt -- but the address works on its own, and the links it makes point at the
 // real site and play for anyone.
@@ -52,6 +56,8 @@ createRoot(document.getElementById('root')!).render(
       <Restore request={restore.request} />
     ) : hide ? (
       <FriendHunt code={hide} />
+    ) : stored ? (
+      <StoredHunt code={stored} />
     ) : making ? (
       <HideMaker />
     ) : testbed ? (

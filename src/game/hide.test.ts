@@ -21,8 +21,15 @@ import {
   hsvToHex,
   minOpacityFor,
   paintStats,
+  readShortCode,
+  formatShortCode,
   servedPaintings,
   SHAPE_CODES,
+  SHORT_CODE_LENGTH,
+  shortCodeFromSearch,
+  shortLink,
+  STORED_HIDE_SCHEMA,
+  storedHide,
   withCheck,
   type Hide,
 } from './hide';
@@ -331,16 +338,65 @@ describe('friend hides', () => {
   });
 
   it('counts the feature and never a run', () => {
-    // The five hide counters say whether anyone uses the thing. Nothing here may reach the
-    // run tally: `count` would write a row keyed to a puzzle day, which is exactly what a
-    // hide is not, and `fetchTally` would put somebody else's numbers on a hide that has
-    // none. `countHide` is the only thing these files may take from the tally module.
+    // The hide counters say whether anyone uses the thing. Nothing here may reach the run
+    // tally: `count` would write a row keyed to a puzzle day, which is exactly what a hide
+    // is not, and `fetchTally` would put somebody else's numbers on a hide that has none.
+    // These files may take the counters, storing a hide behind a short code, and fetching
+    // one back -- and nothing else.
+    const allowed = new Set(['countHide', 'shortHideLink', 'fetchHide', 'type BrokenReason']);
     for (const file of HIDE_FILES) {
       const source = readFileSync(file, 'utf8');
       for (const imported of source.matchAll(/import \{([^}]*)\} from '[^']*\/count'/g)) {
         const names = imported[1].split(',').map((n) => n.trim()).filter(Boolean);
-        expect(names, `${file} imports more than countHide from the tally`).toEqual(['countHide']);
+        for (const name of names) expect(allowed.has(name), `${file} imports ${name} from the tally`).toBe(true);
       }
     }
+  });
+});
+
+describe('short codes', () => {
+  it('reads a code however it was typed, and groups it in fours', () => {
+    expect(readShortCode('ERF4-6H2K')).toBe('ERF46H2K');
+    expect(readShortCode(' erf4 6h2k ')).toBe('ERF46H2K');
+    expect(readShortCode('ILO0-abcd')).toBe('1100ABCD');
+    expect(formatShortCode('ERF46H2K')).toBe('ERF4-6H2K');
+    expect(readShortCode(formatShortCode('ERF46H2K'))).toBe('ERF46H2K');
+  });
+
+  it('refuses anything that cannot be a code', () => {
+    for (const raw of ['', 'ERF46H2', 'ERF46H2KK', 'ERF4-6H2U', 'ERF4!6H2', encodeHide(sample())]) {
+      expect(readShortCode(raw), raw).toBeNull();
+    }
+    expect(SHORT_CODE_LENGTH).toBe(8);
+  });
+
+  it('puts the code in the query string of the real site', () => {
+    const link = shortLink('ERF46H2K', 'https://example.test/');
+    expect(link).toBe('https://example.test/?p=ERF4-6H2K');
+    expect(shortCodeFromSearch(new URL(link).search)).toBe('ERF4-6H2K');
+    expect(shortCodeFromSearch('')).toBeNull();
+    expect(shortCodeFromSearch('?p=')).toBeNull();
+  });
+
+  const stored = (over: Record<string, unknown> = {}) => ({ schema: STORED_HIDE_SCHEMA, ...sample(), ...over });
+
+  it('plays a stored hide as it would the same hide from a link', () => {
+    expect(storedHide(stored(), NOW)).toEqual(decodeHide(encodeHide(sample()), NOW));
+    const named = storedHide(stored({ name: 'Mine' }), NOW);
+    expect(named).toEqual({ ok: true, hide: sample({ name: 'Mine' }), painting: first });
+  });
+
+  it('checks a stored hide the way it checks a link', () => {
+    expect(storedHide(stored({ shape: 'nope' }), NOW)).toEqual({ ok: false, reason: 'malformed' });
+    expect(storedHide(stored({ fill: 'red' }), NOW)).toEqual({ ok: false, reason: 'malformed' });
+    expect(storedHide(stored({ cx: '400' }), NOW)).toEqual({ ok: false, reason: 'malformed' });
+    expect(storedHide(stored({ schema: undefined }), NOW)).toEqual({ ok: false, reason: 'malformed' });
+    expect(storedHide([], NOW)).toEqual({ ok: false, reason: 'malformed' });
+    expect(storedHide(stored({ schema: STORED_HIDE_SCHEMA + 1 }), NOW)).toEqual({ ok: false, reason: 'future' });
+    const served = servedPaintings(EPOCH).map((p) => p.image);
+    const later = PUZZLES.find((p) => !served.includes(p.image));
+    if (later) expect(storedHide(stored({ image: later.image }), EPOCH)).toEqual({ ok: false, reason: 'painting' });
+    const held = storedHide(stored({ size: 900, opacity: 0.1 }), NOW);
+    expect(held.ok && [held.hide.size, held.hide.opacity]).toEqual([HIDE_SIZE.max, HIDE_OPACITY.min]);
   });
 });
