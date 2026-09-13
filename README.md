@@ -807,8 +807,8 @@ rates arrive for every player, rather than for the handful a testbed round can r
 Once a day's hunt is over -- found or given up -- the result card carries one short note
 about the painting, the painter or the moment it was made, with a link to the painting's
 Commons page. Seven a week, so by Sunday a player has learned seven things about the one
-painting they have been looking at all week. For now the card shows it only under `?test`;
-`showNote` on `ResultCard` is the one switch that takes it live.
+painting they have been looking at all week. The card only exists once the hunt has ended,
+so a note is never on screen during one -- a note shown early is a hint.
 
 The notes are `notes` on each week seed in `puzzles.ts`, Monday first, and sit above
 `days` because the planner rewrites `days` as the last thing in the block. They are not
