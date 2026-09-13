@@ -887,6 +887,7 @@ export default function App() {
             metrics={metrics}
             tally={isPractice ? null : tally}
             retuned={retuned}
+            showNote={isTest}
             onShared={onShared}
             onReplay={replay}
           />

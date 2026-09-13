@@ -889,6 +889,21 @@ button.reference:focus-visible {
   font-size: 0.82rem;
 }
 
+/* A museum label for the day: read after the credit line it belongs to, and quieter
+   than the result. The link is underlined, not left to colour alone. */
+.result-note {
+  margin: -6px 0 14px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.result-note a {
+  color: inherit;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
 .result-stats {
   display: flex;
   justify-content: center;

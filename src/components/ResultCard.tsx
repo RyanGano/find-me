@@ -39,6 +39,12 @@ interface Props {
    * quietly replace it.
    */
   retuned?: boolean;
+  /**
+   * Show the day's note about the painting. Only `?test` asks for it while the notes are
+   * being looked over; the card itself only exists once the hunt has ended, so a note is
+   * never on screen during one.
+   */
+  showNote?: boolean;
   /** The share button was pressed, for the tally. */
   onShared: () => void;
   onReplay: () => void;
@@ -54,6 +60,7 @@ export function ResultCard({
   metrics,
   tally,
   retuned,
+  showNote,
   onShared,
   onReplay,
 }: Props) {
@@ -208,6 +215,22 @@ export function ResultCard({
           {puzzle.artist} &middot; {puzzle.year}
         </span>
       </p>
+
+      {/* The same after a give-up as after a find: the reward for looking at a painting is
+          not only for the players who found the shape in it. Never in the share text. */}
+      {showNote && puzzle.note && (
+        <p className="result-note">
+          {puzzle.note}
+          {puzzle.source && (
+            <>
+              {' '}
+              <a href={puzzle.source} target="_blank" rel="noopener noreferrer">
+                More on Commons
+              </a>
+            </>
+          )}
+        </p>
+      )}
 
       {!isPractice && (
         <dl className="result-stats">

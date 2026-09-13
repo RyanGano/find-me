@@ -81,6 +81,15 @@ export interface Puzzle {
    * week, measured by `npm run busyness`. See `CLUTTER_WEIGHT` in difficulty.ts.
    */
   clutter?: number;
+  /**
+   * One thing about the painting, the painter or the moment it was made -- a museum
+   * label for the day, shown on the result card once the hunt is over and never before,
+   * because a note shown early is a hint. Like the title it is not part of `version`, so
+   * editing one hands nothing back. See "A note about the painting" in README.md.
+   */
+  note?: string;
+  /** The Wikimedia Commons file page for the painting, linked beside the note. */
+  source?: string;
   /** Human-readable name of the thing to find, e.g. "star". */
   thing: string;
   /** Emoji used in the shared result. */

@@ -312,6 +312,13 @@ off a different crop later.
 of them, widen that list — but widen it because the painting does not fit, never to dodge
 a choice that would trip the variety rules.
 
+Write the week's seven `notes` too, above `days`: one thing per day about the painting's
+history, the painter or the moment it was made, two sentences and 160 characters at most,
+US English, sourced from the Commons page or its references. **Never describe what is in
+the picture** — not an object, a figure, a region or a colour — because a note can point at
+a hiding place as easily as a commit message can. See "A note about the painting" in
+README.md. `notes.test.ts` fails the build for a week without them.
+
 While in the file, update the count in the `WEEKS` doc comment ("Eight paintings is
 therefore eight weeks"), and the painting count in `README.md` — it states one as
 "Eight paintings therefore give eight weeks -- fifty-six days", so the day count needs

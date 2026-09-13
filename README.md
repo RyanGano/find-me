@@ -802,6 +802,31 @@ in `count.ts`, recorded on the run row beside whatever the run goes on to become
 heard from the players who carried on and **found** it too. Per-day give-up and stuck
 rates arrive for every player, rather than for the handful a testbed round can reach.
 
+### A note about the painting
+
+Once a day's hunt is over -- found or given up -- the result card carries one short note
+about the painting, the painter or the moment it was made, with a link to the painting's
+Commons page. Seven a week, so by Sunday a player has learned seven things about the one
+painting they have been looking at all week. For now the card shows it only under `?test`;
+`showNote` on `ResultCard` is the one switch that takes it live.
+
+The notes are `notes` on each week seed in `puzzles.ts`, Monday first, and sit above
+`days` because the planner rewrites `days` as the last thing in the block. They are not
+part of `version` or `spot`, so writing or correcting one hands nothing back.
+
+**A note is about the painting's history, never about what is in it.** The rule in
+"Nothing here spoils a puzzle" applies to every word of every note, and a note is the
+easiest place to break it: the obvious interesting detail in a painting is so often exactly
+where a shape was put. Rather than check each detail against the week's hiding places, the
+notes do not describe the canvas at all -- who painted it and when, how it was made, where
+it went, what happened to the painter. Nothing in that can point at a region, an object or
+a colour. Keep new notes to the same rule; the week's title is as close to the picture as a
+note gets.
+
+They are also never in the share text. `notes.test.ts` holds every shipped day to having
+one (a painting may be exempted by name in `WITHOUT_NOTES`), to two sentences and 160
+characters, and to US English.
+
 ## How it is built
 
 The whole game is one similarity transform. `src/game/transform.ts` maps image-space

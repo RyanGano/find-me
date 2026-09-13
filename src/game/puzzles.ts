@@ -84,6 +84,15 @@ interface WeekSeed {
    * turns to mush.
    */
   sizeScale?: number;
+  /**
+   * Seven notes about the painting, Monday first: one thing about the painting, the painter
+   * or the moment it was made, shown on the result card once that day's hunt is over.
+   * Two sentences at most, and about the painting's history rather than what is in it --
+   * a note that names an object or a part of the canvas can name a hiding place, so none
+   * does. Not part of any fingerprint. Kept above `days`, which the planner rewrites as the
+   * last thing in the block.
+   */
+  notes?: string[];
   /** Exactly seven targets, Monday first. Written by `npm run plan`, solved by `npm run camouflage`. */
   days: Target[];
 }
@@ -119,6 +128,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 3933,
     clutter: 0.393,
+    notes: [
+      'Leonardo began the portrait around 1503 and was still working on it more than a decade later.',
+      'The sitter is generally identified as Lisa Gherardini, the wife of a Florentine silk merchant, Francesco del Giocondo.',
+      'It is painted in oil on a panel of poplar wood, not on canvas.',
+      'Leonardo took the painting with him to France, and after his death in 1519 it passed into the French royal collection.',
+      'In 1911 it was stolen from the Louvre by Vincenzo Peruggia, who had worked there, and it was missing for more than two years.',
+      'Its soft, smoky blending of light into shadow is known as sfumato, from the Italian word for smoke.',
+      'It has hung in the Louvre\'s Salle des États since 2005, behind protective glass.',
+    ],
     days: [
       { shape: 'snowflake', cx: 1817, cy: 3353, size: 40, angle: -168, fill: '#2b130e', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.37, scan: 0.491, dim: 0.888 },
       { shape: 'star', cx: 1937, cy: 1217, size: 37, angle: 47, fill: '#bfae7c', opacity: 0.398, blend: 'screen', blur: 0.5, ratio: 3.84, scan: 0.456, dim: 0.828 },
@@ -141,6 +159,15 @@ const WEEKS: WeekSeed[] = [
     height: 1748,
     sizeScale: 0.73,
     clutter: 0.581,
+    notes: [
+      'It is a woodblock print rather than a painting, and several thousand impressions are thought to have been pulled from the blocks.',
+      'Hokusai was in his seventies when he made it, and over his long career he worked under more than thirty different names.',
+      'Its Japanese title, Kanagawa oki nami ura, means "Under the Wave off Kanagawa."',
+      'It was issued by the publisher Nishimuraya Yohachi in Edo, the city now called Tokyo.',
+      'The composer Claude Debussy kept a copy in his study and put the image on the cover of his score for La Mer.',
+      'Early impressions are the most prized, because the woodblocks wore down as more copies were printed and fine lines were lost.',
+      'Impressions are held by museums around the world, and the image appears on the Japanese 1,000-yen note issued in 2024.',
+    ],
     days: [
       { shape: 'star', cx: 449, cy: 209, size: 29, angle: -156, fill: '#f6edd9', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 1.4, scan: 0.481, dim: 0.12 },
       { shape: 'clover', cx: 1313, cy: 977, size: 27, angle: -155, fill: '#8f7336', opacity: 0.327, blend: 'multiply', blur: 0.5, ratio: 2.58, scan: 0.457, dim: 0.123 },
@@ -162,6 +189,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 2059,
     clutter: 0.732,
+    notes: [
+      'Van Gogh painted it in June 1889 while staying at the asylum of Saint-Paul-de-Mausole in Saint-Rémy-de-Provence.',
+      'He painted it in his studio during the day, working from sketches and memory.',
+      'Van Gogh did not think much of it at first, and in a letter he dismissed it as a failure.',
+      'It has belonged to the Museum of Modern Art in New York since 1941.',
+      'Van Gogh sold very few paintings in his lifetime, and he died a year after painting this one, in July 1890.',
+      'The canvas is about 29 by 36 inches, smaller than many people expect.',
+      'He made around 150 paintings in the year he spent at Saint-Rémy.',
+    ],
     days: [
       { shape: 'clover', cx: 521, cy: 1289, size: 40, angle: 12, fill: '#2a2b1c', opacity: 1, blend: 'screen', blur: 0.5, ratio: 2.27, scan: 0.49, dim: 0.878 },
       { shape: 'triangle', cx: 2345, cy: 497, size: 37, angle: -25, fill: '#4e471a', opacity: 0.284, blend: 'multiply', blur: 0.5, ratio: 1.43, scan: 0.531, dim: 0.329 },
@@ -185,6 +221,15 @@ const WEEKS: WeekSeed[] = [
     height: 1926,
     sizeScale: 0.73,
     clutter: 0.544,
+    notes: [
+      'Renoir painted it over several months at the Maison Fournaise, a restaurant on an island in the Seine at Chatou, west of Paris.',
+      'It was first shown at the seventh Impressionist exhibition, in 1882.',
+      'Renoir was about forty when he painted it, and he filled it with friends from the Paris art world.',
+      'The canvas is about 51 by 68 inches, large for a picture of a lunch among friends.',
+      'The collector Duncan Phillips bought it in 1923 for $125,000, and it is still the best-known painting in the Phillips Collection in Washington, D.C.',
+      'Late in life Renoir had severe arthritis, and he kept painting with a brush wedged between his fingers.',
+      'The Maison Fournaise still stands, restored as a restaurant, with a small museum beside it.',
+    ],
     days: [
       { shape: 'star', cx: 1217, cy: 1745, size: 29, angle: -156, fill: '#be9978', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 4.95, scan: 0.384, dim: 0.117 },
       { shape: 'hourglass', cx: 185, cy: 1697, size: 27, angle: -155, fill: '#85a4bf', opacity: 0.195, blend: 'screen', blur: 0.5, ratio: 4.76, scan: 0.429, dim: 0.806, cover: 0.5, base: '#213240' },
@@ -205,6 +250,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 1793,
     clutter: 0.496,
+    notes: [
+      'Constable first showed it at the Royal Academy in 1821, under the title Landscape: Noon.',
+      'It did not sell in England, but it won a gold medal at the Paris Salon of 1824.',
+      'Constable painted the country around his birthplace, East Bergholt in Suffolk, again and again throughout his life.',
+      'Before the finished picture he painted a full-size oil sketch of it, which is now in the Victoria and Albert Museum.',
+      'It has belonged to the National Gallery in London since 1886.',
+      'Constable was not elected a full member of the Royal Academy until 1829, when he was 52.',
+      'French painters, Delacroix among them, admired his fresh handling of paint when his work was shown in Paris.',
+    ],
     days: [
       { shape: 'heart', cx: 1457, cy: 497, size: 40, angle: 12, fill: '#e8ebf0', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 1.28, scan: 0.367, dim: 0.459 },
       { shape: 'snowflake', cx: 2345, cy: 353, size: 37, angle: 155, fill: '#313e52', opacity: 0.371, blend: 'multiply', blur: 0.5, ratio: 3.4, scan: 0.347, dim: 0.462, cover: 0.5, base: '#768bae' },
@@ -226,6 +280,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 1969,
     clutter: 0.338,
+    notes: [
+      'Caillebotte showed it at the third Impressionist exhibition, in 1877, a show he also helped pay for.',
+      'He had inherited a fortune, and he bought paintings by friends such as Monet and Renoir to support them.',
+      'He left his collection to the French state, and much of it is now in the Musée d\'Orsay.',
+      'The canvas is almost 7 feet high and more than 9 feet wide.',
+      'It has belonged to the Art Institute of Chicago since 1964.',
+      'Caillebotte was in his late twenties when he painted it.',
+      'He was also a keen yachtsman who designed and built racing boats.',
+    ],
     days: [
       { shape: 'bone', cx: 2177, cy: 1697, size: 40, angle: 168, fill: '#17140d', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.67, scan: 0.324, dim: 0.781 },
       { shape: 'clover', cx: 1697, cy: 353, size: 37, angle: -155, fill: '#7d703d', opacity: 0.174, blend: 'multiply', blur: 0.5, ratio: 3.18, scan: 0.295, dim: 0.161, cover: 0.5, base: '#dfd8bd' },
@@ -247,6 +310,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 1634,
     clutter: 0.365,
+    notes: [
+      'Homer worked on it for several years before showing it at the National Academy of Design in 1876.',
+      'It was shown in 1876, the year the United States celebrated its hundredth birthday.',
+      'Homer began his career as a magazine illustrator and covered the Civil War for Harper\'s Weekly.',
+      'He was largely self-taught as a painter.',
+      'It hangs in the National Gallery of Art in Washington, D.C.',
+      'Homer later settled at Prouts Neck on the coast of Maine, where he lived and painted until his death in 1910.',
+      'At Prouts Neck he was famously private, and he is said to have put up signs to keep visitors away.',
+    ],
     days: [
       { shape: 'sun', cx: 1697, cy: 665, size: 40, angle: 102, fill: '#e7e5d9', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 1.45, scan: 0.294, dim: 0.504 },
       { shape: 'droplet', cx: 497, cy: 329, size: 37, angle: -25, fill: '#c7c1a7', opacity: 0.062, blend: 'screen', blur: 0.5, ratio: 1.08, scan: 0.336, dim: 0.575, cover: 0.5, base: '#6d6752' },
@@ -269,6 +341,15 @@ const WEEKS: WeekSeed[] = [
     height: 1731,
     sizeScale: 0.73,
     clutter: 0.685,
+    notes: [
+      'Seurat worked on it for about two years, from 1884 to 1886, making dozens of drawings and oil sketches along the way.',
+      'It is built from countless small dots and dabs of color, a method later called pointillism.',
+      'Seurat believed colors placed side by side would mix in the viewer\'s eye and look brighter than paint mixed on a palette.',
+      'It caused a stir at the eighth and last Impressionist exhibition, in 1886.',
+      'The canvas is nearly 7 feet high and about 10 feet wide.',
+      'It has been at the Art Institute of Chicago since the 1920s, and the museum no longer lends it.',
+      'Seurat died in 1891, at just 31.',
+    ],
     days: [
       { shape: 'arrow', cx: 1097, cy: 1577, size: 29, angle: -12, fill: '#20322a', opacity: 1, blend: 'screen', blur: 0.5, ratio: 3.02, scan: 0.575, dim: 0.787 },
       { shape: 'cross', cx: 569, cy: 161, size: 27, angle: 25, fill: '#3f421d', opacity: 0.252, blend: 'multiply', blur: 0.5, ratio: 1.85, scan: 0.505, dim: 0.448, cover: 0.5, base: '#8c9440' },
@@ -290,6 +371,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 2137,
     clutter: 0.461,
+    notes: [
+      'In 1897 Pissarro painted a series of views of the boulevard from a hotel room window.',
+      'This is the only painting in that series set at night.',
+      'An eye condition made it hard for him to work outdoors, so in later life he often painted from windows.',
+      'It is in the National Gallery in London.',
+      'Pissarro was the only artist to show work at all eight Impressionist exhibitions.',
+      'He was born in 1830 on the Caribbean island of St. Thomas, which was then Danish.',
+      'Both Cézanne and Gauguin looked to him as a teacher.',
+    ],
     days: [
       { shape: 'cross', cx: 2033, cy: 401, size: 40, angle: -168, fill: '#030a0f', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.26, scan: 0.377, dim: 0.887 },
       { shape: 'bone', cx: 809, cy: 233, size: 37, angle: 155, fill: '#79abc4', opacity: 0.065, blend: 'screen', blur: 0.5, ratio: 1.35, scan: 0.382, dim: 0.831, cover: 0.5, base: '#192e39' },
@@ -310,6 +400,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 2070,
     clutter: 0.439,
+    notes: [
+      'Cézanne painted five versions of card players in the early 1890s.',
+      'His models were farmhands and local men from around his family\'s estate near Aix-en-Provence.',
+      'This version is in the Metropolitan Museum of Art in New York.',
+      'Another of the versions was sold privately in 2011 for a reported price of more than $250 million.',
+      'He worked so slowly that the dealer Ambroise Vollard is said to have sat for his portrait more than a hundred times.',
+      'Painters of the next generation, Picasso and Matisse among them, looked to Cézanne as a starting point for modern art.',
+      'Cézanne and the novelist Émile Zola were close friends from their school days in Aix.',
+    ],
     days: [
       { shape: 'snowflake', cx: 2177, cy: 1625, size: 40, angle: 48, fill: '#141420', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.19, scan: 0.364, dim: 0.79 },
       { shape: 'cloud', cx: 1409, cy: 329, size: 37, angle: 25, fill: '#5b553a', opacity: 0.104, blend: 'multiply', blur: 0.5, ratio: 1.6, scan: 0.303, dim: 0.355, cover: 0.5, base: '#b3ae98' },
@@ -330,6 +429,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 1597,
     clutter: 0.492,
+    notes: [
+      'Frans Snyders worked in Antwerp and was one of the leading painters of still lifes and animals of his day.',
+      'He often worked with Peter Paul Rubens, painting the animals, fruit and game in Rubens\'s pictures.',
+      'He trained in the workshop of Pieter Brueghel the Younger.',
+      'Snyders visited Italy around 1608 and 1609, working for a time in Rome and Milan.',
+      'His sister married the painter Cornelis de Vos, and Snyders married de Vos\'s sister.',
+      'He was a friend of Anthony van Dyck, who painted portraits of Snyders and his wife.',
+      'He became dean of the Antwerp painters\' Guild of St. Luke in 1628.',
+    ],
     days: [
       { shape: 'hourglass', cx: 833, cy: 1265, size: 40, angle: -168, fill: '#110e17', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.41, scan: 0.413, dim: 0.89 },
       { shape: 'triangle', cx: 1913, cy: 377, size: 37, angle: 95, fill: '#908ab4', opacity: 0.119, blend: 'screen', blur: 0.5, ratio: 1.68, scan: 0.387, dim: 0.861, cover: 0.5, base: '#2a2a2b' },
@@ -350,6 +458,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 1496,
     clutter: 0.575,
+    notes: [
+      'It is set in 1698, the morning after a failed revolt by the streltsy, Russia\'s regiments of musketeers.',
+      'Surikov spent about three years on it, and it was his first major painting.',
+      'It was shown in 1881 by the Peredvizhniki, the Wanderers, a group of artists who took exhibitions across Russia.',
+      'Pavel Tretyakov bought it, and it is now in the State Tretyakov Gallery in Moscow.',
+      'Surikov was born in 1848 in Krasnoyarsk, in Siberia, into a Cossack family.',
+      'It was the first of three great paintings of Russian history, followed by Menshikov at Berezovo and Boyarynya Morozova.',
+      'The canvas is more than 7 feet high and about 12 feet wide.',
+    ],
     days: [
       { shape: 'arrow', cx: 1745, cy: 1217, size: 40, angle: -12, fill: '#21120d', opacity: 1, blend: 'screen', blur: 0.5, ratio: 1.29, scan: 0.496, dim: 0.879 },
       { shape: 'star', cx: 1121, cy: 209, size: 37, angle: 97, fill: '#9ec1b8', opacity: 0.166, blend: 'screen', blur: 0.5, ratio: 2, scan: 0.435, dim: 0.668, cover: 0.5, base: '#485451' },
@@ -372,6 +489,15 @@ const WEEKS: WeekSeed[] = [
     height: 1850,
     sizeScale: 0.73,
     clutter: 0.657,
+    notes: [
+      'It was one of a series of paintings of the seasons made in 1565 for Niclaes Jongelinck, a wealthy Antwerp merchant.',
+      'Five of the series survive, and this one hangs with two others in the Kunsthistorisches Museum in Vienna.',
+      'The winter of 1564 to 1565 was one of the harshest in memory, during the long cold spell later called the Little Ice Age.',
+      'It is painted in oil on an oak panel.',
+      'Bruegel died only four years later, in 1569, in Brussels.',
+      'His sons Pieter the Younger and Jan the Elder both became painters, and Pieter made many copies of his father\'s work.',
+      'The filmmaker Andrei Tarkovsky used it in two of his films, Solaris and The Mirror.',
+    ],
     days: [
       { shape: 'tree', cx: 2201, cy: 185, size: 29, angle: 12, fill: '#1b2115', opacity: 1, blend: 'screen', blur: 0.5, ratio: 3.08, scan: 0.54, dim: 0.603 },
       { shape: 'anchor', cx: 1745, cy: 209, size: 27, angle: -25, fill: '#b2c9ab', opacity: 0.123, blend: 'screen', blur: 0.5, ratio: 2.03, scan: 0.492, dim: 0.573, cover: 0.5, base: '#60735a' },
@@ -394,6 +520,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 3397,
     clutter: 0.535,
+    notes: [
+      'Duke William IV of Bavaria commissioned it in 1528 for a series of paintings of famous battles.',
+      'The battle it shows was fought in 333 BC, in what is now southern Turkey.',
+      'Altdorfer is said to have turned down the post of mayor of Regensburg so that he could finish it.',
+      'He was also Regensburg\'s city architect and sat on its city council.',
+      'He was a leader of the Danube School, among the first European painters to treat landscape as a subject in its own right.',
+      'Napoleon\'s troops took it from Munich in 1800, and he is said to have hung it in his bathroom at Saint-Cloud.',
+      'It went back to Bavaria after Napoleon\'s fall and is now in the Alte Pinakothek in Munich.',
+    ],
     days: [
       { shape: 'sun', cx: 209, cy: 1481, size: 40, angle: 168, fill: '#28353f', opacity: 1, blend: 'screen', blur: 0.5, ratio: 3.87, scan: 0.46, dim: 0.82 },
       { shape: 'bolt', cx: 449, cy: 1865, size: 37, angle: -155, fill: '#b39d88', opacity: 0.237, blend: 'screen', blur: 0.5, ratio: 3.28, scan: 0.422, dim: 0.888, cover: 0.5, base: '#2d2620' },
@@ -415,6 +550,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 2082,
     clutter: 0.631,
+    notes: [
+      'Bruegel painted the Tower of Babel at least three times, and two of the paintings survive.',
+      'This is the smaller of the two, in the Museum Boijmans Van Beuningen in Rotterdam; the larger one is in Vienna.',
+      'The story comes from the Book of Genesis, where the builders\' single language is confused so they can no longer work together.',
+      'It is painted on an oak panel about 24 by 29 inches.',
+      'Bruegel moved from Antwerp to Brussels in 1563, the year he married.',
+      'As a young man he traveled through Italy, crossing the Alps on the way.',
+      'He is often called Peasant Bruegel because of his many scenes of village life.',
+    ],
     days: [
       { shape: 'sailboat', cx: 2105, cy: 1553, size: 40, angle: 12, fill: '#322916', opacity: 1, blend: 'screen', blur: 0.5, ratio: 2.31, scan: 0.529, dim: 0.763 },
       { shape: 'cloud', cx: 2393, cy: 593, size: 37, angle: -25, fill: '#284641', opacity: 0.344, blend: 'multiply', blur: 0.5, ratio: 1.34, scan: 0.463, dim: 0.46, cover: 0.5, base: '#5a9c91' },
@@ -437,6 +581,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 1932,
     clutter: 0.531,
+    notes: [
+      'Renoir painted it at an open-air dance hall in Montmartre, and many of his friends posed for it.',
+      'He is said to have painted much of it on the spot, with friends helping him carry the large canvas there.',
+      'It was shown at the third Impressionist exhibition, in 1877, the same show as Caillebotte\'s Paris Street; Rainy Day.',
+      'Caillebotte bought it, and it came to the French state with his bequest; it is now in the Musée d\'Orsay.',
+      'A smaller version sold at auction in 1990 for $78.1 million, then one of the highest prices ever paid for a painting.',
+      'Renoir was 35 when he painted it, and still struggling to make a living from his work.',
+      'Late in life he moved to Cagnes-sur-Mer on the Riviera, where his house is now a museum.',
+    ],
     days: [
       { shape: 'sun', cx: 473, cy: 1721, size: 40, angle: 102, fill: '#353522', opacity: 1, blend: 'screen', blur: 0.5, ratio: 2.71, scan: 0.435, dim: 0.721 },
       { shape: 'snowflake', cx: 1553, cy: 1625, size: 37, angle: -85, fill: '#92adb9', opacity: 0.201, blend: 'screen', blur: 0.5, ratio: 1.58, scan: 0.41, dim: 0.798, cover: 0.5, base: '#2c3d45' },
@@ -457,6 +610,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 1537,
     clutter: 0.556,
+    notes: [
+      'It is based on a legend that in the 1670s the Zaporozhian Cossacks sent a mocking reply to an ultimatum from the Ottoman sultan.',
+      'Repin worked on it for more than a decade, from 1880 to 1891.',
+      'Tsar Alexander III bought it for 35,000 rubles, then a record price for a Russian painting.',
+      'It hangs in the State Russian Museum in Saint Petersburg.',
+      'Repin also painted a second version, which is now in Kharkiv, Ukraine.',
+      'He traveled in Ukraine to study Cossack history, clothing and faces for it.',
+      'Repin was born in 1844 in Chuhuiv, in Ukraine.',
+    ],
     days: [
       { shape: 'blossom', cx: 1001, cy: 233, size: 40, angle: -132, fill: '#d7d9e6', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 1.67, scan: 0.425, dim: 0.392 },
       { shape: 'droplet', cx: 2081, cy: 209, size: 37, angle: -25, fill: '#82743e', opacity: 0.151, blend: 'multiply', blur: 0.5, ratio: 1.35, scan: 0.366, dim: 0.144, cover: 0.5, base: '#e4dec7' },
@@ -479,6 +641,15 @@ const WEEKS: WeekSeed[] = [
     height: 2107,
     sizeScale: 0.73,
     clutter: 0.656,
+    notes: [
+      'Jan Davidsz. de Heem was born in Utrecht in 1606 and became one of the most sought-after still life painters of the Dutch Golden Age.',
+      'He was in his early twenties when he painted it, while living in Leiden.',
+      'In Leiden he was influenced by painters of vanitas still lifes, pictures meant to remind the viewer that life is short.',
+      'He later moved to Antwerp, reportedly because rare fruits and fine objects were easier to find there.',
+      'One of his large banquet pieces is in the Louvre, where the young Henri Matisse copied it.',
+      'His son Cornelis de Heem also became a still life painter.',
+      'De Heem died in Antwerp in 1684.',
+    ],
     days: [
       { shape: 'butterfly', cx: 1793, cy: 1217, size: 29, angle: -12, fill: '#2d1615', opacity: 1, blend: 'screen', blur: 0.5, ratio: 2.63, scan: 0.56, dim: 0.871 },
       { shape: 'cross', cx: 2441, cy: 1745, size: 27, angle: -155, fill: '#b78f8f', opacity: 0.319, blend: 'screen', blur: 0.5, ratio: 4.68, scan: 0.522, dim: 0.836, cover: 0.5, base: '#3e2828' },
@@ -500,6 +671,15 @@ const WEEKS: WeekSeed[] = [
     width: 2600,
     height: 1773,
     clutter: 0.538,
+    notes: [
+      'Canaletto\'s real name was Giovanni Antonio Canal, and "Canaletto" means "little Canal."',
+      'He started out painting theater scenery with his father, Bernardo Canal.',
+      'Most of his buyers were British visitors on the Grand Tour, who took his views home as souvenirs.',
+      'Joseph Smith, the British consul in Venice, acted as his agent and later sold his collection to King George III.',
+      'Canaletto lived and worked in England for about ten years, from 1746.',
+      'He may have used a camera obscura to help with his drawings, and one said to be his survives in Venice\'s Museo Correr.',
+      'Canaletto was born in Venice in 1697 and died there in 1768.',
+    ],
     days: [
       { shape: 'blossom', cx: 2249, cy: 449, size: 40, angle: -132, fill: '#dce3e9', opacity: 1, blend: 'multiply', blur: 0.5, ratio: 2.16, scan: 0.406, dim: 0.429 },
       { shape: 'clover', cx: 1865, cy: 689, size: 37, angle: -25, fill: '#4d7862', opacity: 0.148, blend: 'multiply', blur: 0.5, ratio: 2.23, scan: 0.346, dim: 0.129, cover: 0.5, base: '#d3e2da' },

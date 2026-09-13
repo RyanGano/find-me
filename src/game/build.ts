@@ -24,6 +24,10 @@ export interface BuildableWeek {
   height: number;
   /** Shape-scale busyness of the canvas, written by `npm run busyness`. */
   clutter?: number;
+  /** The Commons file page of the scan, linked from the note on the result card. */
+  source?: string;
+  /** One short note about the painting per day, Monday first. See `Puzzle.note`. */
+  notes?: string[];
   days: Target[];
 }
 
@@ -95,6 +99,8 @@ export function buildWeek(week: BuildableWeek): Puzzle[] {
       version: fingerprint(week.image, rung.key, target),
       spot: spotprint(week.image, rung.key, target),
       clutter: week.clutter,
+      note: week.notes?.[day],
+      source: week.source,
       target: { symmetry: shape.symmetry, ...target },
     };
   });
