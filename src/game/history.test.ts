@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DayTally } from './count';
 import { weekdayOf } from './daily';
-import { byWeekday, extremes, recentMarks, RECENT_WEEKS } from './history';
+import { byWeekday, extremes, recentMarks, recentStart, RECENT_WEEKS } from './history';
 import type { HistoryDay } from './storage';
 
 // Day 0 is a Wednesday, so day 5 is the first Monday and day 11 the first Sunday.
@@ -69,6 +69,11 @@ describe('recentMarks', () => {
   it('shows a skipped day as a gap between solves', () => {
     const marks = recentMarks([solved(today - 2, 1000), solved(today, 1000)], today);
     expect(marks[3].slice(0, 3)).toEqual(['solved', 'missed', 'solved']);
+  });
+
+  it('starts on the Monday three weeks before this one, so a mark can be traced to its day', () => {
+    expect(recentStart(today)).toBe(MON + 7 * 2);
+    expect(weekdayOf(recentStart(today))).toBe(0);
   });
 
   it('marks a give-up as its own thing, not a gap and not a solve', () => {

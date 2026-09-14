@@ -4,8 +4,8 @@ import { dateOfDay, dayIndex } from '../game/daily';
 import { RAMP } from '../game/difficulty';
 import { formatRoughTime, formatTime } from '../game/format';
 import { galleryWall, notesFor, type Frame, type WallWeek } from '../game/gallery';
-import { byWeekday, extremes, recentMarks, type Mark } from '../game/history';
-import { getHistory, getStats } from '../game/storage';
+import { byWeekday, extremes, recentMarks, recentStart, type Mark } from '../game/history';
+import { getHistory, getStats, type HistoryDay } from '../game/storage';
 import { StatTotals } from './StatTotals';
 import { WeekShare } from './WeekShare';
 
@@ -53,8 +53,11 @@ export function Stats({ onDismiss }: Props) {
   const marks = useMemo(() => recentMarks(history.days, today), [history, today]);
   const wall = useMemo(() => galleryWall(history.days, today), [history, today]);
   const range = useMemo(() => extremes(history.days), [history]);
+  const byDay = useMemo(() => new Map(history.days.map((d) => [d.day, d])), [history]);
   // One painting, taken over the panel the way the age explanation takes over the card.
   const [open, setOpen] = useState<Frame | null>(null);
+  // The recent mark last tapped, by day number. A tap and not a tooltip, which a phone never shows.
+  const [picked, setPicked] = useState<number | null>(null);
 
   if (open) {
     return (
@@ -182,16 +185,37 @@ export function Stats({ onDismiss }: Props) {
           )}
 
           <h3>Last four weeks</h3>
-          <div className="stats-recent" role="img" aria-label={recentLabel(marks)}>
+          <div className="stats-recent" role="group" aria-label={recentLabel(marks)}>
             {RAMP.map((r) => (
-              <span key={r.key} className="stats-head">
+              <span key={r.key} className="stats-head" aria-hidden="true">
                 {r.label[0]}
               </span>
             ))}
-            {marks.flat().map((m, i) => (
-              <span key={i} className={`stats-mark is-${m}`} title={MARK_LABEL[m]} />
-            ))}
+            {marks.flat().map((m, i) => {
+              const played = byDay.get(recentStart(today) + i);
+              if (!played) {
+                return <span key={i} className={`stats-mark is-${m}`} title={MARK_LABEL[m]} aria-hidden="true" />;
+              }
+              const tip = markTip(played);
+              const on = picked === played.day;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className={`stats-mark is-${m}${on ? ' is-picked' : ''}`}
+                  title={tip}
+                  aria-label={tip}
+                  aria-pressed={on}
+                  onClick={() => setPicked(on ? null : played.day)}
+                />
+              );
+            })}
           </div>
+          {marks.flat().some((m) => m === 'solved' || m === 'gave-up') && (
+            <p className="stats-note" aria-live="polite">
+              {picked === null || !byDay.has(picked) ? 'Tap a day to see your time.' : markTip(byDay.get(picked)!)}
+            </p>
+          )}
           <p className="stats-legend" aria-hidden="true">
             <span className="stats-mark legend-mark is-solved" /> found
             <span className="stats-mark legend-mark is-gave-up" /> not found
@@ -250,6 +274,12 @@ function WallNotes({ week }: { week: WallWeek }) {
 /** A day number as the date a player would say: "Thu, Sep 3". */
 function dateLabel(day: number): string {
   return dateOfDay(day).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+/** One played day of the recent strip, said in full: "Thu, Sep 3 · found in 1:23.4". */
+function markTip(d: HistoryDay): string {
+  const when = dateLabel(d.day);
+  return d.gaveUp ? `${when} · gave up after ${formatTime(d.ms)}` : `${when} · found in ${formatTime(d.ms)}`;
 }
 
 function wallLabel(week: WallWeek): string {

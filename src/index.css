@@ -1330,6 +1330,19 @@ button.reference:focus-visible {
   border: 1px solid var(--line);
 }
 
+/* A played mark is a button, so tapping it can say the time. */
+button.stats-mark {
+  padding: 0;
+  font: inherit;
+  background: none;
+  cursor: pointer;
+}
+
+.stats-mark.is-picked {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
 .stats-mark.is-solved {
   background: var(--ok);
   border-color: var(--ok);

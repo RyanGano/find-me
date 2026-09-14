@@ -76,7 +76,12 @@ export function extremes(days: HistoryDay[]): { fastest: HistoryDay; slowest: Hi
 /** How many weeks the recent strip shows, this one included. */
 export const RECENT_WEEKS = 4;
 
-export type Mark = 'solved' | 'gave-up' | 'missed' | 'today' | 'ahead' | 'none';
+/** The day number of the strip's first mark: the Monday `RECENT_WEEKS - 1` weeks back. */
+export function recentStart(today: number): number {
+  return today - weekdayOf(today) - (RECENT_WEEKS - 1) * DAYS_PER_WEEK;
+}
+
+export type Mark ='solved' | 'gave-up' | 'missed' | 'today' | 'ahead' | 'none';
 
 /**
  * The last few weeks as marks, a row per week, Monday first, so a broken streak shows as
@@ -89,7 +94,7 @@ export type Mark = 'solved' | 'gave-up' | 'missed' | 'today' | 'ahead' | 'none';
  */
 export function recentMarks(days: HistoryDay[], today: number): Mark[][] {
   const byDay = new Map(days.map((d) => [d.day, d]));
-  const monday = today - weekdayOf(today) - (RECENT_WEEKS - 1) * DAYS_PER_WEEK;
+  const monday = recentStart(today);
   return Array.from({ length: RECENT_WEEKS }, (_, w) =>
     Array.from({ length: DAYS_PER_WEEK }, (_, i): Mark => {
       const day = monday + w * DAYS_PER_WEEK + i;
