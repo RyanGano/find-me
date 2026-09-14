@@ -1365,7 +1365,11 @@ and let anyone open it without playing.
   from before names, while a named one sent to such a page is told it came from a newer
   version rather than that it was cut short. The name is cleaned (control characters out,
   space collapsed, trimmed, held to the length) both when it is packed and when a link is
-  opened, and no fingerprint reads it: naming a hide cannot change the hunt.
+  opened, and no fingerprint reads it: naming a hide cannot change the hunt. Cleaning also
+  takes out every character that is not drawn -- a right-to-left override would turn the
+  rest of the top bar and the share text backwards, so a name could pass itself off as the
+  game's own words -- and a name with nothing left to see is dropped, rather than leaving a
+  hide "named" with a blank. The zero-width joiner is kept, since emoji are built with it.
 - **Only paintings already served.** The painting list is every week the calendar has
   reached, worked out the way `daily.ts` maps it, so the maker cannot show a painting
   early.

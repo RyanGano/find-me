@@ -50,16 +50,31 @@ export const HIDE_VERSION = 3;
 export const HIDE_NAME_MAX = 50;
 
 /**
- * A name as it is being typed: control characters out and held to the length, but spaces
+ * What a name may not carry: control characters, and everything that changes how the text
+ * round it is drawn without being drawn itself -- a direction override that turns the rest
+ * of the line backwards, zero-width spaces, invisible tags -- plus the blank letters that
+ * pass for a space. The zero-width joiner stays, since emoji such as 👩‍🚀 are built with it.
+ */
+const INVISIBLE = /[\p{Cc}\p{Cs}ᅟᅠㅤﾠ⠀]|(?!‍)\p{Cf}/gu;
+
+/** Something a player can actually see. A name without one is no name. */
+const VISIBLE = /[\p{L}\p{N}\p{P}\p{S}]/u;
+
+/**
+ * A name as it is being typed: invisible characters out and held to the length, but spaces
  * left alone, so a trailing one does not vanish from under the cursor.
  */
 export function limitName(raw: string): string {
-  return Array.from(raw.replace(/\p{Cc}/gu, '')).slice(0, HIDE_NAME_MAX).join('');
+  return Array.from(raw.replace(INVISIBLE, '')).slice(0, HIDE_NAME_MAX).join('');
 }
 
-/** A name as it travels and is shown: runs of space collapsed, trimmed, held to the length. */
+/**
+ * A name as it travels and is shown: runs of space collapsed, trimmed, held to the length,
+ * and dropped altogether when nothing in it would show.
+ */
 export function cleanName(raw: string): string {
-  return limitName(raw.replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim()).trim();
+  const name = limitName(raw.replace(/\p{Cc}/gu, ' ').replace(INVISIBLE, '').replace(/\s+/g, ' ').trim()).trim();
+  return VISIBLE.test(name) ? name : '';
 }
 
 /**

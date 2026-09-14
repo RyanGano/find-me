@@ -178,6 +178,21 @@ describe('friend hides', () => {
     if (blank.ok) expect('name' in blank.hide).toBe(false);
   });
 
+  it('drops what would draw nothing or turn the text round', () => {
+    expect(cleanName('‮yadot sreyalp')).toBe('yadot sreyalp');
+    expect(cleanName('a​ b⁦c⁩')).toBe('a bc');
+    expect(cleanName('​​​')).toBe('');
+    expect(cleanName('ㅤ‍ \u{E0041}')).toBe('');
+    expect(cleanName('👩‍🚀 crew')).toBe('👩‍🚀 crew');
+    expect(limitName('left‮ ')).toBe('left ');
+    expect(encodeHide(sample({ name: '​​' }))).toBe(encodeHide(sample()));
+    const turned = storedHide({ schema: STORED_HIDE_SCHEMA, ...sample(), name: '‮eniM' }, NOW);
+    expect(turned.ok && turned.hide.name).toBe('eniM');
+    const unseen = storedHide({ schema: STORED_HIDE_SCHEMA, ...sample(), name: '​​​' }, NOW);
+    expect(unseen.ok).toBe(true);
+    if (unseen.ok) expect('name' in unseen.hide).toBe(false);
+  });
+
   it('refuses a name in the wrong place', () => {
     for (const code of [
       pack([1, first.image, 'star', 1, 1, 50, 0, 'aabbcc', 70, 'named']),
