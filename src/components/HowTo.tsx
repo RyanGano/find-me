@@ -62,8 +62,8 @@ export function HowTo({ thing, rung, friend, invite, brief, onDismiss }: Props) 
         {friend
           ? `A friend hid a ${thing} somewhere in this painting.`
           : `A ${thing} is hidden somewhere in today’s painting.`}{' '}
-        Pan, zoom, and rotate until it matches the badge in the corner —{' '}
-        <strong>same size, same angle</strong>.
+        Pan, zoom, and rotate until it matches the size and rotation of the example in the
+        corner. It&rsquo;s the same color, too.
       </p>
       <ul>
         {coarse ? (
@@ -78,7 +78,7 @@ export function HowTo({ thing, rung, friend, invite, brief, onDismiss }: Props) 
           </>
         )}
         {more && (
-          <li>The corner badge lights up once the {thing} is on screen at close to the right size and angle</li>
+          <li>The example in the corner lights up once the {thing} is on screen at close to the right size and angle</li>
         )}
       </ul>
       {more && (
