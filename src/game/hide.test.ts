@@ -179,16 +179,16 @@ describe('friend hides', () => {
   });
 
   it('drops what would draw nothing or turn the text round', () => {
-    expect(cleanName('‮yadot sreyalp')).toBe('yadot sreyalp');
-    expect(cleanName('a​ b⁦c⁩')).toBe('a bc');
-    expect(cleanName('​​​')).toBe('');
-    expect(cleanName('ㅤ‍ \u{E0041}')).toBe('');
+    expect(cleanName('\u202Eyadot sreyalp')).toBe('yadot sreyalp');
+    expect(cleanName('a\u200B b\u2066c\u2069')).toBe('a bc');
+    expect(cleanName('\u200B\u200B\u200B')).toBe('');
+    expect(cleanName('\u3164\u200D \u{E0041}')).toBe('');
     expect(cleanName('👩‍🚀 crew')).toBe('👩‍🚀 crew');
-    expect(limitName('left‮ ')).toBe('left ');
-    expect(encodeHide(sample({ name: '​​' }))).toBe(encodeHide(sample()));
-    const turned = storedHide({ schema: STORED_HIDE_SCHEMA, ...sample(), name: '‮eniM' }, NOW);
+    expect(limitName('left\u202E ')).toBe('left ');
+    expect(encodeHide(sample({ name: '\u200B\u200B' }))).toBe(encodeHide(sample()));
+    const turned = storedHide({ schema: STORED_HIDE_SCHEMA, ...sample(), name: '\u202EeniM' }, NOW);
     expect(turned.ok && turned.hide.name).toBe('eniM');
-    const unseen = storedHide({ schema: STORED_HIDE_SCHEMA, ...sample(), name: '​​​' }, NOW);
+    const unseen = storedHide({ schema: STORED_HIDE_SCHEMA, ...sample(), name: '\u200B\u200B\u200B' }, NOW);
     expect(unseen.ok).toBe(true);
     if (unseen.ok) expect('name' in unseen.hide).toBe(false);
   });

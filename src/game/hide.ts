@@ -55,7 +55,7 @@ export const HIDE_NAME_MAX = 50;
  * of the line backwards, zero-width spaces, invisible tags -- plus the blank letters that
  * pass for a space. The zero-width joiner stays, since emoji such as 👩‍🚀 are built with it.
  */
-const INVISIBLE = /[\p{Cc}\p{Cs}ᅟᅠㅤﾠ⠀]|(?!‍)\p{Cf}/gu;
+const INVISIBLE = /[\p{Cc}\p{Cs}\u115f\u1160\u3164\uffa0\u2800]|(?!\u200d)\p{Cf}/gu;
 
 /** Something a player can actually see. A name without one is no name. */
 const VISIBLE = /[\p{L}\p{N}\p{P}\p{S}]/u;
