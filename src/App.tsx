@@ -130,6 +130,8 @@ export default function App() {
   const [showHowTo, setShowHowTo] = useState(
     () => !prior && !saved && !isPractice && !hasFlag(HOWTO_SEEN),
   );
+  // The how-to that opens by itself is the short one; once put away, the ? opens it whole.
+  const [howToBrief, setHowToBrief] = useState(showHowTo);
 
   /**
    * The play-testing invitation at the top of How to play, which is only there -- and the
@@ -496,6 +498,7 @@ export default function App() {
   const dismissHowTo = useCallback(() => {
     setFlag(HOWTO_SEEN);
     setShowHowTo(false);
+    setHowToBrief(false);
     stageRef.current?.focus();
   }, [stageRef]);
 
@@ -860,6 +863,7 @@ export default function App() {
             thing={puzzle.thing}
             rung={RAMP[puzzle.dayOfWeek].label}
             invite={invite}
+            brief={howToBrief}
             onDismiss={dismissHowTo}
           />
         )}

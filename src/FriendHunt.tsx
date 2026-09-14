@@ -131,6 +131,8 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
   // A friend's link is often somebody's first sight of Find Me, so it opens on the rules
   // for anyone who has not read them here or on the daily game.
   const [showHowTo, setShowHowTo] = useState(() => !hasFlag(HOWTO_SEEN) && !hasFlag(FRIEND_HOWTO_SEEN));
+  // Short when it opens by itself; whole when opened from the ?.
+  const [howToBrief, setHowToBrief] = useState(showHowTo);
 
   const onSolved = useCallback(() => {
     countHide('found');
@@ -165,6 +167,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
   const closeHowTo = useCallback(() => {
     setFlag(FRIEND_HOWTO_SEEN);
     setShowHowTo(false);
+    setHowToBrief(false);
     stageRef.current?.focus();
   }, [stageRef]);
 
@@ -292,7 +295,7 @@ function Hunt({ puzzle, link, title, named }: { puzzle: Puzzle; link: string; ti
         {showHowTo && (
           <>
             <div className="scrim" onClick={closeHowTo} />
-            <HowTo friend thing={puzzle.thing} onDismiss={closeHowTo} />
+            <HowTo friend brief={howToBrief} thing={puzzle.thing} onDismiss={closeHowTo} />
           </>
         )}
 

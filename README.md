@@ -1783,7 +1783,8 @@ a lever the tuner erases.
 ## Credits
 
 All paintings are in the public domain, sourced from Wikimedia Commons, and How to play
-says so. Each one is credited by title, painter and year on the result card and in the
+says so under "How it works" (a first-time player's panel opens short, with only the goal
+and the gestures, so the full rules sit one tap behind it). Each one is credited by title, painter and year on the result card and in the
 gallery; the `year` field lives beside `title` and `artist` on each week seed in
 `src/game/puzzles.ts`. There used to be a credits panel behind the title in the top bar,
 but nothing marked the title as a button and the panel only repeated the card.
